@@ -209,26 +209,120 @@ Present specs to user. Proceed to execution handoff.
 
 ## Phase 5: Execution Handoff
 
-After specs are generated, summarize and hand off for implementation.
+After specs are generated, create task list and hand off for implementation.
 
-### 5.1 Present Handoff Summary
+### 5.1 Create Task List
+
+Generate a unique task list ID and create initial phase tasks:
+
+```javascript
+// Generate unique ID
+const taskListId = `{project-name}-${Date.now()}`;
+
+// Create phase tasks with dependencies
+TaskCreate({
+  subject: "Phase 1: {phase title from PRD}",
+  description: "Execute spec-phase-1.md",
+  activeForm: "Implementing Phase 1",
+  metadata: { phase: 1, specFile: "spec-phase-1.md" }
+});
+
+// Phase 2 blocked by Phase 1
+TaskCreate({
+  subject: "Phase 2: {phase title}",
+  description: "Execute spec-phase-2.md",
+  activeForm: "Implementing Phase 2",
+  metadata: { phase: 2, specFile: "spec-phase-2.md" }
+});
+
+TaskUpdate({
+  taskId: "{phase2-id}",
+  addBlockedBy: ["{phase1-id}"]
+});
+```
+
+### 5.2 Write Tasks Manifest
+
+Create `./docs/ideation/{project-name}/tasks-manifest.md`:
+
+```markdown
+# Tasks Manifest
+
+**Task List ID:** `{task-list-id}`
+**Created:** {timestamp}
+**Project:** {project-name}
+
+## Quick Start
+
+```bash
+# Start fresh session with task tracking
+CLAUDE_CODE_TASK_LIST_ID={task-list-id} claude
+```
+
+Then run: `/execute-spec docs/ideation/{project-name}/spec-phase-1.md`
+
+## Phases
+
+| Phase | Status | Spec File |
+|-------|--------|-----------|
+| 1 | pending | spec-phase-1.md |
+| 2 | blocked | spec-phase-2.md |
+| ... | ... | ... |
+
+## Cross-Session Coordination
+
+Tasks sync automatically across Claude sessions. To work in parallel:
+
+```bash
+# Terminal 1
+CLAUDE_CODE_TASK_LIST_ID={task-list-id} claude
+# Work on independent Component A
+
+# Terminal 2
+CLAUDE_CODE_TASK_LIST_ID={task-list-id} claude
+# Work on independent Component B
+```
+
+Check progress anytime with `TaskList`.
+```
+
+### 5.3 Present Handoff Summary
 
 ```
 Ideation complete. Artifacts written to `./docs/ideation/{project-name}/`.
 
-**To implement:**
-1. Start a fresh Claude session (clears context)
-2. Run: /execute-spec docs/ideation/{project-name}/spec-phase-1.md
-3. Review changes, run tests, commit
-4. Repeat for each phase
+## Execution Ready
+
+Task list created: `{task-list-id}`
+
+**To implement with shared task tracking:**
+```bash
+CLAUDE_CODE_TASK_LIST_ID={task-list-id} claude
 ```
 
-### 5.2 Why Fresh Sessions?
+Then run: `/execute-spec docs/ideation/{project-name}/spec-phase-1.md`
+
+**For parallel execution (multiple terminals):**
+```bash
+# Terminal 1
+CLAUDE_CODE_TASK_LIST_ID={task-list-id} claude
+# Work on Component A
+
+# Terminal 2
+CLAUDE_CODE_TASK_LIST_ID={task-list-id} claude
+# Work on Component B (if independent)
+```
+
+Tasks sync automatically across sessions.
+```
+
+### 5.4 Why Fresh Sessions?
 
 - Ideation consumes significant context (contract, PRDs, specs)
 - Execution benefits from clean context focused on the spec
 - Human review between phases catches issues early
 - Each phase is independently committable
+- **Task list persists** - progress isn't lost between sessions
 
 ## Output Artifacts
 
@@ -242,6 +336,7 @@ prd-phase-2.md           # Phase 2 requirements (if applicable)
 spec-phase-1.md          # Phase 1 implementation spec
 spec-phase-2.md          # Phase 2 implementation spec
 ...
+tasks-manifest.md        # Task list ID and cross-session coordination info
 ```
 
 ## Bundled Resources
