@@ -167,4 +167,4 @@ Tasks auto-coordinate via blocking relationships—dependent components wait for
 
 ## Version
 
-0.3.0
+0.3.1
