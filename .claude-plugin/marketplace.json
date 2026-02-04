@@ -9,7 +9,7 @@
       "name": "consultant",
       "source": "./plugins/consultant",
       "description": "Multi-model AI consultation and research using GPT-5/Codex, Gemini, Grok, Perplexity, and Claude. Supports single-agent consultation or parallel multi-agent research (5-40 agents).",
-      "version": "0.2.1",
+      "version": "0.3.0",
       "author": {
         "name": "Nick Nisi",
         "email": "nick@nisi.org"
