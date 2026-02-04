@@ -137,7 +137,11 @@
         "name": "Nick Nisi",
         "email": "nick@nisi.org"
       },
-      "keywords": ["experimental", "cunningham", "output-styles"]
+      "keywords": [
+        "experimental",
+        "cunningham",
+        "output-styles"
+      ]
     },
     {
       "name": "spec-driven",
