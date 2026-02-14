@@ -44,6 +44,9 @@ be on planes or whatever and sync when they come back online
    - Phase 4: Sharing (future)
 
 9. **Generate specs** (referencing codebase patterns found in step 2)
+   - Each spec includes a **Feedback Strategy** (inner-loop command, playground type)
+   - Each iterative component gets a **Feedback Loop** (playground, experiment, check command)
+   - Self-review feedback loop quality before presenting — Strong/Adequate/Weak
 
 10. **Execution handoff**: Analyze dependencies, present orchestration strategy
     - Phases 2-4 are independent → recommend agent team
@@ -52,5 +55,7 @@ be on planes or whatever and sync when they come back online
 11. **Implementation** (fresh sessions): For each phase:
     - Start fresh Claude session (or use agent team for parallel phases)
     - Run `/execute-spec spec-phase-{n}.md`
+    - Agent sets up feedback environment first (test runner, dev server, etc.)
+    - For each component: set up loop → build incrementally → check → iterate
     - Review, test, commit
     - Repeat for next phase

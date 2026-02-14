@@ -1,6 +1,6 @@
 ---
 name: ideation
-description: Transform raw brain dumps (dictated freestyle) into structured implementation artifacts. Use when user has messy ideas, scattered thoughts, or dictated stream-of-consciousness about something they want to build. Produces contracts and implementation specs written to ./docs/ideation/{project-name}/.
+description: Transform raw brain dumps (dictated freestyle) into structured implementation artifacts. Use when user has messy ideas, scattered thoughts, or dictated stream-of-consciousness about something they want to build. Also use when user wants to plan a feature, spec something out, or turn rough ideas into actionable specs. Produces contracts and implementation specs written to ./docs/ideation/{project-name}/.
 ---
 
 # Ideation
@@ -70,7 +70,7 @@ Use the `Task` tool with `subagent_type: "Explore"` or direct `Glob`/`Grep`/`Rea
 3. **Conventions and patterns** — How are similar features implemented? What abstractions exist?
 4. **Testing patterns** — How is the codebase tested? What infrastructure exists?
 5. **Configuration and build** — What tools, package managers, and CI/CD are in use?
-6. **Feedback infrastructure** — What fast-feedback tools exist? Test runner config, dev server setup, storybook, API testing scripts, CI shortcuts. These inform feedback loop design in specs.
+6. **Feedback infrastructure** — What fast-feedback tools exist? Test runner config, dev server setup, storybook, API testing scripts, CI shortcuts. These directly inform feedback loop design in specs: if the project has Storybook, prefer it as the UI playground; if it has a test runner with watch mode, use that for the inner-loop command. See `references/feedback-loop-guide.md` for the full infrastructure-to-playground mapping.
 
 ### 2.3 Record Findings
 
@@ -142,37 +142,7 @@ When confidence < 95%, **MUST use `AskUserQuestion` tool** to ask clarifying que
 - Limit to 3-5 questions per round
 - After each round, recalculate confidence
 
-**Question templates by dimension**:
-
-**Problem Clarity**:
-
-- "What specific problem are you trying to solve?"
-- "Who experiences this problem and how often?"
-- "What's the cost of NOT solving this?"
-
-**Goal Definition**:
-
-- "What does success look like for this project?"
-- "How will you measure whether this worked?"
-- "What specific metrics should improve?"
-
-**Success Criteria**:
-
-- "How will you know when you're done?"
-- "What tests would prove this feature works?"
-- "What would a QA person check?"
-
-**Scope Boundaries**:
-
-- "What is explicitly NOT part of this project?"
-- "Are there related features we should defer?"
-- "What's the MVP vs. nice-to-have?"
-
-**Consistency**:
-
-- "You mentioned [X] but also [Y]. Which takes priority?"
-- "These requirements seem to conflict. Can you clarify?"
-- "How should we handle [edge case]?"
+See `references/confidence-rubric.md` for question templates by dimension and best practices.
 
 ### 3.5 Generate Contract
 
@@ -280,26 +250,7 @@ For each phase, generate a full `spec-phase-{n}.md` with:
 
 **Reference existing code:** When the codebase exploration (Phase 2) identified relevant patterns, include "Pattern to follow: `path/to/similar/file.ts`" in the spec's implementation details. This gives the executing agent concrete examples to follow.
 
-**Designing feedback loops:** When generating specs, define how the executing agent will validate its work *during* implementation, not just after. For each component, consider:
-
-1. **What's the playground?** What environment lets the agent interact with its changes? Match the component type:
-
-   | Component Type | Feedback Mechanism | Example |
-   |---|---|---|
-   | Data/logic layers | Test file — create a spec file with a describe block before writing the implementation | `pnpm test -- --filter bookmark-store` |
-   | UI components | Dev server or storybook — start before building, check renders after each change | `pnpm dev`, `pnpm storybook` |
-   | API endpoints | curl/httpie script or test harness — hit the endpoint after each route is added | `curl -s localhost:3000/api/bookmarks \| jq .` |
-   | CLI tools | The tool itself — run with test inputs after each subcommand is added | `./my-cli --help`, `./my-cli generate --dry-run` |
-   | Config/types/constants | Skip — no feedback loop needed, typecheck covers it | `pnpm typecheck` |
-
-2. **What's the experiment?** A parameterized, reproducible check. Not "does it work?" but "does it work with *these specific inputs*?" Good experiments exercise edge cases: empty state, single item, many items, error case.
-
-3. **What's the fastest check?** A single command that runs in seconds and produces text output. The agent runs this dozens of times. Prefer:
-   - `pnpm test -- --filter {module}` over `pnpm test` (scoped, fast)
-   - `curl -s ... | jq .` over "open browser and check" (text, automatable)
-   - `pnpm typecheck` over `pnpm build` (faster, sufficient for type-only changes)
-
-**Not every component needs a feedback loop.** Skip it for: type definition files, config changes, constant files, simple re-exports, migration files verified by the data layer's tests. When in doubt, ask: "Will the agent make multiple iterations on this component?" If yes, add a loop. If it's write-once, skip it.
+**Designing feedback loops:** For each iterative component, define a playground (environment to interact with), experiment (parameterized check), and check command (fastest single validation). Match the feedback mechanism to the component type — data layers use tests, UI uses dev server, APIs use curl scripts, config/types skip loops entirely. See `references/feedback-loop-guide.md` for the full component-type mapping and design criteria.
 
 #### Repeatable phases (3+ phases follow the same pattern)
 
@@ -526,7 +477,8 @@ spec-phase-{n}.md                  # Per-phase delta referencing template (if re
 - `references/contract-template.md` - Template for lean contract document
 - `references/prd-template.md` - Template for phased PRD documents
 - `references/spec-template.md` - Template for implementation specs
-- `references/confidence-rubric.md` - Detailed scoring criteria for confidence assessment
+- `references/confidence-rubric.md` - Detailed scoring criteria for confidence assessment and spec feedback quality
+- `references/feedback-loop-guide.md` - Component-type mapping and design criteria for spec feedback loops
 - `references/workflow-example.md` - End-to-end workflow walkthrough
 
 ### Examples
@@ -534,6 +486,7 @@ spec-phase-{n}.md                  # Per-phase delta referencing template (if re
 Completed artifact examples for reference when generating output:
 
 - `examples/contract-example.md` - A filled-in contract for a bookmark feature
+- `examples/prd-example.md` - A filled-in PRD for the same feature (Phase 1)
 - `examples/spec-example.md` - A filled-in spec for the same feature
 
 When generating artifacts, reference these examples for tone, structure, and level of detail.
