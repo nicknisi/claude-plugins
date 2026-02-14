@@ -46,7 +46,7 @@ be on planes or whatever and sync when they come back online
 9. **Generate specs** (referencing codebase patterns found in step 2)
    - Each spec includes a **Feedback Strategy** (inner-loop command, playground type)
    - Each iterative component gets a **Feedback Loop** (playground, experiment, check command)
-   - Self-review feedback loop quality before presenting — Strong/Adequate/Weak
+   - Self-review feedback loop quality before presenting — Strong/Adequate/Weak (see `confidence-rubric.md`)
 
 10. **Execution handoff**: Analyze dependencies, present orchestration strategy
     - Phases 2-4 are independent → recommend agent team
