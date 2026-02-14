@@ -19,6 +19,14 @@ Use this template when generating `spec-phase-{n}.md` for each approved phase.
 - Patterns or frameworks to use
 - Any spikes or research needed}
 
+## Feedback Strategy
+
+**Inner-loop command**: `{single command that validates the most common change — e.g., pnpm test --filter bookmarks, curl localhost:3000/api/health, pnpm storybook --ci}`
+
+**Playground**: {What environment does the agent interact with during development? Options: dev server, test suite, storybook, REPL, CLI tool, script harness. "None" for trivial specs.}
+
+**Why this approach**: {1 sentence — why this feedback mechanism fits this spec's components. E.g., "Most changes are to store logic, so a fast test runner is the tightest loop."}
+
 ## File Changes
 
 ### New Files
@@ -73,6 +81,12 @@ function {functionName}({params}): {returnType} {
 1. {Step 1}
 2. {Step 2}
 3. {Step 3}
+
+**Feedback loop**: {Omit this block for trivial components (config, types, constants)}
+
+- **Playground**: {What to set up before building — e.g., "Create `store.spec.ts` with a describe block and one smoke test", "Start dev server with `pnpm dev`", "Create `scripts/test-api.sh` that curls the endpoint"}
+- **Experiment**: {A parameterized check — e.g., "Test with 0, 1, and 100 items", "Render component with prop=true and prop=false", "POST then GET to verify round-trip"}
+- **Check command**: `{single command — e.g., pnpm test -- --filter store, curl -s localhost:3000/api/items | jq .count}`
 
 ### {Component/Feature 2}
 
@@ -259,3 +273,5 @@ When filling this template:
 8. **Validation Commands**: Copy-paste ready. No one should guess how to run tests.
 
 9. **Rollout**: Even if it's "just deploy," say so. Feature flags aren't always needed.
+
+10. **Feedback Strategy**: Define the fastest possible check cycle. The inner-loop command should run in seconds, not minutes. Prefer text output the agent can parse over visual output requiring screenshots. Skip feedback loops for trivial components (config edits, type-only files, constant definitions).

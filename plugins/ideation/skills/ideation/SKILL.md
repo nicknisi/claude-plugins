@@ -70,6 +70,7 @@ Use the `Task` tool with `subagent_type: "Explore"` or direct `Glob`/`Grep`/`Rea
 3. **Conventions and patterns** — How are similar features implemented? What abstractions exist?
 4. **Testing patterns** — How is the codebase tested? What infrastructure exists?
 5. **Configuration and build** — What tools, package managers, and CI/CD are in use?
+6. **Feedback infrastructure** — What fast-feedback tools exist? Test runner config, dev server setup, storybook, API testing scripts, CI shortcuts. These inform feedback loop design in specs.
 
 ### 2.3 Record Findings
 
@@ -274,8 +275,31 @@ For each phase, generate a full `spec-phase-{n}.md` with:
 - Testing requirements
 - Error handling
 - Validation commands
+- Feedback strategy (top-level inner-loop command and playground type)
+- Per-component feedback loops (where applicable)
 
 **Reference existing code:** When the codebase exploration (Phase 2) identified relevant patterns, include "Pattern to follow: `path/to/similar/file.ts`" in the spec's implementation details. This gives the executing agent concrete examples to follow.
+
+**Designing feedback loops:** When generating specs, define how the executing agent will validate its work *during* implementation, not just after. For each component, consider:
+
+1. **What's the playground?** What environment lets the agent interact with its changes? Match the component type:
+
+   | Component Type | Feedback Mechanism | Example |
+   |---|---|---|
+   | Data/logic layers | Test file — create a spec file with a describe block before writing the implementation | `pnpm test -- --filter bookmark-store` |
+   | UI components | Dev server or storybook — start before building, check renders after each change | `pnpm dev`, `pnpm storybook` |
+   | API endpoints | curl/httpie script or test harness — hit the endpoint after each route is added | `curl -s localhost:3000/api/bookmarks \| jq .` |
+   | CLI tools | The tool itself — run with test inputs after each subcommand is added | `./my-cli --help`, `./my-cli generate --dry-run` |
+   | Config/types/constants | Skip — no feedback loop needed, typecheck covers it | `pnpm typecheck` |
+
+2. **What's the experiment?** A parameterized, reproducible check. Not "does it work?" but "does it work with *these specific inputs*?" Good experiments exercise edge cases: empty state, single item, many items, error case.
+
+3. **What's the fastest check?** A single command that runs in seconds and produces text output. The agent runs this dozens of times. Prefer:
+   - `pnpm test -- --filter {module}` over `pnpm test` (scoped, fast)
+   - `curl -s ... | jq .` over "open browser and check" (text, automatable)
+   - `pnpm typecheck` over `pnpm build` (faster, sufficient for type-only changes)
+
+**Not every component needs a feedback loop.** Skip it for: type definition files, config changes, constant files, simple re-exports, migration files verified by the data layer's tests. When in doubt, ask: "Will the agent make multiple iterations on this component?" If yes, add a loop. If it's write-once, skip it.
 
 #### Repeatable phases (3+ phases follow the same pattern)
 
@@ -341,6 +365,14 @@ This approach:
 ### 4.5 Present Phases for Review
 
 Whether using PRDs or straight-to-specs, present the phase breakdown and specs for user approval before proceeding to handoff.
+
+**Before presenting specs, evaluate feedback loop quality** using the Spec Feedback Quality checklist from `references/confidence-rubric.md`. Self-review each spec:
+
+- **Strong**: All iterative components have feedback loops, inner-loop command defined, trivial components correctly skipped → present spec as-is
+- **Adequate**: Most components have loops but some gaps → present spec with a note about what's missing
+- **Weak**: No Feedback Strategy section, or complex components missing loops entirely → revise spec before presenting
+
+If Weak, fix the gaps first. Don't present a spec without feedback loops for its iterative components.
 
 Use `AskUserQuestion`:
 

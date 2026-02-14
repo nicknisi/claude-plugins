@@ -11,6 +11,14 @@ Phase 1 implements core bookmarking with tag support. The app uses React with a 
 
 Pattern to follow: the existing "reading history" feature in `src/features/history/` uses the same store + IndexedDB + component pattern.
 
+## Feedback Strategy
+
+**Inner-loop command**: `pnpm test -- --filter bookmarks`
+
+**Playground**: Test suite — most changes are to the Zustand store and IndexedDB integration. Tests run in milliseconds and catch logic errors immediately.
+
+**Why this approach**: The bookmark feature is data-layer heavy with a thin UI layer. A fast scoped test runner is the tightest feedback loop.
+
 ## File Changes
 
 ### New Files
@@ -65,6 +73,12 @@ interface BookmarkStore {
 2. Wire IndexedDB persistence via `bookmark-db.ts`
 3. Sync to IndexedDB on every mutation (same pattern as history-store)
 
+**Feedback loop**:
+
+- **Playground**: Create `bookmark-store.spec.ts` with a describe block and one smoke test (`it('initializes with empty bookmarks')`) before writing the store
+- **Experiment**: Test add/remove with 0, 1, and 100 bookmarks. Test tag operations: add, remove, rename, delete tag assigned to bookmarks. Test IndexedDB persistence: add bookmark, rehydrate store, verify state.
+- **Check command**: `pnpm test -- --filter bookmark-store`
+
 ### BookmarkButton Component
 
 **Pattern to follow**: `src/features/history/HistoryIndicator.tsx`
@@ -74,6 +88,12 @@ interface BookmarkStore {
 2. Toggle bookmark on click
 3. Show filled/unfilled icon based on state
 4. Add to `ArticleView.tsx` header section
+
+**Feedback loop**:
+
+- **Playground**: Start dev server (`pnpm dev`), navigate to any article view
+- **Experiment**: Toggle bookmark on unbookmarked article (filled icon), toggle again (unfilled), refresh page (state persists via store). Verify store tests still pass after wiring the component.
+- **Check command**: `pnpm test -- --filter bookmarks`
 
 ## Testing Requirements
 

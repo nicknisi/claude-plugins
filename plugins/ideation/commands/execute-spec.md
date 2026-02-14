@@ -88,6 +88,8 @@ Extract from the spec file (and template if applicable):
 - **Implementation Details** - Per-component instructions with code patterns
 - **Testing Requirements** - Unit tests, integration tests, manual testing
 - **Validation Commands** - Commands to verify implementation
+- **Feedback Strategy** - Top-level inner-loop command and playground type (if present)
+- **Per-component Feedback Loops** - Playground, experiment, and check command for each component (if present)
 
 ### 4. Check or Create Implementation Tasks
 
@@ -156,6 +158,28 @@ Parse the spec's Implementation Details for component order:
    - Independent components: No blockers (can run in parallel)
 3. **Validation tasks**: Blocked by ALL component tasks
 
+### 6. Set Up Feedback Environment
+
+Before implementing any component, establish the spec's feedback environment. This is a one-time setup.
+
+1. **Read the Feedback Strategy** section from the spec. Identify the playground type and inner-loop command.
+
+2. **Auto-detect feedback infrastructure** — even if the spec has no Feedback Strategy section, probe the codebase:
+   - Read `package.json` (or equivalent manifest) for scripts: `test`, `dev`, `start`, `storybook`, `typecheck`
+   - Check for test runner configs: `jest.config.*`, `vitest.config.*`, `.mocharc.*`, `pytest.ini`, `go.mod` (for `go test`)
+   - Check for dev server configs: `vite.config.*`, `next.config.*`, `webpack.config.*`
+   - Check for storybook: `.storybook/` directory
+   - Check for existing script harnesses: `scripts/`, `bin/`, `Makefile`
+
+3. **Set up the playground** if it requires infrastructure:
+   - **Test runner**: Verify the test command works (even with no tests yet — confirm the runner doesn't crash)
+   - **Dev server**: Start it and verify it's running
+   - **Storybook/harness**: Start it if the spec calls for one
+
+4. **Verify the inner-loop command runs** (even if it does nothing yet). This catches environment issues before they block implementation.
+
+5. **Fallback**: If no Feedback Strategy in the spec AND no feedback infrastructure detected, fall back to Validation Commands as the post-implementation check. Not all specs will have feedback loops.
+
 ## Execution Flow
 
 ### Check Task Progress
@@ -170,19 +194,29 @@ Before starting, use `TaskList` to see current state:
 1. **Claim the task**: `TaskUpdate({ taskId, status: "in_progress" })`
 2. **Read** the component's implementation details from task description
 3. **Read before writing** — If modifying existing files, read them first. If creating files alongside existing analogues, read the analogues to match patterns.
-4. **Follow** the pattern specified (if "Pattern to follow" is listed)
-5. **Create/Edit** files as specified in "File Changes"
-6. **Validate** after each component using the spec's validation commands
+4. **Set up component feedback loop** (if the component has one):
+   a. Create the playground artifact first (e.g., create the test file with a describe block, create the script harness, prepare the component in isolation)
+   b. Run the check command once to verify the loop works (expect it to pass trivially or fail with "not implemented" — either is fine, as long as the command itself runs)
+5. **Build incrementally**:
+   a. Follow the pattern specified (if "Pattern to follow" is listed)
+   b. Implement a meaningful chunk (one function, one handler, one subcomponent)
+   c. Run the component's **check command** (or the spec's inner-loop command if no component-specific one)
+   d. If the check fails: read the output, fix, re-run. Iterate until passing.
+   e. Move to the next chunk. Repeat.
+6. **Run the component's experiment** (if specified) — the parameterized check with specific inputs. This catches edge cases the basic check command might miss.
 7. **Complete**: `TaskUpdate({ taskId, status: "completed" })`
+
+**If the component has no feedback loop:** Fall back to the original flow — implement fully, then run validation commands.
 
 ### Component Completion
 
 After implementing a component:
 
-1. Mark task as `completed` via `TaskUpdate`
-2. Run relevant validation commands
-3. Use `TaskList` to find next unblocked task
-4. Report any issues before proceeding
+1. Run the component's **experiment** if defined (edge cases, parameterized inputs)
+2. Run the spec's **inner-loop command** (top-level quick check) to verify nothing regressed
+3. Mark task as `completed` via `TaskUpdate`
+4. Use `TaskList` to find next unblocked task
+5. Report any issues before proceeding
 
 ### Handling Issues
 
@@ -302,12 +336,14 @@ Options:
 ## Key Principles
 
 1. **Read before writing** - Understand existing code and patterns before creating or modifying files
-2. **Follow spec literally** - Don't improvise beyond what's specified
-3. **Match existing patterns** - New code should look like it belongs in the codebase
-4. **Validate continuously** - Run checks after each component
-5. **Human in loop** - Pause when uncertain, don't guess
-6. **One phase at a time** - Complete this phase fully before moving on
-7. **Clear reporting** - Show what was done and what's next
+2. **Feedback loops over post-hoc validation** - Set up the check cycle before building, not after. Run checks continuously during implementation, not just at the end.
+3. **Fast inner loop** - The check command should run in seconds. If it takes more than 10 seconds, scope tests, skip full builds, use targeted commands.
+4. **Follow spec literally** - Don't improvise beyond what's specified
+5. **Match existing patterns** - New code should look like it belongs in the codebase
+6. **Validate continuously** - Run checks after each component
+7. **Human in loop** - Pause when uncertain, don't guess
+8. **One phase at a time** - Complete this phase fully before moving on
+9. **Clear reporting** - Show what was done and what's next
 
 ## Usage
 

@@ -206,3 +206,34 @@ After each round of questions:
 - Round 3: 85-92 → 95+
 
 **Keep going until ≥ 95.** Score conservatively — when uncertain between two levels, always choose the lower one. Do not inflate scores to move forward faster. The goal is a good contract, not a fast one.
+
+---
+
+## Spec Feedback Quality
+
+**Purpose**: Evaluate generated specs for feedback loop quality before presenting to user. This is separate from brain-dump confidence scoring above — it's applied during spec review (Phase 4.5), not during contract formation.
+
+### Quality Levels
+
+| Level | Criteria | Action |
+|---|---|---|
+| **Strong** | Feedback Strategy section present with inner-loop command. All iterative components have feedback loops (playground + experiment + check command). Trivial components correctly omit loops. Inner-loop command runs in seconds. | Present spec as-is |
+| **Adequate** | Feedback Strategy present but some iterative components lack loops, or experiments are vague ("test it works" instead of parameterized checks). | Present spec with a note about gaps |
+| **Weak** | No Feedback Strategy section, or complex/iterative components missing feedback loops entirely. | Revise spec before presenting — add loops for iterative components |
+
+### Quality Checklist
+
+Run through this checklist for each generated spec:
+
+- [ ] **Feedback Strategy section exists** — inner-loop command and playground type defined
+- [ ] **Inner-loop command is fast** — runs in seconds, not minutes; scoped, not global
+- [ ] **Iterative components have feedback loops** — components where the agent will make multiple passes have playground, experiment, and check command
+- [ ] **Experiments are parameterized** — specific inputs and edge cases, not "verify it works"
+- [ ] **Trivial components correctly skip loops** — config, types, constants, re-exports don't have unnecessary feedback loops
+- [ ] **Playground matches component type** — data layers use tests, UI uses dev server/storybook, APIs use curl/scripts
+
+### Actions
+
+- **Strong** → Present spec to user for approval
+- **Adequate** → Present spec with a note: "Feedback loops could be stronger for {component} — consider adding {specific suggestion}"
+- **Weak** → Do not present. Revise the spec to add feedback loops for iterative components, then re-evaluate
