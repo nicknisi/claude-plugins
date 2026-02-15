@@ -39,6 +39,7 @@ The skill will:
 
 - `voice-tone.md` - Writing style guide
 - `post-template.md` - Astro frontmatter schema and output format
+- `ai-slop-checklist.md` - AI writing tells checklist (with live Wikipedia sync)
 - 6 narrative framework references (loaded selectively)
 
 ### conference-talk-builder
@@ -80,4 +81,4 @@ The blog-post-writer skill supports six narrative frameworks, auto-selected base
 
 ## Version
 
-0.2.0
+0.3.0

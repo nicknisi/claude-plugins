@@ -137,6 +137,18 @@ Check the post:
 - Is humor self-aware, not forced?
 - Does it end with momentum?
 
+**AI slop check:**
+
+1. Load `references/ai-slop-checklist.md` for the curated guidance and Nick-specific nuances
+2. Fetch the current "words to watch" from Wikipedia by calling:
+   ```
+   https://en.wikipedia.org/w/api.php?action=parse&page=Wikipedia:Signs_of_AI_writing&prop=wikitext&format=json
+   ```
+   Extract the `{{tmbox}}` "Words to watch" lists and the AI vocabulary word list from the response. These evolve as AI writing patterns change — newer models drop old tells and develop new ones.
+3. Scan the draft for vocabulary clusters, formulaic transitions, superficial -ing phrases, and structural tells. One hit is normal; a pattern means the LLM was writing on autopilot instead of in Nick's voice.
+
+If the API fetch fails, fall back to the static checklist alone.
+
 Show the post to the user for feedback and iterate.
 
 **Revision strategy:**
@@ -199,6 +211,7 @@ You're not being replaced; you're being amplified.
 
 - `references/voice-tone.md` - Complete voice and tone guide. Read this first to capture Nick's style.
 - `references/post-template.md` - Output format template with frontmatter schema and structural skeleton.
+- `references/ai-slop-checklist.md` - AI writing tells to scan for during review. Adapted from Wikipedia's field guide.
 
 **Narrative frameworks** (read the one that matches the content):
 
