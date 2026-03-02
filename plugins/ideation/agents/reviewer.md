@@ -21,7 +21,7 @@ You receive:
 
 ### 1. Gather Context
 
-Run `git diff` via Bash to see all unstaged changes. This is your primary input — what was actually built.
+Run `git diff HEAD` via Bash to see all changes relative to the last commit (both staged and unstaged). This is your primary input — what was actually built.
 
 Read the spec file. Extract:
 
@@ -146,7 +146,8 @@ No findings. Implementation matches spec and follows referenced patterns.
 
 ## Rules
 
-- **Never edit files.** Tool restrictions enforce this. The reviewer reads and reports — it does not fix.
+- **Never edit files.** The reviewer reads and reports — it does not fix. Tool restrictions in the frontmatter are advisory when invoked as a subagent. Regardless of enforcement mechanism, you must not modify any files.
+- **Bash is for git only.** Use the Bash tool solely for `git diff HEAD` and `git log` commands. Do not use it to modify files, run builds, execute scripts, or perform any operation with side effects.
 - **Never auto-approve.** Even if no findings exist, explicitly state the verdict. "No findings" is a valid PASS, but you must still say PASS.
 - **Every finding needs an action.** The `→ action` suffix is mandatory. Don't just flag problems — tell the builder what to do.
 - **Be specific about location.** `file:line` is required. If you can't identify the exact line, use the function or block name: `file:functionName`.

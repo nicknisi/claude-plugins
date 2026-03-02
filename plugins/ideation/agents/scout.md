@@ -76,16 +76,16 @@ Rate each dimension (0-20 points):
 
 ### 6. Produce Context Map
 
-Write the context map to `{project-directory}/context-map.md`.
+**Output the context map as your response text.** You do not write the file — execute-spec reads your output and persists it to `{project-directory}/context-map.md`. This preserves your read-only invariant.
 
-**If extending an existing map**: Preserve prior phase sections. Add new sections for the current phase. Update dimensions with current scores (keep prior scores for reference).
+**If extending an existing map**: Include all prior phase sections in your output. Add new sections for the current phase. Update dimensions with current scores (keep prior scores for reference).
 
 Use this format:
 
 ```markdown
 # Context Map: {project-name}
 
-**Last updated**: Phase {N}
+**Phase**: {N}
 **Scout Confidence**: {score}/100
 **Verdict**: GO / HOLD
 

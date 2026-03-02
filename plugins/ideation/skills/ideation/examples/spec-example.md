@@ -3,7 +3,7 @@
 **Contract**: ./contract-example.md
 **Estimated Effort**: M
 
-*Note: This example omits template sections not applicable to a frontend-only phase (Data Model, API Design, Rollout Considerations). Include those sections when they apply to your spec.*
+*Note: This example omits template sections not applicable to a frontend-only phase: Data Model, API Design, Error Handling, Rollout Considerations, and Open Items. Include those sections when they apply to your spec — Error Handling in particular is almost always applicable for non-trivial features.*
 
 ## Technical Approach
 

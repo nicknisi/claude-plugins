@@ -41,9 +41,7 @@ Third, there is no separation between the building and reviewing perspectives. T
 - New agent: `plugins/ideation/agents/scout.md` — read-only codebase exploration with confidence scoring and persisted output
 - New agent: `plugins/ideation/agents/reviewer.md` — spec-aware code review with structured findings and restricted tool access
 - Rewrite of `plugins/ideation/skills/execute-spec/SKILL.md` to incorporate the build-verify-review loop, scout integration, and reviewer integration
-- New reference: finding format specification and severity definitions
-- New reference: context map format and structure
-- Updated examples showing the loop flow
+- Context map format and finding format defined inline in agent definitions (no separate reference files — agents are self-documenting)
 
 ### Out of Scope
 

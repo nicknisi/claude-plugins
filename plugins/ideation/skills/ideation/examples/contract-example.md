@@ -46,3 +46,44 @@ Users of the Acme Reader app have no way to save articles for later. They resort
 - Social bookmarking (share collections with friends)
 - Smart tags (auto-suggested based on article content)
 - Bookmark digest emails (weekly summary of saved items)
+
+## Execution Plan
+
+### Dependency Graph
+
+```
+Phase 1: Core Bookmarking + Tags ┐
+                                  ├─ Phase 2: Search & Filtering
+                                  └─ Phase 3: Offline Support
+```
+
+### Strategy: Hybrid (Phase 1 sequential, then Phases 2-3 parallel)
+
+1. **Phase 1 — Core Bookmarking** (sequential, blocks all others)
+   ```
+   /ideation:execute-spec docs/ideation/bookmarks/spec-phase-1.md
+   ```
+
+2. **Phases 2 & 3 — parallel after Phase 1**
+
+   Start one Claude Code session, enter delegate mode (Shift+Tab), paste:
+
+   ```
+   Phase 1 (Core Bookmarking) is complete. Create an agent team to
+   implement 2 remaining phases in parallel. Each phase is independent.
+
+   Spawn 2 teammates with plan approval required. Each teammate should:
+   1. Read their assigned spec file
+   2. Explore the codebase for relevant patterns before planning
+   3. Plan their implementation approach and wait for approval
+   4. Implement following spec and codebase patterns
+   5. Run validation commands from their spec after implementation
+
+   Teammates:
+
+   1. "Search & Filtering" — docs/ideation/bookmarks/spec-phase-2.md
+      Full-text search across bookmarks with tag-based filtering
+
+   2. "Offline Support" — docs/ideation/bookmarks/spec-phase-3.md
+      Cache bookmarked article content for offline access
+   ```

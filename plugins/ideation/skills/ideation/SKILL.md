@@ -63,7 +63,7 @@ Skip exploration for greenfield projects with no existing code.
 
 ### 2.2 Explore the Codebase
 
-Use the `Task` tool with `subagent_type: "Explore"` or direct `Glob`/`Grep`/`Read` to understand:
+Use the `Agent` tool with `subagent_type: "Explore"` or direct `Glob`/`Grep`/`Read` to understand:
 
 1. **Project structure** — What frameworks, languages, and patterns are in use?
 2. **Relevant existing code** — What modules/files relate to the brain dump's scope?
@@ -420,8 +420,9 @@ Ensure agent teams are enabled in `.claude/settings.json` or `~/.claude/settings
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   }
 }
+```
 
-### 5.3 Why Fresh Sessions?
+### 5.4 Why Fresh Sessions?
 
 - Ideation consumes significant context (contract, specs, exploration)
 - Execution benefits from clean context focused on the spec

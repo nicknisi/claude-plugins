@@ -62,10 +62,16 @@ If multiple found, use `AskUserQuestion` to select one.
 
 **Invoke the Scout** using the `Agent` tool:
 
-- **prompt**: Provide the spec file path, the project directory, and the phase number. If a `context-map.md` already exists in the project directory, mention that the scout should extend it rather than start fresh.
-- **subagent_type**: `general-purpose` (the scout's prompt and tool restrictions are defined in the agent file — reference `plugins/ideation/agents/scout.md` in the prompt)
+1. Read `plugins/ideation/agents/scout.md` to get the scout's full workflow and output format
+2. Use the `Agent` tool with:
+   - **subagent_type**: `general-purpose`
+   - **prompt**: Include the full content of `scout.md` as the agent's instructions, followed by the specific inputs: spec file path, project directory, phase number, and whether a prior `context-map.md` exists
 
-**After the scout completes**, read `{project-directory}/context-map.md` and check the verdict:
+**Note on tool restrictions**: The scout's frontmatter declares `tools: ["Read", "Glob", "Grep"]`, but when invoked as a `general-purpose` subagent, these restrictions are policy-based (enforced by the prompt), not mechanism-based. The scout prompt instructs read-only behavior.
+
+The scout may perform up to 2 internal exploration rounds before reaching a verdict. Execute-spec waits for the final output — it does not re-invoke the scout.
+
+**After the scout completes**, parse the scout's text response for the context map and verdict. Write the context map to `{project-directory}/context-map.md` using the `Write` tool (the scout cannot write files itself — it returns the map as text).
 
 **If scout returns GO** (confidence >= 70):
 
@@ -88,7 +94,15 @@ Options:
 - "Abort" — Stop execution for this phase.
 ```
 
-**If no scout agent is available** (agent file missing or invocation fails): Fall back to the original inline exploration — read pattern files, modified files, and analogous files directly. Log a warning that the scout was unavailable.
+**If the user chose "Proceed anyway" after HOLD**: The context map (if produced) may have gaps. During build, treat missing context map sections as unavailable and read files directly for those areas. Pay extra attention to the Risks section of a partial context map.
+
+**If no scout agent is available** (agent file missing or invocation fails): Fall back to inline exploration and log a warning. The inline fallback is:
+
+1. Read all "Pattern to follow" file paths from the spec
+2. Read all files in the spec's "Modified Files" section
+3. If creating files alongside existing analogues, read the analogues
+4. Use `Grep` to check what imports or references the modified files (blast radius)
+5. Read `CLAUDE.md` or project README for conventions
 
 ### 3. Parse Spec Structure
 
@@ -102,9 +116,9 @@ Extract from the spec file (and template if applicable):
 - **Feedback Strategy** - Top-level inner-loop command and playground type (if present)
 - **Per-component Feedback Loops** - Playground, experiment, and check command for each component (if present)
 
-**Also extract for the review cycle:**
+**Also extract and retain for the review cycle:**
 
-- **"Pattern to follow"** file paths — collect all paths across all components. These are passed to the reviewer later.
+- **Pattern file list** — scan all components' Implementation Details for "Pattern to follow" entries. Collect every referenced file path into a single list. This list is passed to the reviewer agent during the post-execution review cycle. Keep it available throughout the build and review phases.
 
 ### 4. Check or Create Implementation Tasks
 
@@ -235,11 +249,13 @@ If validation fails:
 5. **Error handling**: If a subagent fails or a task stays `in_progress` for too long, the parent session should check TaskList, read the task description for context, and either retry or ask the user.
 6. **File conflicts**: If two unblocked components modify the same file, do NOT parallelize them — execute sequentially to avoid merge conflicts. Check the spec's "File Changes" sections for overlap before spawning.
 
-**Review cycle in parallel mode**: Each session (main or subagent) runs its own verify-review-fix loop after completing its assigned components. The reviewer evaluates only the diff produced by that session's work, not the full project diff.
+**Review cycle in parallel mode**: Subagents only build — they do not run their own review cycles. After all subagents complete their components, the **main session** runs a single verify-review-fix loop on the combined diff (`git diff HEAD` covers all changes from all sessions). This avoids the problem of interleaved diffs from multiple sessions writing to the same working tree.
 
 ## Post-Execution: Verify-Review-Fix Loop
 
 After all component tasks are completed, enter the review cycle. Code is **not committed** until the review passes or the user explicitly accepts remaining issues.
+
+**Do not stage files until after the review passes.** The reviewer uses `git diff HEAD` to see all changes. Keep changes unstaged during the review cycle so the diff is clean and complete.
 
 ### Verify
 
@@ -258,12 +274,18 @@ If any validation command fails, fix the issue before proceeding to review. Do n
 
 **Invoke the Reviewer agent** using the `Agent` tool:
 
-- **prompt**: Provide:
-  - The spec file path
-  - The list of "Pattern to follow" file paths collected during spec parsing
-  - The cycle number (1, 2, or 3)
-  - If cycle > 1: include the prior cycle's findings so the reviewer can track what was fixed
-- **subagent_type**: `general-purpose` (reference `plugins/ideation/agents/reviewer.md` in the prompt for the reviewer's workflow and output format)
+1. Read `plugins/ideation/agents/reviewer.md` to get the reviewer's full workflow and output format
+2. Use the `Agent` tool with:
+   - **subagent_type**: `general-purpose`
+   - **prompt**: Include the full content of `reviewer.md` as the agent's instructions, followed by:
+     - The spec file path
+     - The pattern file list (collected during spec parsing in Section 3)
+     - The cycle number (1, 2, or 3)
+     - If cycle > 1: the prior cycle's findings so the reviewer can track what was fixed
+
+**Note on tool restrictions**: The reviewer's frontmatter declares `tools: ["Read", "Grep", "Bash"]`, but when invoked as a `general-purpose` subagent, these restrictions are policy-based. The reviewer prompt instructs it to only use Bash for `git diff HEAD` commands and to never edit files.
+
+**Cycle counter rule**: The cycle number increments only when the reviewer is invoked. Verify failures and their fix iterations do not count as review cycles. Cycle N means the reviewer has been invoked N times.
 
 **Parse the reviewer's output:**
 
@@ -272,7 +294,7 @@ If any validation command fails, fix the issue before proceeding to review. Do n
 3. If zero `critical` AND zero `high` → **PASS**
 4. If any `critical` or `high` → **FAIL**
 
-**If the reviewer fails or returns unparseable output**: Fall back to the current behavior — treat validation command results as sufficient. Log a warning that the review cycle was skipped due to reviewer failure. Continue to commit.
+**If the reviewer fails, returns empty output, or returns output with no verdict line**: Fall back to validation-only mode — treat validation command results as sufficient. Log a warning that the review cycle was skipped due to reviewer failure. Continue to commit.
 
 ### On PASS
 
