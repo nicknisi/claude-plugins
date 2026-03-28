@@ -47,6 +47,27 @@ Accept whatever the user provides:
 
 Acknowledge receipt and begin analysis. Do not ask for clarification yet.
 
+## Anti-Sycophancy Rules
+
+These rules apply during intake analysis (Phase 1) and contract formation (Phase 3). The goal is to challenge weak premises before they become expensive specs.
+
+### Banned Phrases
+
+Do not say these during analysis or contract formation:
+- "That's an interesting approach" — take a position instead
+- "There are many ways to think about this" — pick one and state why
+- "You might want to consider..." — say "This is wrong because..." or "This works because..."
+- "That could work" — say whether it WILL work based on available evidence
+- "I can see why you'd think that" — if the premise is weak, say it's weak and why
+
+### Required Behaviors
+
+- **Take a position on every brain dump.** After analyzing the input, state what you think is strong and what's weak. Don't just extract signals — evaluate them.
+- **Challenge vague demand.** If the brain dump says "users want X" without evidence, push back: "What evidence supports this? Who specifically wants it?"
+- **Name undefined terms.** If the brain dump uses vague terms ("better UX", "more intuitive", "cleaner"), demand specifics: "What does 'better' mean here? Faster? Fewer clicks? Different layout?"
+- **Flag hypothetical users.** If no concrete user or use case is named, note it as a gap during confidence scoring. "Developers will love this" is not evidence.
+- **Score conservatively when pushback reveals gaps.** If challenging the brain dump exposes vague or missing justification, lower the relevant confidence dimension. Don't inflate scores to compensate for a well-written but unsubstantiated brain dump.
+
 ## Phase 2: Codebase Exploration
 
 **Before scoring confidence or generating any artifacts, understand the existing codebase.** This is critical — specs written without understanding existing patterns, architecture, and conventions will be generic and wrong.
@@ -151,8 +172,13 @@ When confidence ≥ 95%, generate the contract document.
 1. Use `AskUserQuestion` to confirm project name if not obvious from context
 2. Convert to kebab-case for directory name
 3. Create output directory: `./docs/ideation/{project-name}/`
-4. Write `contract.md` using `references/contract-template.md`
-5. Use `AskUserQuestion` to get approval:
+4. **Check for prior contract (lineage detection)**:
+   - Check if `./docs/ideation/{project-name}/contract.md` already exists
+   - If it does, read its `Created` date and rename it to `contract-{created-date}.md`
+   - Set the new contract's `Supersedes` field to the renamed file path
+   - If no prior contract exists, set `Supersedes` to "None"
+5. Write `contract.md` using `references/contract-template.md`
+6. Use `AskUserQuestion` to get approval:
 
 ```
 Question: "Does this contract accurately capture your intent?"
@@ -251,6 +277,8 @@ For each phase, generate a full `spec-phase-{n}.md` with:
 **Reference existing code:** When the codebase exploration (Phase 2) identified relevant patterns, include "Pattern to follow: `path/to/similar/file.ts`" in the spec's implementation details. This gives the executing agent concrete examples to follow.
 
 **Designing feedback loops:** For each iterative component, define a playground (environment to interact with), experiment (parameterized check), and check command (fastest single validation). Match the feedback mechanism to the component type — data layers use tests, UI uses dev server, APIs use curl scripts, config/types skip loops entirely. See `references/feedback-loop-guide.md` for the full component-type mapping and design criteria.
+
+**Naming failure modes:** For each non-trivial component, ask: "How would this fail?" Fill in the spec's Failure Modes table with named failures, data shadow paths (nil, empty, stale data), and edge cases (concurrent access, oversized input, missing permissions). The goal is not exhaustive error handling — it's ensuring the spec has no blind spots. Components that are trivial (config, types, constants) skip failure mode enumeration, same as feedback loops.
 
 #### Repeatable phases (3+ phases follow the same pattern)
 

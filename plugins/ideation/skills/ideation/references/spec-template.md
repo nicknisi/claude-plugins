@@ -208,6 +208,18 @@ interface {StateName} {
 | {Scenario 2}   | {How to handle - e.g., "Retry 3x with exponential backoff"}    |
 | {Scenario 3}   | {How to handle - e.g., "Log error, return 500, alert on-call"} |
 
+## Failure Modes
+
+{For each non-trivial component, name the ways it can fail. Not every failure needs handling code — some just need acknowledgment. The goal is to ensure specs don't have blind spots.}
+
+| Component | Failure Mode | Trigger | Impact | Mitigation |
+|---|---|---|---|---|
+| {Component 1} | {Named failure} | {What causes it} | {What happens to the user/system} | {How to handle or acknowledge it} |
+| {Component 1} | {Data shadow path} | {When data is nil/empty/stale} | {Consequence} | {Strategy} |
+| {Component 2} | {Edge case} | {Unusual but valid input} | {Unexpected behavior} | {Guard or accept} |
+
+{Skip components that are trivial (config, types, constants, re-exports).}
+
 ## Validation Commands
 
 ```bash
@@ -275,3 +287,5 @@ When filling this template:
 9. **Rollout**: Even if it's "just deploy," say so. Feature flags aren't always needed.
 
 10. **Feedback Strategy**: Define the fastest possible check cycle. The inner-loop command should run in seconds, not minutes. Prefer text output the agent can parse over visual output requiring screenshots. Skip feedback loops for trivial components (config edits, type-only files, constant definitions).
+
+11. **Failure Modes**: Ask "how would this component fail?" for each non-trivial component. Name the failure (don't say "error" — say "stale cache served after deploy"). Identify data shadow paths (nil, empty, upstream timeout). Name edge cases (concurrent writes, oversized input, missing permissions). Not every failure needs a fix — some just need to be named so the implementer is aware. Skip trivial components.

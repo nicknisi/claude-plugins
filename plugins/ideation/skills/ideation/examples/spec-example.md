@@ -109,6 +109,14 @@ interface BookmarkStore {
 - Tags persist across store rehydration
 - Duplicate bookmarks are prevented
 
+## Failure Modes
+
+| Component | Failure Mode | Trigger | Impact | Mitigation |
+|---|---|---|---|---|
+| Bookmark Store | IndexedDB quota exceeded | User bookmarks many large articles, filling storage | New bookmarks silently fail to persist | Check quota before caching content; fall back to metadata-only bookmark (no offline content) |
+| Bookmark Store | Concurrent tab writes | Two tabs bookmark different articles simultaneously | Last-write-wins race condition corrupts store | IndexedDB transactions are atomic per-store; ensure each write is a single transaction |
+| BookmarkButton | Article content not loaded | User clicks bookmark before article body finishes loading | Bookmark saved with empty content field | Disable bookmark button until article content is available; or save metadata immediately and backfill content |
+
 ## Validation Commands
 
 ```bash

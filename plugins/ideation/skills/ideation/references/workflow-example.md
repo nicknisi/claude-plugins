@@ -19,11 +19,12 @@ be on planes or whatever and sync when they come back online
 
 2. **Codebase Exploration**: Explore existing project structure, identify relevant patterns, understand current architecture
 
-3. **Analysis**:
+3. **Analysis** (with anti-sycophancy):
    - Problem: Users need to save and organize content
    - Goals: Save items, organize with tags, search, offline support
    - Unclear: What items? Why tags > folders? Sharing scope? Offline priority?
-   - Confidence: ~55/100 (low problem clarity, unclear scope)
+   - **Pushback**: "You said 'tags might be better because folders are too rigid' — that's a preference, not evidence. Have users complained about folder-based organization, or is this an assumption? Also, 'people might be on planes' is hypothetical — how many of your users actually need offline access?"
+   - Confidence: ~55/100 (low problem clarity, unclear scope, vague justifications)
 
 4. **Questions** (round 1):
    - "What type of items are users bookmarking? Articles, products, posts?"

@@ -9,6 +9,7 @@ Use this template when generating `contract.md` after reaching ≥95% confidence
 **Created**: {date}
 **Confidence Score**: {score}/100
 **Status**: Draft | Approved
+**Supersedes**: {path to prior contract, or "None"}
 
 ## Problem Statement
 
@@ -125,3 +126,5 @@ When filling this template:
 4. **Scope Boundaries**: When in doubt, list it as out of scope. It's easier to add later than to remove.
 
 5. **Future Considerations**: Don't delete good ideas that are out of scope - park them here for later.
+
+6. **Supersedes**: Before writing a new contract, check if a `contract.md` already exists in the project directory. If it does, rename it to `contract-{date}.md` (using the Created date from its header) and reference it in the new contract's Supersedes field. This creates a revision chain. If no prior contract exists, set to "None".
