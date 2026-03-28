@@ -330,4 +330,4 @@ Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` enabled in settings.
 
 ## Version
 
-0.9.0
+0.10.0
