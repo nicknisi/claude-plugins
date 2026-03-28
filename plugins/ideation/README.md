@@ -31,22 +31,23 @@ I want to build something. Here's what I'm thinking...
 **The workflow:**
 
 1. **Intake** - Accept your messy, unstructured input without judgment
-2. **Codebase exploration** - Understand existing code patterns, architecture, and conventions
-3. **Confidence scoring** - Assess understanding across 5 dimensions (0-100)
-4. **Clarifying questions** - If confidence <95%, ask targeted questions via `AskUserQuestion`
-5. **Contract** - When ≥95% confident, write `contract.md` to `./docs/ideation/{project}/`
-6. **Phasing & specs** - Determine phases, optionally generate PRDs, generate implementation specs with feedback loops
-7. **Feedback quality check** - Self-review specs for feedback loop coverage before presenting
-8. **Execution handoff** - Analyze orchestration strategy, write execution plan to contract, present summary
+2. **Anti-sycophancy challenge** - Take a position on the brain dump, challenge vague demand signals, flag undefined terms and hypothetical users
+3. **Codebase exploration** - Understand existing code patterns, architecture, and conventions
+4. **Confidence scoring** - Assess understanding across 5 dimensions (0-100), scoring conservatively when pushback reveals gaps
+5. **Clarifying questions** - If confidence <95%, ask targeted questions via `AskUserQuestion`
+6. **Contract** - When ≥95% confident, write `contract.md` (with revision lineage tracking via `Supersedes` field)
+7. **Phasing & specs** - Determine phases, generate specs with feedback loops and failure mode catalogs
+8. **Feedback quality check** - Self-review specs for feedback loop coverage before presenting
+9. **Execution handoff** - Analyze orchestration strategy, write execution plan to contract, present summary
 
 **Output artifacts:**
 
 All artifacts are written to `./docs/ideation/{project-name}/`:
 
 ```
-contract.md                    # Problem, goals, success criteria, scope, execution plan
+contract.md                    # Problem, goals, success criteria, scope, execution plan (with Supersedes lineage)
 prd-phase-1.md                 # Phase 1 requirements (only if PRDs chosen)
-spec-phase-1.md                # Phase 1 implementation spec
+spec-phase-1.md                # Phase 1 implementation spec (with failure modes)
 spec-template-{pattern}.md     # Shared template for repeatable phases (if applicable)
 spec-phase-N.md                # Per-phase delta or full spec
 ```
@@ -55,9 +56,34 @@ spec-phase-N.md                # Per-phase delta or full spec
 
 - `contract-template.md` - Lean contract structure
 - `prd-template.md` - Phased PRD template
-- `spec-template.md` - Implementation spec template (includes feedback loop sections)
+- `spec-template.md` - Implementation spec template (includes feedback loops and failure modes)
 - `confidence-rubric.md` - Scoring criteria for confidence assessment and spec feedback quality
 - `feedback-loop-guide.md` - Component-type mapping and design criteria for feedback loops
+
+## Anti-Sycophancy
+
+The skill challenges weak premises rather than accepting them. During intake and contract formation:
+
+- **Banned phrases**: "That's an interesting approach", "There are many ways to think about this", "That could work" — replaced with direct positions
+- **Required behaviors**: Challenge vague demand, name undefined terms, flag hypothetical users, score conservatively when pushback reveals gaps
+
+## Failure Modes
+
+Specs now include a **Failure Modes** section that catalogs how each non-trivial component can fail:
+
+| Column | Purpose |
+| --- | --- |
+| Component | Which component |
+| Failure Mode | Named failure (not just "error") |
+| Trigger | What causes it |
+| Impact | What happens to user/system |
+| Mitigation | How to handle or acknowledge |
+
+Trivial components (config, types, constants) skip failure mode enumeration — same rule as feedback loops.
+
+## Contract Lineage
+
+Contracts track revision history via a `Supersedes` field. When re-running ideation on the same project, the prior contract is renamed to `contract-{date}.md` and the new contract references it, creating a traceable revision chain.
 
 ## Confidence Scoring
 
@@ -116,13 +142,14 @@ search too...
 
 **Process:**
 
-1. Skill accepts input, explores codebase for existing patterns
-2. Calculates ~55/100 confidence
-3. Asks clarifying questions: "What type of items?", "Tags user-created or predefined?", etc.
-4. User responds, confidence rises to 96/100
-5. Generates `contract.md` for approval
-6. After approval, asks: "Straight to specs or PRDs first?"
-7. Generates implementation specs (with template+delta for repeatable phases)
+1. Skill accepts input, challenges vague claims ("tags might be better because folders are too rigid" — is that evidence or preference?)
+2. Explores codebase for existing patterns
+3. Calculates ~55/100 confidence (scored lower due to vague justifications)
+4. Asks clarifying questions: "What type of items?", "Tags user-created or predefined?", etc.
+5. User responds, confidence rises to 96/100
+6. Generates `contract.md` (with `Supersedes: None`) for approval
+7. After approval, asks: "Straight to specs or PRDs first?"
+8. Generates implementation specs with feedback loops and failure modes
 
 **Result:** Clean, structured artifacts ready for implementation.
 
@@ -303,4 +330,4 @@ Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` enabled in settings.
 
 ## Version
 
-0.8.0
+0.9.0
