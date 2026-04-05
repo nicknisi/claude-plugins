@@ -1,7 +1,15 @@
 # Contract Template
 
-Use this template when generating `contract.md` after reaching ≥95% confidence.
+Use this template when generating `{slug}-contract.md` after reaching ≥95% confidence.
 
+**Filename**: `{slug}-contract.md` (where `{slug}` is the project's kebab-case name)
+
+---
+
+---
+tags:
+  - ideation
+  - ideation/contract
 ---
 
 # {Project Name} Contract
@@ -9,7 +17,7 @@ Use this template when generating `contract.md` after reaching ≥95% confidence
 **Created**: {date}
 **Confidence Score**: {score}/100
 **Status**: Draft | Approved
-**Supersedes**: {path to prior contract, or "None"}
+**Supersedes**: {wikilink to prior contract, or "None"}
 
 ## Problem Statement
 
@@ -84,19 +92,19 @@ Phase 1: {title}
 
 1. **Phase 1** — {title} _(blocking)_
    ```bash
-   /execute-spec docs/ideation/{project-name}/spec-phase-1.md
+   /execute-spec {output-directory}/{slug}-spec-phase-1.md
    ```
 
 2. **Phases 2 & 3** — parallel after Phase 1
    {See agent team prompt below, or run sequentially:}
    ```bash
-   /execute-spec docs/ideation/{project-name}/spec-phase-2.md
-   /execute-spec docs/ideation/{project-name}/spec-phase-3.md
+   /execute-spec {output-directory}/{slug}-spec-phase-2.md
+   /execute-spec {output-directory}/{slug}-spec-phase-3.md
    ```
 
 3. **Phase 4** — {title} _(blocked by Phase 3)_
    ```bash
-   /execute-spec docs/ideation/{project-name}/spec-phase-4.md
+   /execute-spec {output-directory}/{slug}-spec-phase-4.md
    ```
 
 ### Agent Team Prompt

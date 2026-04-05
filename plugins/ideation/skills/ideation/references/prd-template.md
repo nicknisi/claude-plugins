@@ -1,12 +1,20 @@
 # PRD Template
 
-Use this template when generating `prd-phase-{n}.md` for each implementation phase.
+Use this template when generating `{slug}-prd-phase-{n}.md` for each implementation phase.
 
+**Filename**: `{slug}-prd-phase-{n}.md`
+
+---
+
+---
+tags:
+  - ideation
+  - ideation/prd
 ---
 
 # PRD: {Project Name} - Phase {N}
 
-**Contract**: ./contract.md
+**Contract**: [[{slug}-contract]]
 **Phase**: {N} of {total phases}
 **Focus**: {One-line description of this phase's focus}
 

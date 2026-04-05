@@ -1,6 +1,6 @@
 ---
 name: ideation
-description: Transform raw brain dumps (dictated freestyle) into structured implementation artifacts. Use when user has messy ideas, scattered thoughts, or dictated stream-of-consciousness, or when they want to plan a feature, spec something out, or turn rough ideas into actionable specs. Produces contracts and implementation specs written to ./docs/ideation/{project-name}/.
+description: Transform raw brain dumps (dictated freestyle) into structured implementation artifacts. Use when user has messy ideas, scattered thoughts, or dictated stream-of-consciousness, or when they want to plan a feature, spec something out, or turn rough ideas into actionable specs. Produces contracts and implementation specs written to a configurable output directory (default ./docs/ideation/{project-name}/).
 ---
 
 # Ideation
@@ -171,14 +171,24 @@ When confidence ≥ 95%, generate the contract document.
 
 1. Use `AskUserQuestion` to confirm project name if not obvious from context
 2. Convert to kebab-case for directory name
-3. Create output directory: `./docs/ideation/{project-name}/`
-4. **Check for prior contract (lineage detection)**:
-   - Check if `./docs/ideation/{project-name}/contract.md` already exists
-   - If it does, read its `Created` date and rename it to `contract-{created-date}.md`
-   - Set the new contract's `Supersedes` field to the renamed file path
+3. **Resolve output directory:**
+   - Check the project's CLAUDE.md (and parent CLAUDE.md files) for an `ideation-output` directive — a line matching: `ideation-output: /absolute/path/to/ideation/`
+   - If found, derive `{repo-name}` from the current working directory:
+     1. Run `git rev-parse --git-common-dir`. If the result is an absolute path (bare repo worktree, e.g., `/Users/me/Developer/cli/.bare`), take the **parent** directory's basename (`cli`).
+     2. Otherwise, use `basename(git rev-parse --show-toplevel)` for standard repos.
+     3. Fallback: `basename(cwd)` if not in a git repo.
+   - Use `{ideation-output}/{repo-name}/{project-name}/` as the output directory.
+   - If not found, default to `./docs/ideation/{project-name}/`
+   - The resolved path is used for all artifacts in this session (contract, PRDs, specs)
+4. **Artifact naming**: All artifacts use the slug as a prefix: `{slug}-contract.md`, `{slug}-spec-phase-1.md`, `{slug}-prd-phase-1.md`, etc. This prevents wikilink ambiguity when artifacts from multiple projects coexist in a vault. If a slug collision is detected (another project in the output directory has the same slug), prefix with `{repo-name}-` to disambiguate.
+5. **Check for prior contract (lineage detection)**:
+   - Check if `{output-directory}/{slug}-contract.md` already exists
+   - If it does, read its `Created` date and rename it to `{slug}-contract-{created-date}.md`
+   - Set the new contract's `Supersedes` field to a wikilink to the renamed file
    - If no prior contract exists, set `Supersedes` to "None"
-5. Write `contract.md` using `references/contract-template.md`
-6. Use `AskUserQuestion` to get approval:
+6. Create the output directory if it doesn't exist
+7. Write `{slug}-contract.md` using `references/contract-template.md`
+8. Use `AskUserQuestion` to get approval:
 
 ```
 Question: "Does this contract accurately capture your intent?"
@@ -393,7 +403,7 @@ Analyze the phase dependency graph to determine the best execution strategy.
 
 ### 5.2 Write Execution Plan to Contract
 
-Append the `## Execution Plan` section to the contract file (`./docs/ideation/{project-name}/contract.md`). This makes the contract fully self-contained — someone can pick it up cold and know exactly how to execute.
+Append the `## Execution Plan` section to the contract file (`{output-directory}/contract.md`). This makes the contract fully self-contained — someone can pick it up cold and know exactly how to execute.
 
 Use the Execution Plan section from the contract template. Fill in:
 
@@ -417,7 +427,7 @@ After writing the execution plan, present a brief conversational summary.
 **Always include:**
 
 ```
-Ideation complete. Artifacts written to `./docs/ideation/{project-name}/`.
+Ideation complete. Artifacts written to `{output-directory}`.
 
 The contract includes the full execution plan — dependency graph,
 commands, and agent team prompt (if parallel). Open `contract.md`
@@ -460,15 +470,15 @@ Ensure agent teams are enabled in `.claude/settings.json` or `~/.claude/settings
 
 ## Output Artifacts
 
-All artifacts written to `./docs/ideation/{project-name}/`:
+All artifacts written to the resolved output directory (see §3.5 step 3):
 
 ```
-contract.md                        # Lean contract (problem, goals, success, scope)
-prd-phase-1.md                     # Phase 1 requirements (only if PRDs chosen)
+{slug}-contract.md                        # Lean contract (problem, goals, success, scope)
+{slug}-prd-phase-1.md                     # Phase 1 requirements (only if PRDs chosen)
 ...
-spec-phase-1.md                    # Phase 1 implementation spec (always full)
-spec-template-{pattern}.md         # Shared template for repeatable phases (if applicable)
-spec-phase-{n}.md                  # Per-phase delta referencing template (if repeatable)
+{slug}-spec-phase-1.md                    # Phase 1 implementation spec (always full)
+{slug}-spec-template-{pattern}.md         # Shared template for repeatable phases (if applicable)
+{slug}-spec-phase-{n}.md                  # Per-phase delta referencing template (if repeatable)
 ...
 ```
 
