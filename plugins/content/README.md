@@ -26,27 +26,18 @@ The skill will:
 - Structure your unorganized thoughts into a post with proper Astro frontmatter
 - Apply Nick's writing voice and tone throughout
 
-**Narrative frameworks** (auto-selected based on content):
-
-- **Story Circle** - Personal journey or transformation
-- **SCQA** - Analytical problem-solving
-- **Progressive Disclosure** - Teaching a concept
-- **Compare & Contrast** - Evaluating trade-offs
-- **Post-mortem** - Incident or failure retrospective
-- **PAS** - Short, punchy fix stories
-
 **Bundled references:**
 
 - `voice-tone.md` - Writing style guide
 - `post-template.md` - Astro frontmatter schema and output format
 - `ai-slop-checklist.md` - AI writing tells checklist (with live Wikipedia sync)
-- 6 narrative framework references (loaded selectively)
+- 27 narrative framework references (loaded selectively, auto-selected based on content)
 
 ### conference-talk-builder
 
-Creates conference talk outlines and iA Presenter markdown slides using the Story Circle narrative framework.
+Creates conference talk outlines and slide-by-slide content plans using narrative frameworks. Tool-agnostic — outputs a talk script you can feed into Slidev, Gamma, iA Presenter, or any slide tool.
 
-Use this when you need to structure a tech talk, create presentation slides, or organize talk ideas into a story-driven format.
+Use this when you need to structure a tech talk, create presentation content, or organize talk ideas into a story-driven format.
 
 **Example usage:**
 
@@ -58,19 +49,20 @@ I want to create a talk about [your topic]
 
 The skill will:
 
-- Gather information about your talk topic and audience
-- Map your content to the 8-step Story Circle framework
-- Generate properly formatted iA Presenter markdown slides
-- Include speaker notes and code examples
+- Gather information about your talk topic, audience, and duration
+- Auto-suggest from 22 narrative frameworks using a scoring algorithm
+- Build a slide-by-slide talk script with speaker notes in Nick's voice
+- Iterate on pacing, narrative arc, and content density
 
 **Bundled references:**
 
-- `story-circle.md` - Eight-step narrative structure
-- `ia-presenter-syntax.md` - iA Presenter markdown syntax
+- `voice-tone.md` - Nick's voice and tone guide for speaker notes
+- `framework-guide.md` - Framework selection algorithm with scoring matrix
+- `frameworks/` - 22 narrative framework references (Foundational, Existential, Absurdist, Non-linear, Rhetorical)
 
 ## Narrative Frameworks
 
-The blog-post-writer skill supports six narrative frameworks, auto-selected based on content type. The conference-talk-builder uses the Story Circle framework. See individual reference files in `skills/blog-post-writer/references/` and `skills/conference-talk-builder/references/` for details.
+Both skills support narrative frameworks auto-selected based on content type. The blog-post-writer has 27 frameworks (including blog-specific ones like SCQA, Progressive Disclosure, and PAS). The conference-talk-builder has 22 frameworks adapted for talk delivery. See individual reference files in `skills/blog-post-writer/references/` and `skills/conference-talk-builder/references/frameworks/` for details.
 
 ## Installation
 
@@ -81,4 +73,4 @@ The blog-post-writer skill supports six narrative frameworks, auto-selected base
 
 ## Version
 
-0.3.0
+0.5.0

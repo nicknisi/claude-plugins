@@ -33,7 +33,7 @@
       "name": "content",
       "source": "./plugins/content",
       "description": "Tools for bootstrapping content creation such as blog posts and conference talks",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "author": {
         "name": "Nick Nisi",
         "email": "nick@nisi.org"
