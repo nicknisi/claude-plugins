@@ -1,6 +1,6 @@
 {
   "name": "image-gen",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Generate or edit images via Google Gemini (nano-banana-pro) or OpenAI gpt-image-2. Supports 1K/2K/4K resolution and masked inpainting.",
   "author": {
     "name": "Nick Nisi",

@@ -1,6 +1,6 @@
 {
   "name": "consultant",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Multi-model AI consultation and research using GPT-5/Codex, Gemini, Grok, Perplexity, and Claude. Supports single-agent consultation or parallel multi-agent research (5-40 agents).",
   "author": {
     "name": "Nick Nisi",
