@@ -1,4 +1,5 @@
 ---
+name: de-slopify
 description: Remove code slop from the current branch
 disable-model-invocation: true
 ---

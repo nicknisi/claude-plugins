@@ -10,10 +10,35 @@
     "typecheck": "tsc --build",
     "format": "prettier --write ."
   },
+  "dependencies": {
+    "typebox": "^1.1.24"
+  },
   "devDependencies": {
     "@types/node": "^24.10.0",
     "prettier": "^3.6.2",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*"
+  },
+  "peerDependenciesMeta": {
+    "@mariozechner/pi-coding-agent": {
+      "optional": true
+    }
+  },
+  "keywords": [
+    "pi-package"
+  ],
+  "pi": {
+    "skills": [
+      "plugins/*/skills"
+    ],
+    "prompts": [
+      "plugins/*/commands/*.md"
+    ],
+    "extensions": [
+      "pi/extensions/*.ts"
+    ]
   }
 }

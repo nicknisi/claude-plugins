@@ -1,4 +1,5 @@
 ---
+name: pr
 description: Create a pull request with a structured template
 disable-model-invocation: true
 ---

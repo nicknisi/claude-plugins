@@ -1,4 +1,5 @@
 ---
+name: ultrathink
 description: Engage deep thinking mode - question assumptions, plan meticulously, craft elegant solutions, and iterate relentlessly toward excellence
 disable-model-invocation: true
 ---

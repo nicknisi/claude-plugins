@@ -1,6 +1,10 @@
 ---
 name: image-gen
-description: Generate or edit images via Google Gemini (nano-banana-pro) or OpenAI gpt-image-2. Trigger: "generate image", "create diagram", "edit image", "make illustration". Supports 1K/2K/4K resolution, masked inpainting, and text-accurate generation.
+description: >-
+  Generate or edit images via Google Gemini (nano-banana-pro) or OpenAI
+  gpt-image-2. Trigger on "generate image", "create diagram", "edit image",
+  or "make illustration". Supports 1K/2K/4K resolution, masked inpainting,
+  and text-accurate generation.
 ---
 
 # Image Generation & Editing

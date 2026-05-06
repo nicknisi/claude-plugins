@@ -1,4 +1,5 @@
 ---
+name: consult
 description: Ask a specific AI model (codex, gemini, grok, perplexity, claude) for focused analysis or a second opinion
 disable-model-invocation: true
 ---
@@ -19,17 +20,18 @@ Ask a specific AI model for focused analysis or a second opinion.
 
 ## Available Consultants
 
-| Model | Agent | Specialization |
-|-------|-------|----------------|
-| **codex** / **gpt5** | `codex-researcher` | Advanced reasoning, technical analysis, complex problem-solving |
-| **gemini** | `gemini-researcher` | Multi-perspective analysis, creative solutions |
-| **grok** | `grok-researcher` | Alternative LLM perspective, latest Grok-4 model |
-| **perplexity** | `perplexity-researcher` | Web research with citations, real-time data |
-| **claude** | `claude-researcher` | Web research, detailed synthesis |
+| Model                | Agent                   | Specialization                                                  |
+| -------------------- | ----------------------- | --------------------------------------------------------------- |
+| **codex** / **gpt5** | `codex-researcher`      | Advanced reasoning, technical analysis, complex problem-solving |
+| **gemini**           | `gemini-researcher`     | Multi-perspective analysis, creative solutions                  |
+| **grok**             | `grok-researcher`       | Alternative LLM perspective, latest Grok-4 model                |
+| **perplexity**       | `perplexity-researcher` | Web research with citations, real-time data                     |
+| **claude**           | `claude-researcher`     | Web research, detailed synthesis                                |
 
 ## Execution
 
 Parse `$ARGUMENTS` to extract:
+
 - **Model**: First word (codex, gemini, grok, perplexity, claude)
 - **Question**: Everything after the model name
 
@@ -40,6 +42,7 @@ Task tool with subagent_type: consultant:[model]-researcher
 ```
 
 Map model names:
+
 - `codex` or `gpt5` → `consultant:codex-researcher`
 - `gemini` → `consultant:gemini-researcher`
 - `grok` → `consultant:grok-researcher`

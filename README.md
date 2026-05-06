@@ -28,6 +28,26 @@ Then install plugins:
 - [spec-driven](plugins/spec-driven/README.md) - Transform specifications into executable code with validation-driven development
 - [workos](plugins/workos/README.md) - Enterprise authentication and SSO integration toolkit
 
+## Using with Pi
+
+This repo is also a Pi package. Install it directly:
+
+```bash
+pi install git:github.com/nicknisi/claude-plugins
+# or, while developing locally:
+pi install /Users/nicknisi/Developer/claude-plugins
+```
+
+The Pi package loads the same `plugins/*/skills` and `plugins/*/commands` files, plus `pi/extensions/claude-compat.ts` for Claude Code compatibility shims like `AskUserQuestion`, `WebFetch`, `WebSearch`, `TodoWrite`, and file-backed task tools.
+
+For skills that rely on Claude Code's `Task`/`Agent` subagent workflow, install `pi-subagents` once:
+
+```bash
+pi install npm:pi-subagents
+```
+
+This repo does not load `pi-subagents` directly because Pi currently errors when the same extension/tool is loaded twice, and many Pi setups already have `pi-subagents` installed globally.
+
 ## Development
 
 This is a pnpm workspace with TypeScript project references.
