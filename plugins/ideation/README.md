@@ -30,15 +30,12 @@ I want to build something. Here's what I'm thinking...
 
 **The workflow:**
 
-1. **Intake** - Accept your messy, unstructured input without judgment
-2. **Anti-sycophancy challenge** - Take a position on the brain dump, challenge vague demand signals, flag undefined terms and hypothetical users
-3. **Codebase exploration** - Understand existing code patterns, architecture, and conventions
-4. **Confidence scoring** - Assess understanding across 5 dimensions (0-100), scoring conservatively when pushback reveals gaps
-5. **Clarifying questions** - If confidence <95%, ask targeted questions via `AskUserQuestion`
-6. **Contract** - When ≥95% confident, write `contract.md` (with revision lineage tracking via `Supersedes` field)
-7. **Phasing & specs** - Determine phases, generate specs with feedback loops and failure mode catalogs
-8. **Feedback quality check** - Self-review specs for feedback loop coverage before presenting
-9. **Execution handoff** - Analyze orchestration strategy, write execution plan to contract, present summary
+1. **Intake** - Accept your messy, unstructured input without judgment. Take a position upfront — what's strong, what's weak.
+2. **Interview loop** - One question at a time, each with a recommended answer. Explores the codebase inline — if it can look something up instead of asking, it does. Challenges vague demand, undefined terms, and hypothetical users. Loops until confidence ≥ 95%.
+3. **Contract** - When ≥95% confident, write `contract.md` (with revision lineage tracking via `Supersedes` field). Artifacts created lazily — no files until decisions are locked.
+4. **Phasing & specs** - Determine phases, generate specs with feedback loops and failure mode catalogs
+5. **Feedback quality check** - Self-review specs for feedback loop coverage before presenting
+6. **Execution handoff** - Analyze orchestration strategy, write execution plan to contract, present summary
 
 **Output artifacts:**
 
@@ -60,12 +57,15 @@ spec-phase-N.md                # Per-phase delta or full spec
 - `confidence-rubric.md` - Scoring criteria for confidence assessment and spec feedback quality
 - `feedback-loop-guide.md` - Component-type mapping and design criteria for feedback loops
 
-## Anti-Sycophancy
+## Interview Loop
 
-The skill challenges weak premises rather than accepting them. During intake and contract formation:
+The core of the skill is a relentless one-question-at-a-time interview that builds shared understanding before writing anything. Key behaviors:
 
-- **Banned phrases**: "That's an interesting approach", "There are many ways to think about this", "That could work" — replaced with direct positions
-- **Required behaviors**: Challenge vague demand, name undefined terms, flag hypothetical users, score conservatively when pushback reveals gaps
+- **One question at a time** — no batching 3-5 questions. Ask, wait, ask next.
+- **Recommended answer with every question** — the agent takes a position and lets you agree or redirect.
+- **Explore instead of asking** — if the codebase can answer a question, the agent looks it up rather than asking you.
+- **No question limit** — keeps interviewing until shared understanding. Say "stop" or "wrap up" to end early.
+- **Anti-sycophancy** — banned phrases ("That's an interesting approach", "That could work") replaced with direct positions. Challenges vague demand, undefined terms, and hypothetical users.
 
 ## Failure Modes
 
@@ -97,14 +97,9 @@ The skill scores your brain dump across 5 dimensions (20 points each):
 | Scope Boundaries | Do I know what's in and out of scope?       |
 | Consistency      | Are there contradictions to resolve?        |
 
-**Thresholds:**
+**Threshold:** ≥ 95 to generate contract. Below that, keep interviewing one question at a time.
 
-- < 70: Major gaps - 5+ clarifying questions
-- 70-84: Moderate gaps - 3-5 questions
-- 85-94: Minor gaps - 1-2 questions
-- ≥ 95: Ready to generate contract
-
-Scoring is deliberately conservative — when uncertain between two levels, score lower. One extra question costs minutes; a bad contract costs hours.
+Scoring is deliberately conservative — when uncertain between two levels, score lower. One extra question costs seconds; a bad contract costs hours.
 
 ## Feedback Loops
 
@@ -142,12 +137,12 @@ search too...
 
 **Process:**
 
-1. Skill accepts input, challenges vague claims ("tags might be better because folders are too rigid" — is that evidence or preference?)
-2. Explores codebase for existing patterns
-3. Calculates ~55/100 confidence (scored lower due to vague justifications)
-4. Asks clarifying questions: "What type of items?", "Tags user-created or predefined?", etc.
-5. User responds, confidence rises to 96/100
-6. Generates `contract.md` (with `Supersedes: None`) for approval
+1. Skill accepts input, takes a position: "Strong: clear core feature. Weak: 'tags over folders' is preference, not evidence."
+2. Interviews one question at a time with recommendations: "I'd scope this to articles — your app already has an Article model. Does that match?"
+3. Explores codebase inline — finds existing tag system, recommends reusing it instead of asking
+4. Challenges assumptions: "Have users complained about folders, or is this your gut?"
+5. Confidence rises to 96/100 after ~5 questions
+6. Generates `contract.md` (artifacts created lazily — no files until now)
 7. After approval, asks: "Straight to specs or PRDs first?"
 8. Generates implementation specs with feedback loops and failure modes
 
@@ -158,9 +153,9 @@ search too...
 ```mermaid
 flowchart TD
     subgraph IDEATION["<b>Ideation Skill</b> — Planning"]
-        A["🧠 Brain Dump<br/><i>messy thoughts, dictation,<br/>scattered ideas</i>"] --> B["Codebase Exploration<br/><i>patterns, architecture,<br/>conventions</i>"]
+        A["🧠 Brain Dump<br/><i>messy thoughts, dictation,<br/>scattered ideas</i>"] --> B["Take Position<br/><i>what's strong, what's weak</i>"]
         B --> C{"Confidence<br/>Score"}
-        C -->|"< 95"| D["Clarifying Questions<br/><i>target lowest dimension</i>"]
+        C -->|"< 95"| D["Interview Loop<br/><i>one question at a time,<br/>recommended answer,<br/>explore codebase inline</i>"]
         D --> C
         C -->|"≥ 95"| E["Generate Contract<br/><i>problem, goals, success,<br/>scope boundaries</i>"]
         E --> F{"User<br/>Approval"}
@@ -331,4 +326,4 @@ Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` enabled in settings.
 
 ## Version
 
-0.10.0
+0.11.0

@@ -3,127 +3,56 @@ name: ideation
 description: Transform raw brain dumps (dictated freestyle) into structured implementation artifacts. Use when user has messy ideas, scattered thoughts, or dictated stream-of-consciousness, or when they want to plan a feature, spec something out, or turn rough ideas into actionable specs. Produces contracts and implementation specs written to ./docs/ideation/{project-name}/.
 ---
 
+<what-to-do>
+
 # Ideation
 
-Transform unstructured brain dumps into structured, actionable implementation artifacts through a confidence-gated workflow.
+Transform unstructured brain dumps into structured, actionable implementation artifacts through a conversational interview that builds shared understanding before writing anything.
 
-## Critical: Use AskUserQuestion Tool
-
-**ALWAYS use the `AskUserQuestion` tool when asking clarifying questions.** Do not ask questions in plain text. The tool provides structured options and ensures the user can respond clearly.
-
-Use `AskUserQuestion` for:
-
-- Clarifying questions during confidence scoring (Phase 2)
-- Project name confirmation before writing artifacts
-- Contract approval
-- Workflow choice (PRDs vs straight to specs)
-- Phase review feedback before spec generation
-- Any decision point requiring user input
-
-## Workflow Pipeline
+## Workflow
 
 ```
-INTAKE → CODEBASE EXPLORATION → CONTRACT FORMATION → PHASING → SPEC GENERATION → HANDOFF
-              ↓                        ↓                  ↓            ↓               ↓
-         Understand              confidence < 95%?    PRDs or     Repeatable?    Analyze deps
-         existing code                ↓               straight      ↓               ↓
-                                 ASK QUESTIONS        to specs?   Template +    Sequential?
-                                      ↓                           per-phase     Parallel?
-                                 (loop until ≥95%)                deltas        Agent Team?
+INTAKE → INTERVIEW LOOP → CONTRACT → PHASING → SPEC GENERATION → HANDOFF
+              ↓                 ↓          ↓            ↓               ↓
+         Accept the mess   One question   Write     Repeatable?    Analyze deps
+                           at a time,     when        ↓               ↓
+                           explore code   locked   Template +    Sequential?
+                           when possible            per-phase     Parallel?
+                                                    deltas        Agent Team?
 ```
 
 ## Phase 1: Intake
 
-Accept whatever the user provides:
+Accept whatever the user provides — scattered thoughts, voice transcripts, bullet points, contradictions, topic jumping. **The mess is the input.**
 
-- Scattered thoughts and half-formed ideas
-- Voice dictation transcripts (messy, stream-of-consciousness)
-- Bullet points mixed with rambling
-- Topic jumping and tangents
-- Contradictions and unclear statements
-- Technical jargon mixed with vague descriptions
+Acknowledge receipt. State what looks strong and what looks weak. Take a position. Then begin the interview.
 
-**Don't require organization. The mess is the input.**
+## Phase 2: Interview Loop
 
-Acknowledge receipt and begin analysis. Do not ask for clarification yet.
+Interview the user relentlessly about every aspect of this plan until reaching shared understanding. Walk down each branch of the decision tree, resolving dependencies between decisions one by one.
 
-## Anti-Sycophancy Rules
+### Core rules
 
-These rules apply during intake analysis (Phase 1) and contract formation (Phase 3). The goal is to challenge weak premises before they become expensive specs.
+1. **Ask one question at a time.** Wait for the answer before asking the next question. Do not batch questions.
+2. **For each question, provide your recommended answer.** Frame it as: "Here's what I'd recommend — [position]. Do you agree, or would you change it?" This accelerates convergence and forces you to take positions.
+3. **If a question can be answered by exploring the codebase, explore the codebase instead.** Don't ask the user what you can look up. Use `Agent` with `subagent_type: "Explore"` or direct `Glob`/`Grep`/`Read` to find the answer, then state what you found and move on.
+4. **Use `AskUserQuestion` tool for every question.** Provide 2-4 options including your recommendation. Mark the recommended option with "(Recommended)".
 
-### Banned Phrases
+### What to explore
 
-Do not say these during analysis or contract formation:
+When exploring the codebase during the interview, look for:
 
-- "That's an interesting approach" — take a position instead
-- "There are many ways to think about this" — pick one and state why
-- "You might want to consider..." — say "This is wrong because..." or "This works because..."
-- "That could work" — say whether it WILL work based on available evidence
-- "I can see why you'd think that" — if the premise is weak, say it's weak and why
+- Project structure, frameworks, languages, patterns in use
+- Existing code related to the brain dump's scope
+- Conventions — how similar features are implemented, what abstractions exist
+- Testing patterns and infrastructure
+- Feedback infrastructure — test runners, dev servers, storybook, API scripts. See `references/feedback-loop-guide.md` for the infrastructure-to-playground mapping.
 
-### Required Behaviors
+**Do not write exploration findings to files.** They're context for the interview, not artifacts.
 
-- **Take a position on every brain dump.** After analyzing the input, state what you think is strong and what's weak. Don't just extract signals — evaluate them.
-- **Challenge vague demand.** If the brain dump says "users want X" without evidence, push back: "What evidence supports this? Who specifically wants it?"
-- **Name undefined terms.** If the brain dump uses vague terms ("better UX", "more intuitive", "cleaner"), demand specifics: "What does 'better' mean here? Faster? Fewer clicks? Different layout?"
-- **Flag hypothetical users.** If no concrete user or use case is named, note it as a gap during confidence scoring. "Developers will love this" is not evidence.
-- **Score conservatively when pushback reveals gaps.** If challenging the brain dump exposes vague or missing justification, lower the relevant confidence dimension. Don't inflate scores to compensate for a well-written but unsubstantiated brain dump.
+### Confidence tracking
 
-## Phase 2: Codebase Exploration
-
-**Before scoring confidence or generating any artifacts, understand the existing codebase.** This is critical — specs written without understanding existing patterns, architecture, and conventions will be generic and wrong.
-
-### 2.1 Determine if Exploration is Needed
-
-Exploration is needed when:
-
-- The brain dump references existing code, features, or systems
-- The project directory contains source code (not a greenfield project)
-- The user mentions extending, modifying, or integrating with existing functionality
-
-Skip exploration for greenfield projects with no existing code.
-
-### 2.2 Explore the Codebase
-
-Use the `Agent` tool with `subagent_type: "Explore"` or direct `Glob`/`Grep`/`Read` to understand:
-
-1. **Project structure** — What frameworks, languages, and patterns are in use?
-2. **Relevant existing code** — What modules/files relate to the brain dump's scope?
-3. **Conventions and patterns** — How are similar features implemented? What abstractions exist?
-4. **Testing patterns** — How is the codebase tested? What infrastructure exists?
-5. **Configuration and build** — What tools, package managers, and CI/CD are in use?
-6. **Feedback infrastructure** — What fast-feedback tools exist? Test runner config, dev server setup, storybook, API testing scripts, CI shortcuts. These directly inform feedback loop design in specs: if the project has Storybook, prefer it as the UI playground; if it has a test runner with watch mode, use that for the inner-loop command. See `references/feedback-loop-guide.md` for the full infrastructure-to-playground mapping.
-
-### 2.3 Record Findings
-
-Retain exploration context for use in later phases. These inform:
-
-- **Confidence scoring** — better understanding of the problem space
-- **Contract** — realistic scope boundaries based on actual architecture
-- **Specs** — "Pattern to follow" references, accurate file paths, correct abstractions
-
-**Do not write exploration findings to files.** They're context for the ideation process, not an artifact.
-
-## Phase 3: Contract Formation
-
-### 3.1 Analyze the Brain Dump
-
-Extract from the raw input + codebase exploration:
-
-1. **Problem signals**: What pain point or need is being described?
-2. **Goal signals**: What does the user want to achieve?
-3. **Success signals**: How will they know it worked?
-4. **Scope signals**: What's included? What's explicitly excluded?
-5. **Contradictions**: Note any conflicting statements
-6. **Codebase constraints**: What does the existing architecture enable or limit?
-
-### 3.2 Calculate Confidence Score
-
-Read `references/confidence-rubric.md` for detailed scoring criteria.
-
-**Score conservatively.** When uncertain between two levels, choose the lower one. One extra round of questions costs minutes; a bad contract costs hours. Do not inflate scores to move forward faster.
-
-Score each dimension (0-20 points):
+Track confidence internally across 5 dimensions (0-20 each, see `references/confidence-rubric.md`):
 
 | Dimension        | Question                                                       |
 | ---------------- | -------------------------------------------------------------- |
@@ -133,46 +62,33 @@ Score each dimension (0-20 points):
 | Scope Boundaries | Do I know what's in and out of scope?                          |
 | Consistency      | Are there contradictions I need resolved?                      |
 
-**Total: /100 points**
+**Score conservatively.** When uncertain between two levels, choose the lower one. One extra question costs seconds; a bad contract costs hours.
 
-### 3.3 Confidence Thresholds
+When confidence reaches ≥ 95%, stop interviewing and generate the contract. There is no fixed question limit — keep asking until you have shared understanding. The user can say "stop", "wrap up", or "that's enough" to end the interview early.
 
-| Score | Action                                                    |
-| ----- | --------------------------------------------------------- |
-| < 70  | Major gaps. Ask 5+ questions targeting lowest dimensions. |
-| 70-84 | Moderate gaps. Ask 3-5 targeted questions.                |
-| 85-94 | Minor gaps. Ask 1-2 specific questions.                   |
-| ≥ 95  | Ready to generate contract.                               |
+### What to challenge during the interview
 
-### 3.4 Ask Clarifying Questions
+- **Vague demand**: "Users want X" → "What evidence? Who specifically?"
+- **Undefined terms**: "Better UX", "more intuitive" → "What does 'better' mean? Faster? Fewer clicks?"
+- **Hypothetical users**: "Developers will love this" → Flag as a gap, score conservatively.
+- **Contradictions**: Surface them explicitly. "You said X earlier but now Y — which is it?"
+- **Weak premises**: If the idea is weak, say it's weak and why. Don't soften.
 
-When confidence < 95%, **MUST use `AskUserQuestion` tool** to ask clarifying questions. Structure questions with clear options when possible.
+### Banned phrases
 
-**Using AskUserQuestion effectively**:
+- "That's an interesting approach" — take a position instead
+- "There are many ways to think about this" — pick one and state why
+- "You might want to consider..." — say "This is wrong because..." or "This works because..."
+- "That could work" — say whether it WILL work based on evidence
+- "I can see why you'd think that" — if the premise is weak, say so
 
-- Provide 2-4 options per question when choices are clear
-- Use `multiSelect: true` when multiple answers apply
-- Keep question headers short (max 12 chars)
-- Include descriptions that explain implications of each choice
+## Phase 3: Contract
 
-**Question strategy**:
-
-- Target the lowest-scoring dimension first
-- Be specific, not open-ended
-- Offer options when possible ("Is it A, B, or C?")
-- Reference what was stated ("You mentioned X, did you mean...?")
-- Limit to 3-5 questions per round
-- After each round, recalculate confidence
-
-See `references/confidence-rubric.md` for question templates by dimension and best practices.
-
-### 3.5 Generate Contract
-
-When confidence ≥ 95%, generate the contract document.
+When confidence ≥ 95%, generate the contract. **Not before.** Create artifacts lazily — only when you have something to write.
 
 1. Use `AskUserQuestion` to confirm project name if not obvious from context
 2. Convert to kebab-case for directory name
-3. Create output directory: `./docs/ideation/{project-name}/`
+3. Create output directory `./docs/ideation/{project-name}/` **only now** — not during intake or exploration
 4. **Check for prior contract (lineage detection)**:
    - Check if `./docs/ideation/{project-name}/contract.md` already exists
    - If it does, read its `Created` date and rename it to `contract-{created-date}.md`
@@ -187,12 +103,16 @@ Options:
 - "Approved" - Contract is accurate, proceed
 - "Needs changes" - Some parts need revision
 - "Missing scope" - Important items are not captured
-- "Start over" - Fundamentally off track, re-analyze
+- "Start over" - Fundamentally off track, re-interview
 ```
 
-**If not approved:** Revise the contract based on feedback. Do not re-score confidence unless the feedback reveals a fundamental misunderstanding — in that case, return to Phase 3.2 and re-score. Otherwise, edit `contract.md` directly and re-present for approval. Iterate until approved.
+**If not approved:** Revise based on feedback. If feedback reveals a fundamental misunderstanding, return to the interview loop. Otherwise edit `contract.md` directly and re-present. Iterate until approved.
 
 **Do not proceed until contract is explicitly approved.**
+
+</what-to-do>
+
+<supporting-info>
 
 ## Phase 4: Phasing & Specification
 
@@ -205,17 +125,15 @@ Use `AskUserQuestion` to ask:
 ```
 Question: "How should we proceed from the contract?"
 Options:
-- "Straight to specs" — Recommended for technical projects.
-  Contract defines what, specs define how. Faster.
-- "PRDs then specs" — Recommended for large scope or cross-functional
-  teams. Adds a requirements layer for stakeholder alignment.
+- "Straight to specs (Recommended)" — Contract defines what, specs define how. Faster.
+- "PRDs then specs" — Adds a requirements layer for stakeholder alignment.
 ```
 
 ### 4.2 Determine Phases
 
-Regardless of PRD choice, analyze the contract and break scope into logical implementation phases.
+Analyze the contract and break scope into logical implementation phases.
 
-**Small-project shortcut:** If the scope is small enough to implement in a single phase (1-3 components, touches fewer than ~10 files), skip phasing entirely. Generate a single `spec.md` (no phase number needed) and proceed directly to handoff. Not every project needs multiple phases — don't force structure where simplicity suffices.
+**Small-project shortcut:** If the scope is small enough to implement in a single phase (1-3 components, touches fewer than ~10 files), skip phasing entirely. Generate a single `spec.md` (no phase number needed) and proceed directly to handoff. Don't force structure where simplicity suffices.
 
 **Phasing criteria** (for multi-phase projects):
 
@@ -260,7 +178,7 @@ Iterate until user explicitly approves.
 
 ### 4.4 Generate Implementation Specs
 
-Generate specs using `references/spec-template.md`. How specs are generated depends on whether phases are repeatable:
+Generate specs using `references/spec-template.md`. Create spec files lazily — only when a phase's details are resolved.
 
 #### Standard phases (each is unique)
 
@@ -275,11 +193,11 @@ For each phase, generate a full `spec-phase-{n}.md` with:
 - Feedback strategy (top-level inner-loop command and playground type)
 - Per-component feedback loops (where applicable)
 
-**Reference existing code:** When the codebase exploration (Phase 2) identified relevant patterns, include "Pattern to follow: `path/to/similar/file.ts`" in the spec's implementation details. This gives the executing agent concrete examples to follow.
+**Reference existing code:** When the interview's codebase exploration identified relevant patterns, include "Pattern to follow: `path/to/similar/file.ts`" in the spec's implementation details.
 
 **Designing feedback loops:** For each iterative component, define a playground (environment to interact with), experiment (parameterized check), and check command (fastest single validation). Match the feedback mechanism to the component type — data layers use tests, UI uses dev server, APIs use curl scripts, config/types skip loops entirely. See `references/feedback-loop-guide.md` for the full component-type mapping and design criteria.
 
-**Naming failure modes:** For each non-trivial component, ask: "How would this fail?" Fill in the spec's Failure Modes table with named failures, data shadow paths (nil, empty, stale data), and edge cases (concurrent access, oversized input, missing permissions). The goal is not exhaustive error handling — it's ensuring the spec has no blind spots. Components that are trivial (config, types, constants) skip failure mode enumeration, same as feedback loops.
+**Naming failure modes:** For each non-trivial component, ask: "How would this fail?" Fill in the spec's Failure Modes table with named failures, data shadow paths (nil, empty, stale data), and edge cases (concurrent access, oversized input, missing permissions). Trivial components (config, types, constants) skip failure mode enumeration.
 
 #### Repeatable phases (3+ phases follow the same pattern)
 
@@ -345,16 +263,9 @@ For each SDK, create:
 - CI needs Ruby 3.x installed for eval fixtures
 ```
 
-This approach:
-
-- Saves significant context window space
-- Makes the per-phase differences obvious
-- Avoids copy-paste errors across specs
-- Makes it easy to update the shared pattern in one place
-
 ### 4.5 Present Phases for Review
 
-Whether using PRDs or straight-to-specs, present the phase breakdown and specs for user approval before proceeding to handoff.
+Present the phase breakdown and specs for user approval before proceeding to handoff.
 
 **Before presenting specs, evaluate feedback loop quality** using the Spec Feedback Quality checklist from `references/confidence-rubric.md`. Self-review each spec:
 
@@ -379,7 +290,7 @@ If not approved, revise the relevant specs based on feedback and re-present. Ite
 
 ## Phase 5: Execution Handoff
 
-After specs are generated, create task list, analyze orchestration options, and hand off for implementation.
+After specs are generated, analyze orchestration options and hand off for implementation.
 
 ### 5.1 Analyze Orchestration Strategy
 
@@ -469,6 +380,8 @@ Ensure agent teams are enabled in `.claude/settings.json` or `~/.claude/settings
 - Each phase is independently committable
 - Each session creates granular implementation tasks scoped to that phase
 
+</supporting-info>
+
 ## Output Artifacts
 
 All artifacts written to `./docs/ideation/{project-name}/`:
@@ -506,14 +419,17 @@ When generating artifacts, reference these examples for tone, structure, and lev
 
 ## Important Notes
 
-- **ALWAYS use `AskUserQuestion` tool for clarifications and approvals.** Never ask questions in plain text.
-- **Explore the codebase** before scoring confidence (unless greenfield).
+- **ALWAYS use `AskUserQuestion` tool for questions and approvals.** Never ask questions in plain text.
+- **One question at a time.** Provide your recommended answer with each question.
+- **Explore the codebase during the interview** — don't ask what you can look up.
 - **Score confidence conservatively.** When uncertain, score lower.
 - Never skip the confidence check. Don't assume understanding.
 - Always write artifacts to files. Don't just display them.
+- **Create files lazily** — only when decisions are locked, not speculatively.
 - Each phase should be independently valuable.
 - Specs should be detailed enough to implement without re-reading PRDs or the contract.
 - Keep contracts lean. Heavy docs slow iteration.
 - **Reference existing code patterns** in specs — "Pattern to follow" with real file paths.
 - **Use template + delta** for repeatable phases — don't generate N identical specs.
 - **Small projects don't need phases.** If scope is 1-3 components, generate a single spec.
+- **No question limit.** Keep interviewing until shared understanding. The user can say "stop" or "wrap up" to end early.

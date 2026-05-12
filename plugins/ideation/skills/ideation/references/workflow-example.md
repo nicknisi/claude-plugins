@@ -15,48 +15,51 @@ be on planes or whatever and sync when they come back online
 
 **Process**:
 
-1. **Intake**: Accept without judgment
+1. **Intake**: Accept without judgment. State position upfront:
+   - "Strong: You have a clear core feature (bookmarking) with reasonable extensions. Weak: 'tags might be better because folders are too rigid' is a preference, not evidence. 'People might be on planes' is hypothetical. Let me interview you to nail this down."
 
-2. **Codebase Exploration**: Explore existing project structure, identify relevant patterns, understand current architecture
+2. **Interview loop** (one question at a time, interleaved with codebase exploration):
 
-3. **Analysis** (with anti-sycophancy):
-   - Problem: Users need to save and organize content
-   - Goals: Save items, organize with tags, search, offline support
-   - Unclear: What items? Why tags > folders? Sharing scope? Offline priority?
-   - **Pushback**: "You said 'tags might be better because folders are too rigid' — that's a preference, not evidence. Have users complained about folder-based organization, or is this an assumption? Also, 'people might be on planes' is hypothetical — how many of your users actually need offline access?"
-   - Confidence: ~55/100 (low problem clarity, unclear scope, vague justifications)
+   **Q1**: "What type of items are users bookmarking? I'd recommend scoping this to articles — your app already has an `Article` model with content rendering, and that's the primary content type. Does that match your intent, or are you thinking broader?"
+   - *User*: "Yeah, articles for now, maybe products later"
 
-4. **Questions** (round 1):
-   - "What type of items are users bookmarking? Articles, products, posts?"
-   - "You mentioned tags over folders. Should tags be user-created or predefined?"
-   - "Is offline support MVP or can it wait for phase 2?"
-   - "When you say 'sharing eventually,' what does that look like?"
+   **Q2**: *(explores codebase — finds existing tag system on articles)* "Your codebase already has a `Tag` model with a many-to-many relation on `Article`. I'd recommend reusing that system for bookmark organization rather than building a new one. The existing tags are admin-created — should bookmark tags be user-created, or reuse the existing set?"
+   - *User*: "User-created, separate from the content tags"
 
-5. **User responds** → Recalculate confidence → Repeat if needed
+   **Q3**: "You said 'tags might be better because folders are too rigid' — that's a preference, not evidence. Have users complained about folder-based organization? My recommendation: start with tags since your codebase already has the pattern, but don't rule out folders until you have usage data."
+   - *User*: "Fair, no complaints — it's just my gut. Tags first, revisit later."
 
-6. **Confidence reaches 96%** → Generate contract
+   **Q4**: "Is offline support MVP or can it wait? I'd recommend deferring it — your app is currently fully server-rendered with no service worker infrastructure. Adding offline would mean introducing IndexedDB, a sync layer, and conflict resolution. That's a separate project."
+   - *User*: "Yeah, defer it. Phase 2 at earliest."
 
-7. **Contract approved** → Ask: "Straight to specs or PRDs first?"
+   **Q5**: "When you say 'sharing eventually,' what does that look like? My recommendation: sharing a read-only link to a bookmark collection — simplest version, no auth required for viewers."
+   - *User*: "Exactly, just a public link."
 
-8. **Determine phases**:
-   - Phase 1: Core bookmarking with tags
+   *(Confidence now at 96% — all dimensions ≥ 18)*
+
+3. **Contract generated** → Artifacts written to `./docs/ideation/bookmarks/contract.md` only now — no files created during the interview
+
+4. **Contract approved** → Ask: "Straight to specs or PRDs first?"
+
+5. **Determine phases**:
+   - Phase 1: Core bookmarking with user-created tags
    - Phase 2: Search and filtering
    - Phase 3: Offline support
    - Phase 4: Sharing (future)
 
-9. **Generate specs** (referencing codebase patterns found in step 2)
+6. **Generate specs** (referencing codebase patterns found during interview)
    - Each spec includes a **Feedback Strategy** (inner-loop command, playground type)
    - Each iterative component gets a **Feedback Loop** (playground, experiment, check command)
    - Self-review feedback loop quality before presenting — Strong/Adequate/Weak (see `confidence-rubric.md`)
 
-10. **Execution handoff**: Analyze dependencies, present orchestration strategy
-    - Phases 2-4 are independent → recommend agent team
-    - Generate team prompt with per-teammate assignments
+7. **Execution handoff**: Analyze dependencies, present orchestration strategy
+   - Phases 2-4 are independent → recommend agent team
+   - Generate team prompt with per-teammate assignments
 
-11. **Implementation** (fresh sessions): For each phase:
-    - Start fresh Claude session (or use agent team for parallel phases)
-    - Run `/execute-spec spec-phase-{n}.md`
-    - Agent sets up feedback environment first (test runner, dev server, etc.)
-    - For each component: set up loop → build incrementally → check → iterate
-    - Review, test, commit
-    - Repeat for next phase
+8. **Implementation** (fresh sessions): For each phase:
+   - Start fresh Claude session (or use agent team for parallel phases)
+   - Run `/execute-spec spec-phase-{n}.md`
+   - Agent sets up feedback environment first (test runner, dev server, etc.)
+   - For each component: set up loop → build incrementally → check → iterate
+   - Review, test, commit
+   - Repeat for next phase
