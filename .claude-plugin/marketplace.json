@@ -104,7 +104,7 @@
       "name": "ideation",
       "source": "./plugins/ideation",
       "description": "Transform brain dumps into structured implementation artifacts: contracts, phased PRDs, and implementation specs",
-      "version": "0.10.0",
+      "version": "0.11.0",
       "author": {
         "name": "Nick Nisi",
         "email": "nick@nisi.org"
@@ -168,7 +168,11 @@
         "name": "Nick Nisi",
         "email": "nick@nisi.org"
       },
-      "keywords": ["experimental", "cunningham", "output-styles"]
+      "keywords": [
+        "experimental",
+        "cunningham",
+        "output-styles"
+      ]
     },
     {
       "name": "sidequest",
