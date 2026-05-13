@@ -31,18 +31,21 @@ I want to build something. Here's what I'm thinking...
 **The workflow:**
 
 1. **Intake** - Accept your messy, unstructured input without judgment. Take a position upfront — what's strong, what's weak.
-2. **Interview loop** - One question at a time, each with a recommended answer. Explores the codebase inline — if it can look something up instead of asking, it does. Challenges vague demand, undefined terms, and hypothetical users. Loops until confidence ≥ 95%.
-3. **Contract** - When ≥95% confident, write `contract.html` (with revision lineage tracking via `Supersedes` link). Artifacts created lazily — no files until decisions are locked.
-4. **Phasing & specs** - Determine phases, generate specs with feedback loops and failure mode catalogs
-5. **Feedback quality check** - Self-review specs for feedback loop coverage before presenting
-6. **Execution handoff** - Analyze orchestration strategy, write execution plan to contract, present summary
+2. **Interview loop** - One question at a time, each with a recommended answer. Explores the codebase inline — if it can look something up instead of asking, it does. Challenges vague demand, undefined terms, and hypothetical users. Loops until confidence >= 95%.
+3. **Exploration visualization** - Generates `_exploration.html` — a visual context map of codebase findings (file tree, pattern cards, infrastructure badges). Opens in your browser so you can see what the agent discovered.
+4. **Contract** - When >= 95% confident, write `contract.html` with a **scope slider** (MVP / Full / Stretch tiers). Drag the slider to see what's in scope at each level, then pick your tier in the terminal. Includes revision lineage tracking via `Supersedes` link.
+5. **Visual comparisons** - At key decision points (phasing strategy, orchestration approach), generates temporary side-by-side HTML comparisons in your browser before asking you to choose.
+6. **Phasing & specs** - Determine phases, generate interactive HTML specs with feedback loops and failure mode catalogs
+7. **Feedback quality check** - Self-review specs for feedback loop coverage before presenting
+8. **Execution handoff** - SVG dependency graph, copy-to-clipboard execute commands, auto-generated MD specs for `/execute-spec`
 
 **Output artifacts:**
 
 All artifacts are written to `./docs/ideation/{project-name}/`:
 
 ```
-contract.html                  # Interactive contract (primary, for review)
+_exploration.html              # Codebase context map (file tree, patterns, infrastructure)
+contract.html                  # Interactive contract with scope slider (primary, for review)
 contract.md                    # Plain contract (for /execute-spec lineage)
 prd-phase-1.html               # Phase 1 requirements (only if PRDs chosen)
 prd-phase-1.md                 # MD PRD (only if PRDs chosen)
@@ -52,11 +55,22 @@ spec-template-{pattern}.html   # Shared template for repeatable phases (if appli
 spec-template-{pattern}.md     # MD version of repeatable template (if applicable)
 spec-phase-N.html              # Per-phase delta or full HTML spec
 spec-phase-N.md                # Per-phase delta or full MD spec
+_comparison.html               # Temporary visual comparison (deleted after decision)
 ```
 
-HTML specs include tabs, a confidence meter, sidebar nav, collapsible sections, feedback cards, SVG dependency graphs, and copy buttons for `/execute-spec` commands. They open in your browser automatically after writing. All CSS/JS is inlined — no external dependencies. Dark mode is automatic via `prefers-color-scheme`.
+HTML artifacts are self-contained single files with all CSS/JS inlined — no external dependencies. They open in your browser automatically after writing. Features include:
 
-The Markdown specs are auto-generated at handoff (Phase 5) so `/ideation:execute-spec` can consume them. They mirror the HTML content but are machine-consumable only.
+- **Tabs** for section navigation (CSS-only, no JS framework)
+- **Confidence meter** showing scoring across 5 dimensions
+- **Scope slider** with MVP / Full / Stretch tiers (drag to see what's included)
+- **Sidebar navigation** in specs for jumping between sections
+- **Collapsible sections** for implementation details and failure modes
+- **SVG dependency graphs** for execution planning
+- **Copy-to-clipboard buttons** on `/execute-spec` commands
+- **Dark mode** automatic via `prefers-color-scheme`
+- **Print-friendly** via `@media print` rules
+
+The Markdown specs are auto-generated at handoff (Phase 5) so `/ideation:execute-spec` can consume them. They are equally detailed — generated from the same interview context using the MD templates directly, not converted from HTML.
 
 **Bundled references:**
 
@@ -156,11 +170,14 @@ search too...
 3. Explores codebase inline — finds existing tag system, recommends reusing it instead of asking
 4. Challenges assumptions: "Have users complained about folders, or is this your gut?"
 5. Confidence rises to 96/100 after ~5 questions
-6. Generates `contract.html` and opens it in the browser (artifacts created lazily — no files until now)
-7. After approval, asks: "Straight to specs or PRDs first?"
-8. Generates implementation specs with feedback loops and failure modes
+6. Generates `_exploration.html` — opens in browser showing the file tree, discovered patterns, and infrastructure (test runner, dev server, etc.)
+7. Generates `contract.html` with scope slider — drag between MVP / Full / Stretch to see what's included at each tier. Pick your scope in the terminal.
+8. After approval, asks: "Straight to specs or PRDs first?"
+9. At decision points (phasing, orchestration), opens side-by-side visual comparisons in browser
+10. Generates interactive HTML specs with feedback loops and failure modes
+11. Auto-generates MD specs for `/execute-spec` compatibility
 
-**Result:** Clean, structured artifacts ready for implementation.
+**Result:** Interactive HTML artifacts you actually want to read, plus machine-consumable MD specs for execution.
 
 ## Full Workflow Diagram
 
@@ -171,8 +188,9 @@ flowchart TD
         B --> C{"Confidence<br/>Score"}
         C -->|"< 95"| D["Interview Loop<br/><i>one question at a time,<br/>recommended answer,<br/>explore codebase inline</i>"]
         D --> C
-        C -->|"≥ 95"| E["Generate Contract<br/><i>problem, goals, success,<br/>scope boundaries</i>"]
-        E --> F{"User<br/>Approval"}
+        C -->|"≥ 95"| EX["Exploration Viz<br/><i>file tree, patterns,<br/>infrastructure badges</i>"]
+        EX --> E["Generate Contract<br/><i>scope slider: MVP/Full/Stretch,<br/>confidence meter, tabs</i>"]
+        E --> F{"User<br/>Approval<br/>(pick scope tier)"}
         F -->|"Needs changes"| E
         F -->|"Approved"| G{"PRDs or<br/>straight to specs?"}
         G -->|"PRDs first"| H["Generate PRDs"] --> I
@@ -257,7 +275,7 @@ flowchart TD
 
 ### Reading the Diagram
 
-**Ideation (left/top)** — brain dump → confidence-gated questioning → contract → specs → execution plan. Human approves at each gate.
+**Ideation (left/top)** — brain dump → confidence-gated questioning → exploration visualization → contract with scope slider → specs → execution plan. Human approves at each gate.
 
 **Execute-Spec (right/bottom)** — three phases per spec:
 
