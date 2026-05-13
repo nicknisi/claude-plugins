@@ -362,7 +362,7 @@ When generating artifacts, reference these examples for tone, structure, and lev
 - **Explore the codebase during the interview** — don't ask what you can look up.
 - **Score confidence conservatively.** When uncertain, score lower.
 - Never skip the confidence check. Don't assume understanding.
-- **Read `references/html-guide.md` before writing any HTML artifact.** Follow the component library exactly.
+- **Read `references/html-guide.md` once before Phase 3.** It stays in context for subsequent artifacts — do not re-read it for each one. Follow the component library exactly.
 - **ALL CSS and JS must be inlined.** No external links. Files must work from `file://`.
 - **Open each HTML artifact in the browser** after writing it. Use `open` (macOS) or `xdg-open` (Linux).
 - **Dark mode support is required.** Use `prefers-color-scheme` media query.

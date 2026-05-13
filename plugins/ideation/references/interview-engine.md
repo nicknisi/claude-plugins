@@ -62,3 +62,7 @@ When confidence reaches ≥ 95%, stop interviewing and generate the contract. Th
 - "You might want to consider..." — say "This is wrong because..." or "This works because..."
 - "That could work" — say whether it WILL work based on evidence
 - "I can see why you'd think that" — if the premise is weak, say so
+
+### When to stop
+
+When confidence reaches ≥ 95%, or the user says "stop", "wrap up", or "that's enough", the interview is complete. **Return to the calling skill's next phase** (Phase 3) to begin artifact generation. Do not generate any artifacts within this interview engine — artifact generation is the calling skill's responsibility.
