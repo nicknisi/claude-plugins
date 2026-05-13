@@ -1,6 +1,6 @@
 ---
 name: ideation
-description: Transform raw brain dumps (dictated freestyle) into structured implementation artifacts. Outputs interactive HTML contracts and specs (tabs, confidence meter, SVG dependency graphs, collapsible sections) with auto-generated Markdown specs for /execute-spec compatibility. Use when user has messy ideas, scattered thoughts, or dictated stream-of-consciousness, or when they want to plan a feature, spec something out, or turn rough ideas into actionable specs. Writes artifacts to ./docs/ideation/{project-name}/.
+description: Activate for pre-implementation planning — when the user has a problem, idea, or goal but needs to figure out the shape of the solution before writing code. Covers: organizing messy notes or brain dumps into specs, interviewing the user to clarify requirements, pressure-testing approaches, turning scattered thoughts into structured plans, speccing out features or migrations, and creating design documents. The user's input will typically describe WHAT they want but not have a locked-down HOW — they may say "help me plan," "spec this out," "turn this into a plan," "think through this," "interview me," or simply present unstructured ideas asking for structure. This skill runs a conversational interview, then writes interactive HTML specs and contracts to ./docs/ideation/{project-name}/. Skip this skill when the user already knows exactly what to build and just needs implementation — writing code, fixing bugs, refactoring, explaining code, or generating configs.
 ---
 
 <what-to-do>
@@ -354,6 +354,24 @@ Completed artifact examples for reference when generating output:
 - `examples/spec-example.html` - A filled-in interactive HTML spec for reference
 
 When generating artifacts, reference these examples for tone, structure, and level of detail.
+
+## Visual Comparisons for Key Decisions
+
+When a decision point has 2-3 valid approaches with meaningfully different trade-offs, generate a temporary comparison HTML page so the user can see the options side-by-side in their browser before choosing.
+
+**When to use this:**
+- Phase 4.2: Multiple valid phasing strategies (e.g., "core-first vs. risk-first vs. value-first")
+- Phase 5.1: Orchestration strategy when the choice isn't obvious (sequential vs. parallel vs. hybrid)
+- Any `AskUserQuestion` where visual layout would clarify the trade-offs better than text options
+
+**How it works:**
+1. Write a temporary `_comparison.html` to the project's ideation directory using `references/html-guide.md` components
+2. Show each approach as a card or column with: name, description, trade-offs, and a visual (e.g., SVG dependency graph for phasing, timeline for orchestration)
+3. Open in browser: `open ./docs/ideation/{project-name}/_comparison.html`
+4. Ask via `AskUserQuestion`: reference the browser view in the question text
+5. After the user chooses, delete `_comparison.html` — it served its purpose
+
+**When NOT to use this:** Simple yes/no decisions, choices where the recommended option is clearly best, or any decision that's faster to explain in text. Don't slow down the flow with unnecessary visual aids.
 
 ## Important Notes
 
