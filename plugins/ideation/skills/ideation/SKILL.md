@@ -235,9 +235,9 @@ Re-open the contract in the browser after updating.
 
 ### 5.3 Auto-generate MD Specs for Execution
 
-For each HTML spec written, also generate a corresponding Markdown spec file (`spec-phase-{n}.md`) using `references/spec-template.md`. Extract the same content from the HTML spec — technical approach, file changes, implementation details, testing requirements, feedback strategy, failure modes, validation commands — but in plain Markdown format.
+For each HTML spec written, also generate a corresponding Markdown spec file (`spec-phase-{n}.md`) using `references/spec-template.md`. Populate it from the same interview findings, exploration results, and decisions that produced the HTML spec — technical approach, file changes, implementation details, testing requirements, feedback strategy, failure modes, validation commands. The MD spec must be **equally detailed and complete** — it is the input to `/execute-spec`, which builds from it. A weak MD spec produces a weak implementation regardless of how good the HTML spec looks.
 
-These MD specs are for `/execute-spec` consumption only. The HTML specs are the primary artifacts for human review.
+Generate MD specs using the MD templates directly. Do not convert HTML to Markdown — both formats are generated from the same source (your interview context), just targeting different templates.
 
 Also generate `contract.md` from `references/contract-template.md` with the same content as `contract.html` — needed for execute-spec lineage detection. Include the Execution Plan section.
 
