@@ -1,6 +1,6 @@
 # Ideation Plugin
 
-Transform brain dumps into structured implementation artifacts: contracts and implementation specs. Supports Markdown output (`/ideation`) and interactive HTML output (`/ideation:visual`). Includes execution workflow for implementing specs in fresh sessions with per-component feedback loops.
+Transform brain dumps into structured implementation artifacts: interactive HTML contracts and implementation specs. HTML is the primary output for human review (tabs, confidence meter, SVG dependency graphs, copy buttons, dark mode). Equivalent Markdown specs are auto-generated at handoff for `/execute-spec` compatibility. Includes execution workflow for implementing specs in fresh sessions with per-component feedback loops.
 
 ## Skills
 
@@ -32,7 +32,7 @@ I want to build something. Here's what I'm thinking...
 
 1. **Intake** - Accept your messy, unstructured input without judgment. Take a position upfront — what's strong, what's weak.
 2. **Interview loop** - One question at a time, each with a recommended answer. Explores the codebase inline — if it can look something up instead of asking, it does. Challenges vague demand, undefined terms, and hypothetical users. Loops until confidence ≥ 95%.
-3. **Contract** - When ≥95% confident, write `contract.md` (with revision lineage tracking via `Supersedes` field). Artifacts created lazily — no files until decisions are locked.
+3. **Contract** - When ≥95% confident, write `contract.html` (with revision lineage tracking via `Supersedes` link). Artifacts created lazily — no files until decisions are locked.
 4. **Phasing & specs** - Determine phases, generate specs with feedback loops and failure mode catalogs
 5. **Feedback quality check** - Self-review specs for feedback loop coverage before presenting
 6. **Execution handoff** - Analyze orchestration strategy, write execution plan to contract, present summary
@@ -42,12 +42,21 @@ I want to build something. Here's what I'm thinking...
 All artifacts are written to `./docs/ideation/{project-name}/`:
 
 ```
-contract.md                    # Problem, goals, success criteria, scope, execution plan (with Supersedes lineage)
-prd-phase-1.md                 # Phase 1 requirements (only if PRDs chosen)
-spec-phase-1.md                # Phase 1 implementation spec (with failure modes)
-spec-template-{pattern}.md     # Shared template for repeatable phases (if applicable)
-spec-phase-N.md                # Per-phase delta or full spec
+contract.html                  # Interactive contract (primary, for review)
+contract.md                    # Plain contract (for /execute-spec lineage)
+prd-phase-1.html               # Phase 1 requirements (only if PRDs chosen)
+prd-phase-1.md                 # MD PRD (only if PRDs chosen)
+spec-phase-1.html              # Interactive spec (primary, for review)
+spec-phase-1.md                # Plain spec (for /execute-spec)
+spec-template-{pattern}.html   # Shared template for repeatable phases (if applicable)
+spec-template-{pattern}.md     # MD version of repeatable template (if applicable)
+spec-phase-N.html              # Per-phase delta or full HTML spec
+spec-phase-N.md                # Per-phase delta or full MD spec
 ```
+
+HTML specs include tabs, a confidence meter, sidebar nav, collapsible sections, feedback cards, SVG dependency graphs, and copy buttons for `/execute-spec` commands. They open in your browser automatically after writing. All CSS/JS is inlined — no external dependencies. Dark mode is automatic via `prefers-color-scheme`.
+
+The Markdown specs are auto-generated at handoff (Phase 5) so `/ideation:execute-spec` can consume them. They mirror the HTML content but are machine-consumable only.
 
 **Bundled references:**
 
@@ -56,40 +65,11 @@ Shared (plugin root):
 - `confidence-rubric.md` - Scoring criteria for confidence assessment and spec feedback quality
 - `feedback-loop-guide.md` - Component-type mapping and design criteria for feedback loops
 
-Skill-specific (MD templates):
-- `contract-template.md` - Lean contract structure
-- `prd-template.md` - Phased PRD template
-- `spec-template.md` - Implementation spec template (includes feedback loops and failure modes)
-
-### ideation-visual
-
-Same interview process as `/ideation`, but outputs interactive HTML artifacts instead of Markdown. Use when you want specs that are easier to read, share, and navigate visually.
-
-**How to invoke:**
-
-```
-/ideation:visual
-
-[provide your brain dump]
-```
-
-**What's different from /ideation:**
-
-| Aspect | /ideation | /ideation:visual |
-|--------|-----------|-----------------|
-| Output format | Markdown (.md) | Interactive HTML (.html) |
-| Contract | Plain text | Tabbed layout with confidence meter |
-| Specs | Flat document | Sidebar nav, collapsible sections, feedback cards |
-| Dependency graph | ASCII art | Inline SVG |
-| Execute commands | Plain text | Copy-to-clipboard buttons |
-| Dark mode | N/A | Automatic via prefers-color-scheme |
-| /execute-spec compatible | Yes | No — HTML is for human review |
-
-**Same interview, different output:** Both skills share the same interview engine — same questions, same confidence tracking, same codebase exploration. The difference is entirely in how artifacts are generated (Phases 3-5).
-
-**Browser integration:** Each HTML artifact opens in your browser automatically after it's written.
-
-**Note:** HTML specs are for human review and sharing. To execute specs via `/ideation:execute-spec`, use `/ideation` to generate Markdown specs.
+Skill-specific:
+- `html-guide.md` - HTML component library, design tokens, and constraints
+- `contract-template.html` / `contract-template.md` - Contract templates
+- `prd-template.html` / `prd-template.md` - PRD templates
+- `spec-template.html` / `spec-template.md` - Implementation spec templates (includes feedback loops and failure modes)
 
 ## Interview Loop
 
@@ -117,7 +97,7 @@ Trivial components (config, types, constants) skip failure mode enumeration — 
 
 ## Contract Lineage
 
-Contracts track revision history via a `Supersedes` field. When re-running ideation on the same project, the prior contract is renamed to `contract-{date}.md` and the new contract references it, creating a traceable revision chain.
+Contracts track revision history via a `Supersedes` link. When re-running ideation on the same project, the prior `contract.html` is renamed to `contract-{date}.html` (and the sibling `contract.md` to `contract-{date}.md`) and the new contract references it, creating a traceable revision chain.
 
 ## Confidence Scoring
 
@@ -176,7 +156,7 @@ search too...
 3. Explores codebase inline — finds existing tag system, recommends reusing it instead of asking
 4. Challenges assumptions: "Have users complained about folders, or is this your gut?"
 5. Confidence rises to 96/100 after ~5 questions
-6. Generates `contract.md` (artifacts created lazily — no files until now)
+6. Generates `contract.html` and opens it in the browser (artifacts created lazily — no files until now)
 7. After approval, asks: "Straight to specs or PRDs first?"
 8. Generates implementation specs with feedback loops and failure modes
 

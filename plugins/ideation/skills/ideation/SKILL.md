@@ -1,24 +1,24 @@
 ---
 name: ideation
-description: Transform raw brain dumps (dictated freestyle) into structured implementation artifacts. Use when user has messy ideas, scattered thoughts, or dictated stream-of-consciousness, or when they want to plan a feature, spec something out, or turn rough ideas into actionable specs. Produces contracts and implementation specs written to ./docs/ideation/{project-name}/.
+description: Transform raw brain dumps (dictated freestyle) into structured implementation artifacts. Outputs interactive HTML contracts and specs (tabs, confidence meter, SVG dependency graphs, collapsible sections) with auto-generated Markdown specs for /execute-spec compatibility. Use when user has messy ideas, scattered thoughts, or dictated stream-of-consciousness, or when they want to plan a feature, spec something out, or turn rough ideas into actionable specs. Writes artifacts to ./docs/ideation/{project-name}/.
 ---
 
 <what-to-do>
 
 # Ideation
 
-Transform unstructured brain dumps into structured, actionable implementation artifacts through a conversational interview that builds shared understanding before writing anything.
+Transform unstructured brain dumps into interactive HTML implementation artifacts through a conversational interview that builds shared understanding before writing anything. HTML is the primary artifact for human review; equivalent Markdown specs are auto-generated for `/execute-spec` consumption.
 
 ## Workflow
 
 ```
-INTAKE → INTERVIEW LOOP → CONTRACT → PHASING → SPEC GENERATION → HANDOFF
-              ↓                 ↓          ↓            ↓               ↓
-         Accept the mess   One question   Write     Repeatable?    Analyze deps
-                           at a time,     when        ↓               ↓
-                           explore code   locked   Template +    Sequential?
-                           when possible            per-phase     Parallel?
-                                                    deltas        Agent Team?
+INTAKE → INTERVIEW LOOP → CONTRACT.HTML → PHASING → SPEC.HTML GENERATION → HANDOFF
+              ↓                  ↓             ↓               ↓                ↓
+         Accept the mess    One question    HTML with     Repeatable?      SVG graph
+                            at a time,      tabs +          ↓              + copy buttons
+                            explore code    meter        Template +        + MD specs
+                            when possible                 per-phase         auto-generated
+                                                          deltas
 ```
 
 ## Phases 1-2: Interview
@@ -27,23 +27,27 @@ Read and follow `${CLAUDE_PLUGIN_ROOT}/references/interview-engine.md` for the c
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/confidence-rubric.md` for the detailed scoring criteria.
 
-## Phase 3: Contract
+## Phase 3: Contract (HTML)
 
-When confidence ≥ 95%, generate the contract. **Not before.** Create artifacts lazily — only when you have something to write.
+When confidence ≥ 95%, generate the contract as an interactive HTML document. **Not before.** Create artifacts lazily — only when you have something to write.
 
 1. Use `AskUserQuestion` to confirm project name if not obvious from context
 2. Convert to kebab-case for directory name
 3. Create output directory `./docs/ideation/{project-name}/` **only now** — not during intake or exploration
 4. **Check for prior contract (lineage detection)**:
-   - Check if `./docs/ideation/{project-name}/contract.md` already exists
-   - If it does, read its `Created` date and rename it to `contract-{created-date}.md`
-   - Set the new contract's `Supersedes` field to the renamed file path
-   - If no prior contract exists, set `Supersedes` to "None"
-5. Write `contract.md` using `references/contract-template.md`
-6. Use `AskUserQuestion` to get approval:
+   - Check if `./docs/ideation/{project-name}/contract.html` already exists
+   - If it does, read it, extract the Created date from the meta line, and rename it to `contract-{created-date}.html`
+   - Also rename any sibling `contract.md` to `contract-{created-date}.md` so both formats stay in sync
+   - Set the new contract's Supersedes link to the renamed HTML file path
+   - If no prior contract exists, omit the Supersedes link
+5. Read `references/html-guide.md` for the full component library and design tokens
+6. Read `references/contract-template.html` for the HTML structure
+7. Write `contract.html` following the template structure with ALL CSS and JS inlined
+8. After writing, open in browser: run `open ./docs/ideation/{project-name}/contract.html` (macOS) or `xdg-open` (Linux)
+9. Use `AskUserQuestion` to get approval:
 
 ```
-Question: "Does this contract accurately capture your intent?"
+Question: "Does this contract accurately capture your intent? (View it in your browser)"
 Options:
 - "Approved" - Contract is accurate, proceed
 - "Needs changes" - Some parts need revision
@@ -51,7 +55,7 @@ Options:
 - "Start over" - Fundamentally off track, re-interview
 ```
 
-**If not approved:** Revise based on feedback. If feedback reveals a fundamental misunderstanding, return to the interview loop. Otherwise edit `contract.md` directly and re-present. Iterate until approved.
+**If not approved:** Revise based on feedback. If feedback reveals a fundamental misunderstanding, return to the interview loop. Otherwise re-write the HTML file and re-open in browser. Iterate until approved.
 
 **Do not proceed until contract is explicitly approved.**
 
@@ -59,9 +63,9 @@ Options:
 
 <supporting-info>
 
-## Phase 4: Phasing & Specification
+## Phase 4: Phasing & Specification (HTML)
 
-After contract is approved, determine phases and generate specs. PRDs are optional.
+After contract is approved, determine phases and generate HTML specs. PRDs are optional.
 
 ### 4.1 Choose Workflow
 
@@ -78,7 +82,7 @@ Options:
 
 Analyze the contract and break scope into logical implementation phases.
 
-**Small-project shortcut:** If the scope is small enough to implement in a single phase (1-3 components, touches fewer than ~10 files), skip phasing entirely. Generate a single `spec.md` (no phase number needed) and proceed directly to handoff. Don't force structure where simplicity suffices.
+**Small-project shortcut:** If the scope is small enough to implement in a single phase (1-3 components, touches fewer than ~10 files), skip phasing entirely. Generate a single `spec.html` (no phase number needed) and proceed directly to handoff. Don't force structure where simplicity suffices.
 
 **Phasing criteria** (for multi-phase projects):
 
@@ -97,7 +101,7 @@ Typical phasing:
 
 ### 4.3 Generate PRDs (only if user chose "PRDs then specs")
 
-For each phase, generate `prd-phase-{n}.md` using `references/prd-template.md`.
+For each phase, read `references/prd-template.html` and `references/html-guide.md`, then generate `prd-phase-{n}.html`.
 
 Include:
 
@@ -108,7 +112,7 @@ Include:
 - Dependencies (prerequisites and outputs)
 - Acceptance criteria
 
-Present all PRDs for review. Use `AskUserQuestion`:
+Open each PRD in the browser after writing. Present all PRDs for review via `AskUserQuestion`:
 
 ```
 Question: "Do these PRD phases look correct?"
@@ -121,22 +125,22 @@ Options:
 
 Iterate until user explicitly approves.
 
-### 4.4 Generate Implementation Specs
+### 4.4 Generate Implementation Specs (HTML)
 
-Generate specs using `references/spec-template.md`. Create spec files lazily — only when a phase's details are resolved.
+Generate specs using `references/spec-template.html` and `references/html-guide.md`. Create spec files lazily — only when a phase's details are resolved.
 
 #### Standard phases (each is unique)
 
-For each phase, generate a full `spec-phase-{n}.md` with:
+For each phase, generate a full `spec-phase-{n}.html` with:
 
-- Technical approach
-- File changes (new and modified)
-- Implementation details with code patterns
-- Testing requirements
-- Error handling
-- Validation commands
-- Feedback strategy (top-level inner-loop command and playground type)
-- Per-component feedback loops (where applicable)
+- **Navigation sidebar** — sticky nav linking to each section
+- **Technical approach** — high-level strategy
+- **Feedback strategy** — three-card layout: inner-loop command, playground, rationale
+- **File changes** — table with new/modified/deleted badges
+- **Implementation details** — collapsible per-component sections, each with a feedback loop card (playground → experiment → check command)
+- **Testing requirements** — table of test files and coverage
+- **Failure modes** — collapsible table with component, failure, trigger, impact, mitigation columns
+- **Validation commands** — code block with copy button
 
 **Reference existing code:** When the interview's codebase exploration identified relevant patterns, include "Pattern to follow: `path/to/similar/file.ts`" in the spec's implementation details.
 
@@ -144,71 +148,21 @@ For each phase, generate a full `spec-phase-{n}.md` with:
 
 **Naming failure modes:** For each non-trivial component, ask: "How would this fail?" Fill in the spec's Failure Modes table with named failures, data shadow paths (nil, empty, stale data), and edge cases (concurrent access, oversized input, missing permissions). Trivial components (config, types, constants) skip failure mode enumeration.
 
+**After writing each spec:** Open in browser via `open {filepath}`.
+
 #### Repeatable phases (3+ phases follow the same pattern)
 
 When multiple phases share the same structure (e.g., "add support for {SDK}"), avoid generating N nearly-identical full specs. Instead:
 
-1. **Generate one full template spec** — `spec-template-{pattern-name}.md` — with detailed implementation steps, using placeholders for the variable parts.
+1. **Generate one full template spec** — `spec-template-{pattern-name}.html` — with detailed implementation steps, using placeholders for the variable parts.
 
-2. **Generate lightweight per-phase delta files** — `spec-phase-{n}.md` — containing only:
+2. **Generate lightweight per-phase delta files** — `spec-phase-{n}.html` — containing only:
    - Phase-specific inputs (e.g., language name, package manager, framework)
    - Deviations from the template (what's different about this phase)
    - Any phase-specific concerns or edge cases
-   - Reference to the template: "Follow `spec-template-{pattern-name}.md` with the inputs below"
+   - Reference to the template: "Follow `spec-template-{pattern-name}.html` with the inputs below"
 
-**Example for SDK integrations:**
-
-`spec-template-sdk-integration.md`:
-
-```markdown
-# SDK Integration Template
-
-## Pattern
-
-For each SDK, create:
-
-1. `src/{language}/{language}-installer-agent.ts` — FrameworkConfig following existing pattern
-2. `skills/workos-{sdk-name}/SKILL.md` — Agent skill fetching SDK README
-3. `tests/fixtures/{language}/{framework}-example/` — Minimal project fixture
-4. `tests/evals/graders/{language}.grader.ts` — Extending BaseGrader
-
-## Implementation Details
-
-{Detailed steps with {placeholders} for variable parts}
-
-## Validation
-
-{Common validation steps}
-```
-
-`spec-phase-5.md`:
-
-```markdown
-# Spec: Ruby SDK (workos-ruby)
-
-**Template**: ./spec-template-sdk-integration.md
-
-## Inputs
-
-- Language: Ruby
-- Framework: Rails
-- Package manager: Bundler (`bundle add`)
-- Manifest file: Gemfile
-- SDK package: workos
-- Detection: `rails` gem in Gemfile or `config/routes.rb` exists
-
-## Deviations from template
-
-- Rails has strong conventions — files go in specific locations
-- Initializer pattern: `config/initializers/workos.rb`
-- Env vars: `.env` with dotenv-rails, or Rails credentials
-
-## Phase-specific concerns
-
-- CI needs Ruby 3.x installed for eval fixtures
-```
-
-### 4.5 Present Phases for Review
+### 4.5 Present Specs for Review
 
 Present the phase breakdown and specs for user approval before proceeding to handoff.
 
@@ -223,7 +177,7 @@ If Weak, fix the gaps first. Don't present a spec without feedback loops for its
 Use `AskUserQuestion`:
 
 ```
-Question: "Do these specs look correct?"
+Question: "Do these specs look correct? (Review them in your browser)"
 Options:
 - "Approved" - Specs look good, proceed to execution handoff
 - "Adjust approach" - Implementation strategy needs changes
@@ -235,7 +189,7 @@ If not approved, revise the relevant specs based on feedback and re-present. Ite
 
 ## Phase 5: Execution Handoff
 
-After specs are generated, analyze orchestration options and hand off for implementation.
+After specs are approved, update the contract HTML with the execution plan and auto-generate Markdown specs for `/execute-spec`.
 
 ### 5.1 Analyze Orchestration Strategy
 
@@ -258,17 +212,17 @@ Analyze the phase dependency graph to determine the best execution strategy.
 | 2+ independent phases         | **Agent team** — lead orchestrates teammates in parallel                      |
 | Mixed dependencies            | **Hybrid** — sequential for dependent chain, agent team for independent group |
 
-### 5.2 Write Execution Plan to Contract
+### 5.2 Update Contract HTML with Execution Plan
 
-Append the `## Execution Plan` section to the contract file (`./docs/ideation/{project-name}/contract.md`). This makes the contract fully self-contained — someone can pick it up cold and know exactly how to execute.
+Read the existing `contract.html` and update the Execution Plan tab panel. This makes the contract fully self-contained — someone can pick it up cold and know exactly how to execute.
 
-Use the Execution Plan section from the contract template. Fill in:
+1. **SVG Dependency Graph** — generate inline SVG using the dep-graph component from `references/html-guide.md`. Vertical flow for sequential, horizontal spread for parallel phases at the same depth.
 
-1. **Dependency Graph** — ASCII art showing which phases block which. Keep it simple.
-2. **Execution Steps** — ordered list with the exact `/execute-spec` commands. Mark which are sequential vs parallel.
-3. **Agent Team Prompt** — only if 2+ phases are parallelizable. Ready-to-paste prompt for delegate mode. **Omit this subsection entirely** for fully sequential projects.
+2. **Execution Steps** — code blocks with copy buttons for each `/execute-spec` command. Mark which are sequential vs parallel.
 
-**Shared file detection:** Before writing the agent team prompt, scan spec files' "Modified Files" sections. If multiple specs modify the same files, include a coordination note in the prompt:
+3. **Agent Team Prompt** — only if 2+ phases are parallelizable. Place in a collapsible section with a copy button. **Omit this subsection entirely** for fully sequential projects.
+
+**Shared file detection:** Before writing the agent team prompt, scan spec files' "Modified Files" sections. If multiple specs modify the same files, include a coordination note:
 
 ```
 Coordinate on shared files ({list}) to avoid merge conflicts —
@@ -277,18 +231,38 @@ only one teammate should modify a shared file at a time.
 
 **Batching:** If more than 5 parallelizable phases, note in the execution steps to start with the highest-priority batch first.
 
-### 5.3 Present Handoff Summary
+Re-open the contract in the browser after updating.
 
-After writing the execution plan, present a brief conversational summary.
+### 5.3 Auto-generate MD Specs for Execution
+
+For each HTML spec written, also generate a corresponding Markdown spec file (`spec-phase-{n}.md`) using `references/spec-template.md`. Extract the same content from the HTML spec — technical approach, file changes, implementation details, testing requirements, feedback strategy, failure modes, validation commands — but in plain Markdown format.
+
+These MD specs are for `/execute-spec` consumption only. The HTML specs are the primary artifacts for human review.
+
+Also generate `contract.md` from `references/contract-template.md` with the same content as `contract.html` — needed for execute-spec lineage detection. Include the Execution Plan section.
+
+If repeatable phases produced a `spec-template-{pattern}.html`, also generate a matching `spec-template-{pattern}.md`.
+
+If PRDs were generated, also generate matching `prd-phase-{n}.md` files from `references/prd-template.md`.
+
+Do **not** open the MD files in the browser — they are machine-consumable only.
+
+### 5.4 Present Handoff Summary
+
+After updating the contract and generating MD specs, present a brief conversational summary.
 
 **Always include:**
 
 ```
-Ideation complete. Artifacts written to `./docs/ideation/{project-name}/`.
+Ideation complete. Interactive artifacts written to `./docs/ideation/{project-name}/`.
 
-The contract includes the full execution plan — dependency graph,
-commands, and agent team prompt (if parallel). Open `contract.md`
-to pick up implementation from any session.
+Open contract.html in your browser to review the full plan — dependency graph,
+execution commands, and agent team prompt (if parallel) are all in the
+Execution Plan tab.
+
+Markdown specs (spec-phase-*.md) were also generated for /execute-spec
+compatibility — these are machine-consumable only; the HTML artifacts are
+for human review.
 ```
 
 **Then show the first step** — either the first `/execute-spec` command for sequential execution, or a pointer to the agent team prompt in the contract for parallel execution.
@@ -296,7 +270,7 @@ to pick up implementation from any session.
 **Agent team context** (include when the execution plan has an agent team prompt):
 
 ```
-The agent team prompt is in the contract's Execution Plan section.
+The agent team prompt is in the contract's Execution Plan tab.
 To use it: start a new Claude Code session, enter delegate mode
 (Shift+Tab), and paste the prompt from the contract.
 ```
@@ -317,7 +291,7 @@ Ensure agent teams are enabled in `.claude/settings.json` or `~/.claude/settings
 }
 ```
 
-### 5.4 Why Fresh Sessions?
+### 5.5 Why Fresh Sessions?
 
 - Ideation consumes significant context (contract, specs, exploration)
 - Execution benefits from clean context focused on the spec
@@ -332,12 +306,17 @@ Ensure agent teams are enabled in `.claude/settings.json` or `~/.claude/settings
 All artifacts written to `./docs/ideation/{project-name}/`:
 
 ```
-contract.md                        # Lean contract (problem, goals, success, scope)
-prd-phase-1.md                     # Phase 1 requirements (only if PRDs chosen)
+contract.html                      # Interactive contract (primary, for review)
+contract.md                        # Plain contract (for execute-spec lineage)
+prd-phase-1.html                   # Phase 1 requirements (only if PRDs chosen)
+prd-phase-1.md                     # PRD MD (only if PRDs chosen)
 ...
-spec-phase-1.md                    # Phase 1 implementation spec (always full)
-spec-template-{pattern}.md         # Shared template for repeatable phases (if applicable)
-spec-phase-{n}.md                  # Per-phase delta referencing template (if repeatable)
+spec-phase-1.html                  # Interactive spec (primary, for review)
+spec-phase-1.md                    # Plain spec (for execute-spec)
+spec-template-{pattern}.html       # Shared template for repeatable phases (if applicable)
+spec-template-{pattern}.md         # MD version of repeatable template (if applicable)
+spec-phase-{n}.html                # Per-phase delta or full HTML spec
+spec-phase-{n}.md                  # Per-phase delta or full MD spec
 ...
 ```
 
@@ -350,19 +329,29 @@ spec-phase-{n}.md                  # Per-phase delta referencing template (if re
 - `${CLAUDE_PLUGIN_ROOT}/references/feedback-loop-guide.md` - Component-type mapping and design criteria for spec feedback loops
 - `${CLAUDE_PLUGIN_ROOT}/references/workflow-example.md` - End-to-end workflow walkthrough
 
-### Skill References (MD-specific)
+### Skill References
 
-- `references/contract-template.md` - Template for lean contract document
-- `references/prd-template.md` - Template for phased PRD documents
-- `references/spec-template.md` - Template for implementation specs
+HTML (primary, for human review):
+
+- `references/html-guide.md` - HTML component library, design tokens, and constraints
+- `references/contract-template.html` - Interactive HTML contract template
+- `references/spec-template.html` - Interactive HTML spec template with sidebar navigation
+- `references/prd-template.html` - Styled HTML PRD template
+
+Markdown (auto-generated at handoff for `/execute-spec`):
+
+- `references/contract-template.md` - Plain contract template
+- `references/prd-template.md` - Plain PRD template
+- `references/spec-template.md` - Plain spec template
 
 ### Examples
 
 Completed artifact examples for reference when generating output:
 
-- `examples/contract-example.md` - A filled-in contract for a bookmark feature
-- `examples/prd-example.md` - A filled-in PRD for the same feature (Phase 1)
-- `examples/spec-example.md` - A filled-in spec for the same feature
+- `examples/contract-example.md` - A filled-in MD contract for a bookmark feature
+- `examples/prd-example.md` - A filled-in MD PRD for the same feature (Phase 1)
+- `examples/spec-example.md` - A filled-in MD spec for the same feature
+- `examples/spec-example.html` - A filled-in interactive HTML spec for reference
 
 When generating artifacts, reference these examples for tone, structure, and level of detail.
 
@@ -373,8 +362,12 @@ When generating artifacts, reference these examples for tone, structure, and lev
 - **Explore the codebase during the interview** — don't ask what you can look up.
 - **Score confidence conservatively.** When uncertain, score lower.
 - Never skip the confidence check. Don't assume understanding.
-- Always write artifacts to files. Don't just display them.
+- **Read `references/html-guide.md` before writing any HTML artifact.** Follow the component library exactly.
+- **ALL CSS and JS must be inlined.** No external links. Files must work from `file://`.
+- **Open each HTML artifact in the browser** after writing it. Use `open` (macOS) or `xdg-open` (Linux).
+- **Dark mode support is required.** Use `prefers-color-scheme` media query.
 - **Create files lazily** — only when decisions are locked, not speculatively.
+- **MD specs are auto-generated at handoff** (Phase 5.3). They mirror the HTML content and exist solely for `/execute-spec` compatibility. Never present them as the primary artifact.
 - Each phase should be independently valuable.
 - Specs should be detailed enough to implement without re-reading PRDs or the contract.
 - Keep contracts lean. Heavy docs slow iteration.

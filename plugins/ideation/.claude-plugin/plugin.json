@@ -1,7 +1,7 @@
 {
   "name": "ideation",
   "version": "0.12.0",
-  "description": "Transform brain dumps into structured implementation artifacts: contracts, phased PRDs, and implementation specs. Supports Markdown output (/ideation) and interactive HTML output (/ideation:visual).",
+  "description": "Transform brain dumps into structured implementation artifacts: interactive HTML contracts, phased PRDs, and implementation specs (tabs, confidence meter, SVG dependency graphs, copy buttons). Auto-generates Markdown specs at handoff for /execute-spec compatibility.",
   "author": {
     "name": "Nick Nisi",
     "email": "nick@nisi.org"

@@ -1,6 +1,6 @@
 # HTML Design System Guide
 
-This is the canonical reference for **every** HTML artifact produced by the `ideation-visual` skill. Read this file **before** generating any HTML. Every contract, spec, or PRD must use the exact tokens, components, and structure defined here.
+This is the canonical reference for **every** HTML artifact produced by the `ideation` skill. Read this file **before** generating any HTML. Every contract, spec, or PRD must use the exact tokens, components, and structure defined here.
 
 ## Rules (non-negotiable)
 
