@@ -27,13 +27,30 @@ Read and follow `${CLAUDE_PLUGIN_ROOT}/references/interview-engine.md` for the c
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/confidence-rubric.md` for the detailed scoring criteria.
 
+## Phase 2.5: Exploration Visualization
+
+After the interview engine completes and before generating the contract, produce a visual context map of everything discovered during codebase exploration. This helps the user see what the agent found and verify the exploration was thorough.
+
+1. Create output directory `./docs/ideation/{project-name}/` **only now**
+2. Write `_exploration.html` using `references/html-guide.md` components:
+   - **Project overview** — language, framework, key directories, package manager
+   - **File tree** — collapsible tree of relevant directories explored (not the entire repo — just the areas related to the brain dump's scope)
+   - **Pattern cards** — each existing pattern found gets a card: file path, what it does, why it's relevant to this project. These are the "Pattern to follow" references that will appear in specs later.
+   - **Infrastructure badges** — test runner, dev server, CI, linting, type checking — what exists and where
+   - **Conventions found** — naming, file organization, error handling patterns, import style
+   - **Related code** — files and functions most relevant to the proposed feature, with brief descriptions
+3. Open in browser: `open ./docs/ideation/{project-name}/_exploration.html`
+4. Present briefly: "I've mapped out the relevant parts of your codebase — take a look in your browser. Moving on to the contract."
+
+This visualization is a reference artifact — it stays in the project directory and is useful when reviewing specs later. Do not ask for approval; it's informational, not a decision gate. If the interview didn't involve codebase exploration (e.g., a greenfield project with no existing code), skip this step.
+
 ## Phase 3: Contract (HTML)
 
-When confidence ≥ 95%, generate the contract as an interactive HTML document. **Not before.** Create artifacts lazily — only when you have something to write.
+When confidence ≥ 95%, generate the contract as an interactive HTML document. **Not before.**
 
 1. Use `AskUserQuestion` to confirm project name if not obvious from context
 2. Convert to kebab-case for directory name
-3. Create output directory `./docs/ideation/{project-name}/` **only now** — not during intake or exploration
+3. The output directory `./docs/ideation/{project-name}/` should already exist from Phase 2.5. If it doesn't (greenfield project with no exploration), create it now.
 4. **Check for prior contract (lineage detection)**:
    - Check if `./docs/ideation/{project-name}/contract.html` already exists
    - If it does, read it, extract the Created date from the meta line, and rename it to `contract-{created-date}.html`
@@ -43,17 +60,25 @@ When confidence ≥ 95%, generate the contract as an interactive HTML document. 
 5. Read `references/html-guide.md` for the full component library and design tokens
 6. Read `references/contract-template.html` for the HTML structure
 7. Write `contract.html` following the template structure with ALL CSS and JS inlined
-8. After writing, open in browser: run `open ./docs/ideation/{project-name}/contract.html` (macOS) or `xdg-open` (Linux)
-9. Use `AskUserQuestion` to get approval:
+8. **Include a scope slider** in the Scope tab. Define 3 scope tiers based on the interview findings:
+   - **MVP** — minimum viable version, core functionality only
+   - **Full** — everything in the contract's "In Scope" section
+   - **Stretch** — full scope plus items from "Future Considerations" that could be pulled in
+   For each tier, list what's included and excluded. Use a range input (`<input type="range">`) with 3 stops that reveals/hides scope items as the user drags. The slider is a visual aid — the user sees what each tier includes, then tells you in the terminal which tier to target. This replaces the static in-scope/out-of-scope lists for the Scope tab.
+9. After writing, open in browser: run `open ./docs/ideation/{project-name}/contract.html` (macOS) or `xdg-open` (Linux)
+10. Use `AskUserQuestion` to get approval — include the scope tier question:
 
 ```
-Question: "Does this contract accurately capture your intent? (View it in your browser)"
+Question: "Does this contract capture your intent? Use the scope slider in your browser to pick a tier."
 Options:
-- "Approved" - Contract is accurate, proceed
-- "Needs changes" - Some parts need revision
-- "Missing scope" - Important items are not captured
+- "Approved — MVP scope" - Ship the minimum viable version first
+- "Approved — Full scope" - Build everything in the In Scope list
+- "Approved — Stretch scope" - Include Future Considerations items too
+- "Needs changes" - Some parts need revision before approving
 - "Start over" - Fundamentally off track, re-interview
 ```
+
+The approved scope tier determines what goes into specs. Items outside the chosen tier move to "Future Considerations" in the contract.
 
 **If not approved:** Revise based on feedback. If feedback reveals a fundamental misunderstanding, return to the interview loop. Otherwise re-write the HTML file and re-open in browser. Iterate until approved.
 
@@ -306,7 +331,8 @@ Ensure agent teams are enabled in `.claude/settings.json` or `~/.claude/settings
 All artifacts written to `./docs/ideation/{project-name}/`:
 
 ```
-contract.html                      # Interactive contract (primary, for review)
+_exploration.html                  # Codebase context map (if exploration occurred)
+contract.html                      # Interactive contract with scope slider (primary, for review)
 contract.md                        # Plain contract (for execute-spec lineage)
 prd-phase-1.html                   # Phase 1 requirements (only if PRDs chosen)
 prd-phase-1.md                     # PRD MD (only if PRDs chosen)
