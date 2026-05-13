@@ -46,7 +46,7 @@ This visualization is a reference artifact — it stays in the project directory
 
 ## Phase 3: Contract (HTML)
 
-When confidence ≥ 95%, generate the contract as an interactive HTML document. **Not before.**
+When confidence ≥ 95%, generate the contract as an interactive HTML document. **Not before.** Output is `.html`, NOT `.md`. Every artifact from this point forward is HTML.
 
 1. Use `AskUserQuestion` to confirm project name if not obvious from context
 2. Convert to kebab-case for directory name
@@ -57,9 +57,12 @@ When confidence ≥ 95%, generate the contract as an interactive HTML document. 
    - Also rename any sibling `contract.md` to `contract-{created-date}.md` so both formats stay in sync
    - Set the new contract's Supersedes link to the renamed HTML file path
    - If no prior contract exists, omit the Supersedes link
-5. Read `references/html-guide.md` for the full component library and design tokens
-6. Read `references/contract-template.html` for the HTML structure
-7. Write `contract.html` following the template structure with ALL CSS and JS inlined
+5. **MANDATORY: Use `Read` tool to read `references/html-guide.md` now.** This file contains all CSS design tokens, component patterns, and the document skeleton. You cannot generate correct HTML without it. Do not skip this step.
+6. **MANDATORY: Use `Read` tool to read `references/contract-template.html` now.** This is the HTML structure to follow. Fill in the `{placeholder}` values with contract content.
+7. Write `contract.html` following the template structure with ALL CSS and JS inlined. The file must be a complete, self-contained HTML document that opens correctly in a browser from `file://`.
+
+**The output is HTML, not Markdown.** If you find yourself writing `# Heading` or `- bullet` to a file, stop — you are writing Markdown. Write `<h1>Heading</h1>` and `<li>bullet</li>` instead. Every artifact file ends in `.html`.
+
 8. **Include a scope slider** in the Scope tab. Define 3 scope tiers based on the interview findings:
    - **MVP** — minimum viable version, core functionality only
    - **Full** — everything in the contract's "In Scope" section
@@ -126,7 +129,7 @@ Typical phasing:
 
 ### 4.3 Generate PRDs (only if user chose "PRDs then specs")
 
-For each phase, read `references/prd-template.html` and `references/html-guide.md`, then generate `prd-phase-{n}.html`.
+For each phase, use the `Read` tool to read `references/prd-template.html`, then generate `prd-phase-{n}.html` (NOT `.md`). The html-guide.md should already be in context from Phase 3.
 
 Include:
 
@@ -152,7 +155,7 @@ Iterate until user explicitly approves.
 
 ### 4.4 Generate Implementation Specs (HTML)
 
-Generate specs using `references/spec-template.html` and `references/html-guide.md`. Create spec files lazily — only when a phase's details are resolved.
+Use the `Read` tool to read `references/spec-template.html`, then generate `spec-phase-{n}.html` (NOT `.md`). Create spec files lazily — only when a phase's details are resolved. Remember: output is HTML, not Markdown.
 
 #### Standard phases (each is unique)
 
@@ -379,12 +382,12 @@ When a decision point has 2-3 valid approaches with meaningfully different trade
 
 ## Important Notes
 
+- **ALL artifacts are HTML files (.html), not Markdown (.md).** This is the single most important rule. If you catch yourself writing Markdown syntax to a file, stop and write HTML instead. The only `.md` files are auto-generated at Phase 5.3.
+- **Use the `Read` tool to load templates before writing.** You MUST read `references/html-guide.md` before Phase 3 and read each HTML template before generating its artifact. Do not attempt to write HTML from memory — use the templates.
 - **Use `AskUserQuestion` for all questions and approvals.** One question at a time, with your recommended answer.
 - **Score confidence conservatively.** When uncertain, score lower. No fixed question limit.
-- **Read `references/html-guide.md` once before Phase 3.** Do not re-read for each artifact. All HTML must be self-contained: CSS/JS inlined, no external links, works from `file://`, dark mode via `prefers-color-scheme`.
 - **Open each HTML artifact in the browser** after writing. Use `open` (macOS) or `xdg-open` (Linux).
 - **Create files lazily.** Only when decisions are locked, not speculatively.
-- **MD specs are auto-generated at handoff** (Phase 5.3) for `/execute-spec` only. Never present MD as the primary artifact.
 - **Reference existing code patterns** in specs — "Pattern to follow" with real file paths.
 - **Small projects don't need phases.** 1-3 components → single spec. Use template + delta for repeatable phases.
 - **Specs must stand alone** — detailed enough to implement without re-reading PRDs or the contract.
