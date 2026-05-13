@@ -61,6 +61,8 @@ plugins/{name}/
 
 The sync script auto-discovers plugins and generates `marketplace.json`.
 
+5. Make sure to update the README for that plugin.
+
 ## MCP Servers
 
 ### Custom MCP Server
