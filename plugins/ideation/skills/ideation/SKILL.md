@@ -1,6 +1,6 @@
 ---
 name: ideation
-description: Activate for pre-implementation planning — when the user has a problem, idea, or goal but needs to figure out the shape of the solution before writing code. Covers: organizing messy notes or brain dumps into specs, interviewing the user to clarify requirements, pressure-testing approaches, turning scattered thoughts into structured plans, speccing out features or migrations, and creating design documents. The user's input will typically describe WHAT they want but not have a locked-down HOW — they may say "help me plan," "spec this out," "turn this into a plan," "think through this," "interview me," or simply present unstructured ideas asking for structure. This skill runs a conversational interview, then writes interactive HTML specs and contracts to ./docs/ideation/{project-name}/. Skip this skill when the user already knows exactly what to build and just needs implementation — writing code, fixing bugs, refactoring, explaining code, or generating configs.
+description: Use when the user needs to shape a solution before writing code — brain dumps, scattered ideas, planning features, speccing out migrations, or pressure-testing approaches. Triggers on "help me plan," "spec this out," "think through this," "interview me," or unstructured ideas asking for structure. Runs a conversational interview, then writes interactive HTML artifacts to ./docs/ideation/{project-name}/. Skip for well-defined implementation tasks (writing code, fixing bugs, refactoring, explaining code).
 ---
 
 <what-to-do>
@@ -300,29 +300,7 @@ To use it: start a new Claude Code session, enter delegate mode
 (Shift+Tab), and paste the prompt from the contract.
 ```
 
-Agent teams let a single lead session automatically spawn and coordinate multiple teammates — the user starts **one** `claude` session, and the lead handles spawning, task assignment, plan approval, and synthesis. No manual terminal juggling.
-
-**Why delegate mode?** Pressing Shift+Tab restricts the lead to coordination-only tools: spawning teammates, messaging, managing tasks, and approving plans. This prevents the lead from implementing tasks itself and ensures work is distributed to teammates.
-
-**Why one session?** The lead automatically spawns each teammate as a separate Claude Code instance. Each teammate gets its own context window, loads project context (CLAUDE.md, MCP servers, skills), and works independently. You interact with the lead and it coordinates everything — use Shift+Up/Down to message individual teammates if needed.
-
-Ensure agent teams are enabled in `.claude/settings.json` or `~/.claude/settings.json`:
-
-```json
-{
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  }
-}
-```
-
-### 5.5 Why Fresh Sessions?
-
-- Ideation consumes significant context (contract, specs, exploration)
-- Execution benefits from clean context focused on the spec
-- Human review between phases catches issues early
-- Each phase is independently committable
-- Each session creates granular implementation tasks scoped to that phase
+For background on agent teams and delegate mode, see `references/agent-team-handoff.md`.
 
 </supporting-info>
 
@@ -401,21 +379,12 @@ When a decision point has 2-3 valid approaches with meaningfully different trade
 
 ## Important Notes
 
-- **ALWAYS use `AskUserQuestion` tool for questions and approvals.** Never ask questions in plain text.
-- **One question at a time.** Provide your recommended answer with each question.
-- **Explore the codebase during the interview** — don't ask what you can look up.
-- **Score confidence conservatively.** When uncertain, score lower.
-- Never skip the confidence check. Don't assume understanding.
-- **Read `references/html-guide.md` once before Phase 3.** It stays in context for subsequent artifacts — do not re-read it for each one. Follow the component library exactly.
-- **ALL CSS and JS must be inlined.** No external links. Files must work from `file://`.
-- **Open each HTML artifact in the browser** after writing it. Use `open` (macOS) or `xdg-open` (Linux).
-- **Dark mode support is required.** Use `prefers-color-scheme` media query.
-- **Create files lazily** — only when decisions are locked, not speculatively.
-- **MD specs are auto-generated at handoff** (Phase 5.3). They mirror the HTML content and exist solely for `/execute-spec` compatibility. Never present them as the primary artifact.
-- Each phase should be independently valuable.
-- Specs should be detailed enough to implement without re-reading PRDs or the contract.
-- Keep contracts lean. Heavy docs slow iteration.
+- **Use `AskUserQuestion` for all questions and approvals.** One question at a time, with your recommended answer.
+- **Score confidence conservatively.** When uncertain, score lower. No fixed question limit.
+- **Read `references/html-guide.md` once before Phase 3.** Do not re-read for each artifact. All HTML must be self-contained: CSS/JS inlined, no external links, works from `file://`, dark mode via `prefers-color-scheme`.
+- **Open each HTML artifact in the browser** after writing. Use `open` (macOS) or `xdg-open` (Linux).
+- **Create files lazily.** Only when decisions are locked, not speculatively.
+- **MD specs are auto-generated at handoff** (Phase 5.3) for `/execute-spec` only. Never present MD as the primary artifact.
 - **Reference existing code patterns** in specs — "Pattern to follow" with real file paths.
-- **Use template + delta** for repeatable phases — don't generate N identical specs.
-- **Small projects don't need phases.** If scope is 1-3 components, generate a single spec.
-- **No question limit.** Keep interviewing until shared understanding. The user can say "stop" or "wrap up" to end early.
+- **Small projects don't need phases.** 1-3 components → single spec. Use template + delta for repeatable phases.
+- **Specs must stand alone** — detailed enough to implement without re-reading PRDs or the contract.
