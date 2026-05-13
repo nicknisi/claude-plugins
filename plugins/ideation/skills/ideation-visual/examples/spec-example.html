@@ -1,0 +1,1014 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Spec: Bookmark Feature — Phase 1</title>
+    <style>
+      /* === DESIGN TOKENS === */
+      :root {
+        /* Color — light mode */
+        --color-bg: #ffffff;
+        --color-surface: #f8f9fa;
+        --color-border: #dee2e6;
+        --color-text: #212529;
+        --color-text-muted: #6c757d;
+
+        --color-accent: #4361ee;
+        --color-accent-bg: #eef0ff;
+
+        --color-success: #2d6a4f;
+        --color-success-bg: #d8f3dc;
+
+        --color-danger: #9b2226;
+        --color-danger-bg: #fde8e8;
+
+        --color-warning: #b45309;
+        --color-warning-bg: #fef3c7;
+
+        /* Typography */
+        --font-sans:
+          system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+          sans-serif;
+        --font-mono:
+          "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", Menlo,
+          Consolas, monospace;
+
+        /* Spacing scale */
+        --space-1: 4px;
+        --space-2: 8px;
+        --space-3: 16px;
+        --space-4: 24px;
+        --space-5: 32px;
+        --space-6: 48px;
+
+        /* Radius */
+        --radius-sm: 4px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+
+        /* Layout */
+        --max-width: 1200px;
+        --sidebar-width: 220px;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        [data-theme="auto"] {
+          --color-bg: #1a1a2e;
+          --color-surface: #16213e;
+          --color-border: #2a2a4a;
+          --color-text: #e0e0e0;
+          --color-text-muted: #a0a0b0;
+
+          --color-accent: #6c83f7;
+          --color-accent-bg: #1e2a4a;
+
+          --color-success: #4ade80;
+          --color-success-bg: #14352a;
+
+          --color-danger: #f87171;
+          --color-danger-bg: #3a1818;
+
+          --color-warning: #fbbf24;
+          --color-warning-bg: #3a2a08;
+        }
+      }
+
+      /* === LAYOUT === */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font-sans);
+        font-size: 16px;
+        line-height: 1.6;
+        color: var(--color-text);
+        background: var(--color-bg);
+        max-width: var(--max-width);
+        margin: 0 auto;
+        padding: var(--space-5) var(--space-4);
+      }
+
+      .doc-header {
+        border-bottom: 1px solid var(--color-border);
+        padding-bottom: var(--space-3);
+        margin-bottom: var(--space-5);
+      }
+
+      .doc-header h1 {
+        margin: 0 0 var(--space-1) 0;
+        font-size: 28px;
+        line-height: 1.25;
+      }
+
+      .doc-meta {
+        color: var(--color-text-muted);
+        font-size: 14px;
+        margin: 0;
+      }
+
+      .doc-meta a {
+        color: var(--color-accent);
+      }
+
+      .doc-content h2 {
+        margin-top: var(--space-6);
+        padding-bottom: var(--space-2);
+        border-bottom: 1px solid var(--color-border);
+        font-size: 22px;
+        scroll-margin-top: var(--space-4);
+      }
+
+      .doc-content h3 {
+        margin-top: var(--space-5);
+        font-size: 18px;
+      }
+
+      .doc-content h4 {
+        margin-top: var(--space-4);
+        font-size: 15px;
+      }
+
+      .doc-content p,
+      .doc-content li {
+        font-size: 15px;
+      }
+
+      a {
+        color: var(--color-accent);
+      }
+
+      /* === SPEC LAYOUT (sidebar + main) === */
+      .spec-layout {
+        display: flex;
+        gap: var(--space-5);
+        align-items: flex-start;
+      }
+
+      .spec-nav {
+        position: sticky;
+        top: var(--space-4);
+        flex: 0 0 var(--sidebar-width);
+        width: var(--sidebar-width);
+        align-self: flex-start;
+        font-size: 14px;
+      }
+
+      .spec-nav-title {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--color-text-muted);
+        font-weight: 600;
+        margin: 0 0 var(--space-2) 0;
+        padding-left: var(--space-3);
+      }
+
+      .spec-nav ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        border-left: 1px solid var(--color-border);
+      }
+
+      .spec-nav li {
+        margin: 0;
+      }
+
+      .spec-nav a {
+        display: block;
+        padding: var(--space-1) var(--space-3);
+        color: var(--color-text-muted);
+        text-decoration: none;
+        border-left: 2px solid transparent;
+        margin-left: -1px;
+        transition:
+          color 0.15s ease,
+          border-color 0.15s ease;
+      }
+
+      .spec-nav a:hover,
+      .spec-nav a:focus-visible {
+        color: var(--color-accent);
+        border-left-color: var(--color-accent);
+        outline: none;
+      }
+
+      .spec-main {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .spec-main > section:first-child > h2 {
+        margin-top: 0;
+      }
+
+      /* === COMPONENTS === */
+
+      /* Collapsible */
+      .collapsible {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        margin: var(--space-3) 0;
+        overflow: hidden;
+      }
+
+      .collapsible > summary {
+        list-style: none;
+        cursor: pointer;
+        padding: var(--space-2) var(--space-3);
+        background: var(--color-surface);
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+      }
+
+      .collapsible > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .collapsible > summary::before {
+        content: "▸";
+        display: inline-block;
+        transition: transform 0.15s ease;
+        color: var(--color-text-muted);
+      }
+
+      .collapsible[open] > summary::before {
+        transform: rotate(90deg);
+      }
+
+      .collapsible > summary:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
+      }
+
+      .collapsible-body {
+        padding: var(--space-3);
+        border-top: 1px solid var(--color-border);
+      }
+
+      /* Tables */
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: var(--space-3) 0;
+        font-size: 14px;
+      }
+
+      .data-table th {
+        text-align: left;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 12px;
+        color: var(--color-text-muted);
+        font-weight: 600;
+        padding: var(--space-2) var(--space-3);
+        border-bottom: 2px solid var(--color-border);
+      }
+
+      .data-table td {
+        padding: var(--space-2) var(--space-3);
+        border-bottom: 1px solid var(--color-border);
+        vertical-align: top;
+      }
+
+      .data-table tbody tr:hover {
+        background: var(--color-surface);
+      }
+
+      .data-table code {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        background: var(--color-surface);
+        padding: 1px var(--space-1);
+        border-radius: var(--radius-sm);
+      }
+
+      /* File badges */
+      .file-new,
+      .file-mod,
+      .file-del {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        padding: 2px var(--space-2);
+        border-radius: var(--radius-sm);
+        border: 1px solid;
+        white-space: nowrap;
+      }
+
+      .file-new {
+        background: var(--color-success-bg);
+        color: var(--color-success);
+        border-color: var(--color-success);
+      }
+
+      .file-new::before {
+        content: "+ ";
+        font-weight: 700;
+      }
+
+      .file-mod {
+        background: var(--color-warning-bg);
+        color: var(--color-warning);
+        border-color: var(--color-warning);
+      }
+
+      .file-mod::before {
+        content: "~ ";
+        font-weight: 700;
+      }
+
+      .file-del {
+        background: var(--color-danger-bg);
+        color: var(--color-danger);
+        border-color: var(--color-danger);
+      }
+
+      .file-del::before {
+        content: "− ";
+        font-weight: 700;
+      }
+
+      /* Feedback cards */
+      .feedback-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--space-3);
+        margin: var(--space-4) 0;
+      }
+
+      .feedback-card {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-top: 3px solid var(--color-accent);
+        border-radius: var(--radius-md);
+        padding: var(--space-3);
+      }
+
+      .feedback-card h4 {
+        margin: 0 0 var(--space-2) 0;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--color-text-muted);
+      }
+
+      .feedback-card p {
+        margin: 0 0 var(--space-2) 0;
+        font-size: 14px;
+      }
+
+      .feedback-card code {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        background: var(--color-bg);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        padding: 2px var(--space-2);
+      }
+
+      .feedback-playground {
+        border-top-color: var(--color-accent);
+      }
+      .feedback-experiment {
+        border-top-color: var(--color-warning);
+      }
+      .feedback-check {
+        border-top-color: var(--color-success);
+      }
+
+      /* Inline feedback step (used inside collapsibles for per-component loops) */
+      .feedback-step {
+        background: var(--color-bg);
+        border: 1px solid var(--color-border);
+        border-top: 3px solid var(--color-accent);
+        border-radius: var(--radius-md);
+        padding: var(--space-3);
+      }
+
+      .feedback-step h5 {
+        margin: 0 0 var(--space-1) 0;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--color-text-muted);
+        font-weight: 600;
+      }
+
+      .feedback-step p {
+        margin: 0 0 var(--space-2) 0;
+        font-size: 13px;
+      }
+
+      .feedback-step code {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        padding: 2px var(--space-2);
+      }
+
+      /* Code blocks */
+      .code-block {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        margin: var(--space-3) 0;
+        background: var(--color-surface);
+        overflow: hidden;
+      }
+
+      .code-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-1) var(--space-3);
+        border-bottom: 1px solid var(--color-border);
+        background: var(--color-bg);
+      }
+
+      .code-lang {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--color-text-muted);
+        text-transform: lowercase;
+      }
+
+      .copy-btn {
+        font-family: var(--font-sans);
+        font-size: 12px;
+        padding: var(--space-1) var(--space-2);
+        border: 1px solid var(--color-border);
+        background: var(--color-surface);
+        color: var(--color-text);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+      }
+
+      .copy-btn:hover {
+        background: var(--color-accent-bg);
+        border-color: var(--color-accent);
+        color: var(--color-accent);
+      }
+
+      .copy-btn:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
+      }
+
+      .code-block pre {
+        margin: 0;
+        padding: var(--space-3);
+        overflow-x: auto;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .code-block code {
+        font-family: inherit;
+        color: var(--color-text);
+        background: none;
+        padding: 0;
+      }
+
+      /* Pattern reference */
+      .pattern-ref {
+        font-size: 14px;
+        color: var(--color-text-muted);
+        margin: 0 0 var(--space-3) 0;
+      }
+
+      .pattern-ref code {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        background: var(--color-surface);
+        padding: 2px var(--space-2);
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--color-border);
+        color: var(--color-text);
+      }
+
+      /* === RESPONSIVE === */
+      @media (max-width: 768px) {
+        .spec-layout {
+          flex-direction: column;
+        }
+        .spec-nav {
+          position: static;
+          flex: 1 1 auto;
+          width: 100%;
+        }
+        .feedback-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* === PRINT === */
+      @media print {
+        body {
+          font-size: 11pt;
+          max-width: none;
+          color: #000;
+          background: #fff;
+        }
+
+        .spec-layout {
+          display: block;
+        }
+
+        .spec-nav {
+          display: none;
+        }
+
+        .copy-btn {
+          display: none !important;
+        }
+
+        details {
+          display: block;
+        }
+        details > summary {
+          list-style: none;
+        }
+        details > summary::before {
+          display: none;
+        }
+        details:not([open]) > *:not(summary) {
+          display: block !important;
+        }
+
+        .code-block,
+        .data-table,
+        .feedback-card,
+        .feedback-step {
+          page-break-inside: avoid;
+        }
+
+        a {
+          color: #000;
+          text-decoration: underline;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="doc-header">
+      <h1>Spec: Bookmark Feature — Phase 1</h1>
+      <p class="doc-meta">
+        <a href="./contract-example.html">Contract</a> ·
+        Estimated effort: <strong>M</strong>
+      </p>
+    </header>
+
+    <div class="spec-layout">
+      <nav class="spec-nav" aria-label="Spec sections">
+        <p class="spec-nav-title">On this page</p>
+        <ul>
+          <li><a href="#technical-approach">Technical Approach</a></li>
+          <li><a href="#feedback-strategy">Feedback Strategy</a></li>
+          <li><a href="#file-changes">File Changes</a></li>
+          <li><a href="#implementation">Implementation</a></li>
+          <li><a href="#testing">Testing</a></li>
+          <li><a href="#failure-modes">Failure Modes</a></li>
+          <li><a href="#validation">Validation</a></li>
+        </ul>
+      </nav>
+
+      <main class="spec-main doc-content">
+        <!-- === TECHNICAL APPROACH === -->
+        <section id="technical-approach">
+          <h2>Technical Approach</h2>
+          <p>
+            Phase 1 implements core bookmarking with tag support. The app uses
+            React with a Zustand store and IndexedDB for persistence. We'll add
+            a <code>bookmarks</code> slice to the store, a
+            <code>BookmarkButton</code> component, and a tag management UI.
+            IndexedDB handles offline storage naturally — bookmarked article
+            content is cached locally.
+          </p>
+          <p class="pattern-ref">
+            <strong>Pattern to follow:</strong> the existing "reading history"
+            feature in <code>src/features/history/</code> uses the same store +
+            IndexedDB + component pattern.
+          </p>
+        </section>
+
+        <!-- === FEEDBACK STRATEGY === -->
+        <section id="feedback-strategy">
+          <h2>Feedback Strategy</h2>
+          <p>
+            The bookmark feature is data-layer heavy with a thin UI layer, so
+            the tightest loop runs against the store, not the browser.
+          </p>
+          <div class="feedback-grid">
+            <div class="feedback-card feedback-playground">
+              <h4>Inner-Loop Command</h4>
+              <p>Run the scoped bookmark test suite on every change.</p>
+              <code>pnpm test -- --filter bookmarks</code>
+            </div>
+            <div class="feedback-card feedback-experiment">
+              <h4>Playground</h4>
+              <p>
+                Test suite — most changes are to the Zustand store and
+                IndexedDB integration. Tests run in milliseconds and catch
+                logic errors immediately.
+              </p>
+              <code>vitest --filter bookmarks</code>
+            </div>
+            <div class="feedback-card feedback-check">
+              <h4>Rationale</h4>
+              <p>
+                Data-layer heavy with thin UI. A fast scoped test runner is the
+                tightest feedback loop for these changes.
+              </p>
+              <code>scoped test runner</code>
+            </div>
+          </div>
+        </section>
+
+        <!-- === FILE CHANGES === -->
+        <section id="file-changes">
+          <h2>File Changes</h2>
+
+          <h3>New Files</h3>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>File</th>
+                <th>Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <span class="file-new"
+                    >src/features/bookmarks/bookmark-store.ts</span
+                  >
+                </td>
+                <td>Zustand store slice for bookmark state</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="file-new"
+                    >src/features/bookmarks/bookmark-db.ts</span
+                  >
+                </td>
+                <td>IndexedDB operations for bookmark persistence</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="file-new"
+                    >src/features/bookmarks/BookmarkButton.tsx</span
+                  >
+                </td>
+                <td>Toggle bookmark on/off for an article</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="file-new"
+                    >src/features/bookmarks/BookmarkList.tsx</span
+                  >
+                </td>
+                <td>List view of all bookmarks with tag filters</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="file-new"
+                    >src/features/bookmarks/TagManager.tsx</span
+                  >
+                </td>
+                <td>Create, rename, delete tags</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="file-new"
+                    >src/features/bookmarks/bookmark-store.spec.ts</span
+                  >
+                </td>
+                <td>Unit tests for store logic</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>Modified Files</h3>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>File</th>
+                <th>Changes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <span class="file-mod"
+                    >src/features/article/ArticleView.tsx</span
+                  >
+                </td>
+                <td>Add <code>BookmarkButton</code> to article header</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="file-mod">src/app/navigation.tsx</span>
+                </td>
+                <td>Add "Bookmarks" link to sidebar</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="file-mod">src/store/index.ts</span>
+                </td>
+                <td>Register bookmark store slice</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- === IMPLEMENTATION DETAILS === -->
+        <section id="implementation">
+          <h2>Implementation Details</h2>
+
+          <details class="collapsible" open>
+            <summary>Bookmark Store</summary>
+            <div class="collapsible-body">
+              <p class="pattern-ref">
+                <strong>Pattern to follow:</strong>
+                <code>src/features/history/history-store.ts</code>
+              </p>
+              <p>
+                Zustand store slice owning bookmark state and tag set, persisted
+                to IndexedDB on every mutation.
+              </p>
+
+              <div class="code-block">
+                <div class="code-header">
+                  <span class="code-lang">typescript</span>
+                  <button
+                    class="copy-btn"
+                    data-copy="bookmark-types"
+                    type="button"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <pre><code id="bookmark-types">interface Bookmark {
+  id: string;
+  articleId: string;
+  title: string;
+  url: string;
+  tags: string[];
+  createdAt: Date;
+  content: string; // Cached for offline
+}
+
+interface BookmarkStore {
+  bookmarks: Map&lt;string, Bookmark&gt;;
+  tags: Set&lt;string&gt;;
+  addBookmark(article: Article): Promise&lt;void&gt;;
+  removeBookmark(articleId: string): Promise&lt;void&gt;;
+  toggleTag(bookmarkId: string, tag: string): void;
+  createTag(name: string): void;
+  deleteTag(name: string): void;
+}</code></pre>
+              </div>
+
+              <h4>Implementation steps</h4>
+              <ol>
+                <li>
+                  Create store with Zustand <code>create()</code> following the
+                  history-store pattern.
+                </li>
+                <li>
+                  Wire IndexedDB persistence via <code>bookmark-db.ts</code>.
+                </li>
+                <li>
+                  Sync to IndexedDB on every mutation (same pattern as
+                  history-store).
+                </li>
+              </ol>
+
+              <h4>Feedback loop</h4>
+              <div class="feedback-grid">
+                <div class="feedback-step feedback-playground">
+                  <h5>Playground</h5>
+                  <p>
+                    Create <code>bookmark-store.spec.ts</code> with a describe
+                    block and one smoke test
+                    (<code>it('initializes with empty bookmarks')</code>) before
+                    writing the store.
+                  </p>
+                  <code>bookmark-store.spec.ts</code>
+                </div>
+                <div class="feedback-step feedback-experiment">
+                  <h5>Experiment</h5>
+                  <p>
+                    Test add/remove with 0, 1, and 100 bookmarks. Test tag
+                    operations: add, remove, rename, delete tag assigned to
+                    bookmarks. Test IndexedDB persistence: add bookmark,
+                    rehydrate store, verify state.
+                  </p>
+                  <code>vary count + tag ops + persistence</code>
+                </div>
+                <div class="feedback-step feedback-check">
+                  <h5>Check Command</h5>
+                  <p>Run the scoped store tests to confirm.</p>
+                  <code>pnpm test -- --filter bookmark-store</code>
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <details class="collapsible">
+            <summary>BookmarkButton Component</summary>
+            <div class="collapsible-body">
+              <p class="pattern-ref">
+                <strong>Pattern to follow:</strong>
+                <code>src/features/history/HistoryIndicator.tsx</code>
+              </p>
+              <p>
+                Toggle component that reads bookmark state for the current
+                article and shows a filled/unfilled icon.
+              </p>
+
+              <h4>Implementation steps</h4>
+              <ol>
+                <li>
+                  Create component that reads bookmark state for the current
+                  article.
+                </li>
+                <li>Toggle bookmark on click.</li>
+                <li>Show filled/unfilled icon based on state.</li>
+                <li>
+                  Add to <code>ArticleView.tsx</code> header section.
+                </li>
+              </ol>
+
+              <h4>Feedback loop</h4>
+              <div class="feedback-grid">
+                <div class="feedback-step feedback-playground">
+                  <h5>Playground</h5>
+                  <p>
+                    Start the dev server and navigate to any article view.
+                  </p>
+                  <code>pnpm dev</code>
+                </div>
+                <div class="feedback-step feedback-experiment">
+                  <h5>Experiment</h5>
+                  <p>
+                    Toggle bookmark on an unbookmarked article (filled icon),
+                    toggle again (unfilled), refresh page (state persists via
+                    store). Verify store tests still pass after wiring the
+                    component.
+                  </p>
+                  <code>toggle / refresh / verify persistence</code>
+                </div>
+                <div class="feedback-step feedback-check">
+                  <h5>Check Command</h5>
+                  <p>
+                    Run the full bookmark suite to catch wiring regressions.
+                  </p>
+                  <code>pnpm test -- --filter bookmarks</code>
+                </div>
+              </div>
+            </div>
+          </details>
+        </section>
+
+        <!-- === TESTING === -->
+        <section id="testing">
+          <h2>Testing Requirements</h2>
+
+          <h3>Unit Tests</h3>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Test File</th>
+                <th>Coverage</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <span class="file-new"
+                    >src/features/bookmarks/bookmark-store.spec.ts</span
+                  >
+                </td>
+                <td>Add, remove, toggle tag, create/delete tag</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>Key Test Cases</h3>
+          <ul>
+            <li>Adding a bookmark caches article content.</li>
+            <li>Removing a bookmark clears cached content.</li>
+            <li>Tags persist across store rehydration.</li>
+            <li>Duplicate bookmarks are prevented.</li>
+          </ul>
+        </section>
+
+        <!-- === FAILURE MODES === -->
+        <section id="failure-modes">
+          <h2>Failure Modes</h2>
+          <details class="collapsible" open>
+            <summary>Named failure scenarios per component</summary>
+            <div class="collapsible-body">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Component</th>
+                    <th>Failure</th>
+                    <th>Trigger</th>
+                    <th>Impact</th>
+                    <th>Mitigation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Bookmark Store</td>
+                    <td>IndexedDB quota exceeded</td>
+                    <td>
+                      User bookmarks many large articles, filling storage.
+                    </td>
+                    <td>New bookmarks silently fail to persist.</td>
+                    <td>
+                      Check quota before caching content; fall back to
+                      metadata-only bookmark (no offline content).
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Bookmark Store</td>
+                    <td>Concurrent tab writes</td>
+                    <td>
+                      Two tabs bookmark different articles simultaneously.
+                    </td>
+                    <td>Last-write-wins race condition corrupts store.</td>
+                    <td>
+                      IndexedDB transactions are atomic per-store; ensure each
+                      write is a single transaction.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>BookmarkButton</td>
+                    <td>Article content not loaded</td>
+                    <td>
+                      User clicks bookmark before article body finishes loading.
+                    </td>
+                    <td>Bookmark saved with empty content field.</td>
+                    <td>
+                      Disable bookmark button until article content is
+                      available; or save metadata immediately and backfill
+                      content.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </section>
+
+        <!-- === VALIDATION === -->
+        <section id="validation">
+          <h2>Validation Commands</h2>
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">bash</span>
+              <button class="copy-btn" data-copy="validation-cmds" type="button">
+                Copy
+              </button>
+            </div>
+            <pre><code id="validation-cmds">pnpm typecheck
+pnpm test -- --filter bookmarks
+pnpm build</code></pre>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      document.querySelectorAll(".copy-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const target = document.getElementById(btn.dataset.copy);
+          navigator.clipboard.writeText(target.textContent).then(() => {
+            btn.textContent = "Copied!";
+            setTimeout(() => (btn.textContent = "Copy"), 2000);
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
