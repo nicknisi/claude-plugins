@@ -1,7 +1,7 @@
 {
   "name": "ideation",
-  "version": "0.11.0",
-  "description": "Transform brain dumps into structured implementation artifacts: contracts, phased PRDs, and implementation specs",
+  "version": "0.12.0",
+  "description": "Transform brain dumps into structured implementation artifacts: contracts, phased PRDs, and implementation specs. Supports Markdown output (/ideation) and interactive HTML output (/ideation:visual).",
   "author": {
     "name": "Nick Nisi",
     "email": "nick@nisi.org"
@@ -12,6 +12,9 @@
     "planning",
     "prd",
     "specification",
-    "execution"
+    "execution",
+    "visual",
+    "html",
+    "interactive"
   ]
 }

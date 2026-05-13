@@ -1,6 +1,6 @@
 # Ideation Plugin
 
-Transform brain dumps into structured implementation artifacts: contracts and implementation specs. Includes execution workflow for implementing specs in fresh sessions with per-component feedback loops.
+Transform brain dumps into structured implementation artifacts: contracts and implementation specs. Supports Markdown output (`/ideation`) and interactive HTML output (`/ideation:visual`). Includes execution workflow for implementing specs in fresh sessions with per-component feedback loops.
 
 ## Skills
 
@@ -51,11 +51,45 @@ spec-phase-N.md                # Per-phase delta or full spec
 
 **Bundled references:**
 
+Shared (plugin root):
+- `interview-engine.md` - Shared interview engine (Phases 1-2)
+- `confidence-rubric.md` - Scoring criteria for confidence assessment and spec feedback quality
+- `feedback-loop-guide.md` - Component-type mapping and design criteria for feedback loops
+
+Skill-specific (MD templates):
 - `contract-template.md` - Lean contract structure
 - `prd-template.md` - Phased PRD template
 - `spec-template.md` - Implementation spec template (includes feedback loops and failure modes)
-- `confidence-rubric.md` - Scoring criteria for confidence assessment and spec feedback quality
-- `feedback-loop-guide.md` - Component-type mapping and design criteria for feedback loops
+
+### ideation-visual
+
+Same interview process as `/ideation`, but outputs interactive HTML artifacts instead of Markdown. Use when you want specs that are easier to read, share, and navigate visually.
+
+**How to invoke:**
+
+```
+/ideation:visual
+
+[provide your brain dump]
+```
+
+**What's different from /ideation:**
+
+| Aspect | /ideation | /ideation:visual |
+|--------|-----------|-----------------|
+| Output format | Markdown (.md) | Interactive HTML (.html) |
+| Contract | Plain text | Tabbed layout with confidence meter |
+| Specs | Flat document | Sidebar nav, collapsible sections, feedback cards |
+| Dependency graph | ASCII art | Inline SVG |
+| Execute commands | Plain text | Copy-to-clipboard buttons |
+| Dark mode | N/A | Automatic via prefers-color-scheme |
+| /execute-spec compatible | Yes | No — HTML is for human review |
+
+**Same interview, different output:** Both skills share the same interview engine — same questions, same confidence tracking, same codebase exploration. The difference is entirely in how artifacts are generated (Phases 3-5).
+
+**Browser integration:** Each HTML artifact opens in your browser automatically after it's written.
+
+**Note:** HTML specs are for human review and sharing. To execute specs via `/ideation:execute-spec`, use `/ideation` to generate Markdown specs.
 
 ## Interview Loop
 
@@ -326,4 +360,4 @@ Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` enabled in settings.
 
 ## Version
 
-0.11.0
+0.12.0
