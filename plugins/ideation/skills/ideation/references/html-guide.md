@@ -8,7 +8,7 @@ This is the canonical reference for **every** HTML artifact produced by the `ide
 2. **No** external CDN links, no build step, no remote fonts.
 3. Must work from `file://` offline.
 4. Both light **and** dark mode via `prefers-color-scheme`.
-5. Minimal JS — only the clipboard copy snippet at the bottom of this file.
+5. Minimal JS — only the clipboard copy snippet and the scope slider interaction (see Section 6). No other JS belongs in an artifact.
 6. Use **semantic HTML** (`<header>`, `<main>`, `<section>`, `<details>`, `<table>`).
 7. Every tab group needs a **unique** `name` attribute on its radio inputs.
 8. SVG uses **CSS custom properties** for colors — never hardcoded hex.
@@ -885,6 +885,245 @@ Inline badges for file change indicators.
 
 See JS in Section 6. HTML pattern is shown in the Code Block component (4.6) — every `data-copy="ID"` must target an element with that exact `id`.
 
+### 4.11 Scope Slider
+
+Interactive range input that shows/hides scope items based on the selected tier (MVP / Full / Stretch). This is the **one** exception to "clipboard only" JS — the slider needs a small input listener to toggle item visibility. Each `.scope-item` carries a `data-tier` attribute: `0` = MVP, `1` = Full, `2` = Stretch. Items at or below the selected tier are visible; items above are hidden. Re-use the existing `.scope-in` / `.scope-out` classes for the in/out styling.
+
+```html
+<div class="scope-slider">
+  <div class="scope-slider-header">
+    <label for="scope-range">Scope Tier</label>
+    <output id="scope-label">Full</output>
+  </div>
+  <input type="range" id="scope-range" min="0" max="2" value="1" step="1" />
+  <div class="scope-tier-labels">
+    <span>MVP</span><span>Full</span><span>Stretch</span>
+  </div>
+  <div class="scope-items">
+    <div class="scope-item scope-in" data-tier="0">{MVP item — always visible}</div>
+    <div class="scope-item scope-in" data-tier="1">{Full item — visible at Full+}</div>
+    <div class="scope-item scope-out" data-tier="2">{Stretch item — visible at Stretch only}</div>
+  </div>
+</div>
+```
+
+```css
+.scope-slider {
+  margin: var(--space-4) 0;
+}
+
+.scope-slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.scope-slider-header label {
+  font-weight: 600;
+}
+
+.scope-slider-header output {
+  font-weight: 600;
+  color: var(--color-accent);
+  padding: 2px 8px;
+  background: var(--color-accent-bg);
+  border-radius: var(--radius-sm);
+  font-size: 0.85em;
+}
+
+#scope-range {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--color-border);
+  border-radius: 3px;
+  outline: none;
+}
+
+#scope-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--color-accent);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.scope-tier-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8em;
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+}
+```
+
+JS (paste alongside the clipboard snippet in the `<script>` block — see Section 6):
+
+```javascript
+const scopeRange = document.getElementById("scope-range");
+const scopeLabel = document.getElementById("scope-label");
+const tierNames = ["MVP", "Full", "Stretch"];
+if (scopeRange) {
+  scopeRange.addEventListener("input", () => {
+    const tier = parseInt(scopeRange.value);
+    scopeLabel.textContent = tierNames[tier];
+    document.querySelectorAll(".scope-item").forEach((item) => {
+      const itemTier = parseInt(item.dataset.tier);
+      item.style.display = itemTier <= tier ? "" : "none";
+    });
+  });
+}
+```
+
+### 4.12 Exploration Visualization
+
+Components for the codebase context map (`_exploration.html`) — turns discovery findings into a visual context map.
+
+**File tree** — collapsible nested list using native `<details>`:
+
+```html
+<div class="file-tree">
+  <details open>
+    <summary><span class="tree-dir">src/</span></summary>
+    <ul>
+      <li>
+        <details>
+          <summary><span class="tree-dir">features/</span></summary>
+          <ul>
+            <li><span class="tree-file">bookmarks/bookmark-store.ts</span></li>
+          </ul>
+        </details>
+      </li>
+    </ul>
+  </details>
+</div>
+```
+
+```css
+.file-tree {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+.file-tree ul {
+  list-style: none;
+  padding-left: var(--space-4);
+}
+
+.file-tree li {
+  margin: 2px 0;
+}
+
+.file-tree details > summary {
+  cursor: pointer;
+}
+
+.tree-dir {
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+.tree-file {
+  color: var(--color-text);
+}
+
+.tree-file::before {
+  content: "- ";
+}
+```
+
+**Pattern cards** — cards for discovered code patterns:
+
+```html
+<div class="pattern-grid">
+  <div class="pattern-card">
+    <div class="pattern-path"><code>{file path}</code></div>
+    <div class="pattern-desc">{what this pattern does}</div>
+    <div class="pattern-relevance">{why it's relevant to this project}</div>
+  </div>
+</div>
+```
+
+```css
+.pattern-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-3) 0;
+}
+
+.pattern-card {
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-accent);
+}
+
+.pattern-path {
+  margin-bottom: var(--space-1);
+}
+
+.pattern-path code {
+  font-size: 0.85em;
+  color: var(--color-accent);
+}
+
+.pattern-desc {
+  margin-bottom: var(--space-2);
+}
+
+.pattern-relevance {
+  font-size: 0.85em;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+```
+
+**Infrastructure badges** — inline status indicators for discovered (or missing) tooling:
+
+```html
+<div class="infra-badges">
+  <span class="infra-badge infra-found">vitest</span>
+  <span class="infra-badge infra-found">vite dev</span>
+  <span class="infra-badge infra-missing">storybook</span>
+  <span class="infra-badge infra-found">eslint</span>
+  <span class="infra-badge infra-found">typescript</span>
+</div>
+```
+
+```css
+.infra-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.infra-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8em;
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+
+.infra-found {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.infra-missing {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+```
+
 ---
 
 ## 5. Print Styles
@@ -946,11 +1185,12 @@ See JS in Section 6. HTML pattern is shown in the Code Block component (4.6) —
 
 ---
 
-## 6. JavaScript — Clipboard Only
+## 6. JavaScript — Clipboard and Scope Slider Only
 
-Append once at the bottom of `<body>`. **No other JS** belongs in an artifact.
+Append once at the bottom of `<body>`. **JS exceptions: clipboard copy AND scope slider interaction — no other JS** belongs in an artifact. The scope slider block is a no-op when the artifact does not include a `#scope-range` element (the `if (scopeRange)` guard handles that), so it is safe to include in every artifact.
 
 ```javascript
+/* Clipboard */
 document.querySelectorAll('.copy-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const target = document.getElementById(btn.dataset.copy);
@@ -960,6 +1200,21 @@ document.querySelectorAll('.copy-btn').forEach(btn => {
     });
   });
 });
+
+/* Scope slider */
+const scopeRange = document.getElementById('scope-range');
+const scopeLabel = document.getElementById('scope-label');
+const tierNames = ['MVP', 'Full', 'Stretch'];
+if (scopeRange) {
+  scopeRange.addEventListener('input', () => {
+    const tier = parseInt(scopeRange.value);
+    scopeLabel.textContent = tierNames[tier];
+    document.querySelectorAll('.scope-item').forEach(item => {
+      const itemTier = parseInt(item.dataset.tier);
+      item.style.display = itemTier <= tier ? '' : 'none';
+    });
+  });
+}
 ```
 
 ---

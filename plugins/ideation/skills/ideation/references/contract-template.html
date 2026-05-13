@@ -496,6 +496,58 @@
         margin-top: var(--space-1);
       }
 
+      /* Scope slider */
+      .scope-slider {
+        margin: var(--space-4) 0;
+      }
+
+      .scope-slider-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-2);
+      }
+
+      .scope-slider-header label {
+        font-weight: 600;
+      }
+
+      .scope-slider-header output {
+        font-weight: 600;
+        color: var(--color-accent);
+        padding: 2px 8px;
+        background: var(--color-accent-bg);
+        border-radius: var(--radius-sm);
+        font-size: 0.85em;
+      }
+
+      #scope-range {
+        width: 100%;
+        height: 6px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: var(--color-border);
+        border-radius: 3px;
+        outline: none;
+      }
+
+      #scope-range::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        background: var(--color-accent);
+        border-radius: 50%;
+        cursor: pointer;
+      }
+
+      .scope-tier-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8em;
+        color: var(--color-text-muted);
+        margin-top: var(--space-1);
+      }
+
       /* File badges */
       .file-new,
       .file-mod,
@@ -788,28 +840,73 @@
 
         <!-- ---- Tab 3: Scope ---- -->
         <div class="tab-panel">
-          <h2>In Scope</h2>
+          <h2>Scope</h2>
           <!--
-            One .scope-in block per included feature/capability.
-            {in-scope-item-N}: short label of the included item.
-            {in-scope-reason-N}: optional rationale (omit the .scope-reason div if none).
+            Scope slider: drag to preview what is included at each tier
+            before committing in the terminal.
+              - tier 0 = MVP    (always visible)
+              - tier 1 = Full   (visible at Full and Stretch)
+              - tier 2 = Stretch (visible only at Stretch)
+            Each .scope-item carries a data-tier attribute matching its tier.
+            Use .scope-in for included items and .scope-out for deferred items
+            (a stretch-tier item is typically rendered as .scope-out at MVP/Full
+            and the slider reveals it). The .scope-reason div is optional —
+            omit it when no rationale is needed.
           -->
-          <div class="scope-in">
-            <strong>In scope:</strong> {in-scope-item-1}
-            <div class="scope-reason">{in-scope-reason-1}</div>
-          </div>
-          <div class="scope-in">
-            <strong>In scope:</strong> {in-scope-item-2}
-            <div class="scope-reason">{in-scope-reason-2}</div>
-          </div>
-          <div class="scope-in">
-            <strong>In scope:</strong> {in-scope-item-3}
-            <div class="scope-reason">{in-scope-reason-3}</div>
+          <div class="scope-slider">
+            <div class="scope-slider-header">
+              <label for="scope-range">Scope Tier</label>
+              <output id="scope-label">Full</output>
+            </div>
+            <input
+              type="range"
+              id="scope-range"
+              min="0"
+              max="2"
+              value="1"
+              step="1"
+            />
+            <div class="scope-tier-labels">
+              <span>MVP</span><span>Full</span><span>Stretch</span>
+            </div>
+            <div class="scope-items">
+              <!-- ---- Tier 0: MVP (always visible) ---- -->
+              <div class="scope-item scope-in" data-tier="0">
+                <strong>In scope (MVP):</strong> {mvp-item-1}
+                <div class="scope-reason">{mvp-reason-1}</div>
+              </div>
+              <div class="scope-item scope-in" data-tier="0">
+                <strong>In scope (MVP):</strong> {mvp-item-2}
+                <div class="scope-reason">{mvp-reason-2}</div>
+              </div>
+
+              <!-- ---- Tier 1: Full (visible at Full+) ---- -->
+              <div class="scope-item scope-in" data-tier="1">
+                <strong>In scope (Full):</strong> {full-item-1}
+                <div class="scope-reason">{full-reason-1}</div>
+              </div>
+              <div class="scope-item scope-in" data-tier="1">
+                <strong>In scope (Full):</strong> {full-item-2}
+                <div class="scope-reason">{full-reason-2}</div>
+              </div>
+
+              <!-- ---- Tier 2: Stretch (visible only at Stretch) ---- -->
+              <div class="scope-item scope-out" data-tier="2">
+                <strong>Stretch:</strong> {stretch-item-1}
+                <div class="scope-reason">{stretch-reason-1}</div>
+              </div>
+              <div class="scope-item scope-out" data-tier="2">
+                <strong>Stretch:</strong> {stretch-item-2}
+                <div class="scope-reason">{stretch-reason-2}</div>
+              </div>
+            </div>
           </div>
 
           <h2>Out of Scope</h2>
           <!--
-            One .scope-out block per excluded item, with a brief rationale.
+            One .scope-out block per explicitly excluded item, with rationale.
+            These are NOT controlled by the slider — they stay visible at every
+            tier so reviewers always see what was deliberately cut.
             When in doubt, list as out of scope — easier to add later than remove.
           -->
           <div class="scope-out">
@@ -982,6 +1079,11 @@
     </main>
 
     <script>
+      /*
+        JS exceptions: clipboard copy AND scope slider interaction — no other JS.
+        Every other behavior in this artifact must be pure HTML/CSS.
+      */
+
       /* === CLIPBOARD === */
       document.querySelectorAll(".copy-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -992,6 +1094,21 @@
           });
         });
       });
+
+      /* === SCOPE SLIDER === */
+      const scopeRange = document.getElementById("scope-range");
+      const scopeLabel = document.getElementById("scope-label");
+      const tierNames = ["MVP", "Full", "Stretch"];
+      if (scopeRange) {
+        scopeRange.addEventListener("input", () => {
+          const tier = parseInt(scopeRange.value);
+          scopeLabel.textContent = tierNames[tier];
+          document.querySelectorAll(".scope-item").forEach((item) => {
+            const itemTier = parseInt(item.dataset.tier);
+            item.style.display = itemTier <= tier ? "" : "none";
+          });
+        });
+      }
     </script>
   </body>
 </html>
@@ -1035,8 +1152,16 @@ When generating an ideation contract HTML from this template:
      read-only display.
 
 6. SCOPE TAB
-   - One .scope-in / .scope-out block per item. The .scope-reason div is
-     optional — omit it when no rationale is needed.
+   - Scope slider tiers: 0 = MVP, 1 = Full, 2 = Stretch. Every .scope-item
+     inside .scope-items MUST have a `data-tier` attribute set to one of
+     those values; the slider hides items above the selected tier.
+   - Use .scope-in for items that are included at their tier, and .scope-out
+     for stretch-tier items that should read as "deferred" when the slider
+     is at MVP/Full. The .scope-reason div is optional — omit when no
+     rationale is needed.
+   - "Out of Scope" blocks below the slider are NOT controlled by the slider
+     — they remain visible at every tier so reviewers always see what was
+     deliberately cut.
    - Future Considerations is a collapsible <details> block. Do not delete
      good ideas that are out of scope — park them here.
 
