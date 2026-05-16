@@ -110,7 +110,7 @@ Options:
 
 Analyze the contract and break scope into logical implementation phases.
 
-**Small-project shortcut:** If the scope is small enough to implement in a single phase (1-3 components, touches fewer than ~10 files), skip phasing entirely. Generate a single `spec.html` (no phase number needed) and proceed directly to handoff. Don't force structure where simplicity suffices.
+**Small-project shortcut:** If the scope is small enough to implement in a single phase (1-3 components, touches fewer than ~10 files), skip phasing entirely. Generate a single `spec.md` (no phase number needed) and proceed directly to handoff. Don't force structure where simplicity suffices.
 
 **Phasing criteria** (for multi-phase projects):
 

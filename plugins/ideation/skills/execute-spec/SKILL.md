@@ -62,7 +62,7 @@ If multiple found, use `AskUserQuestion` to select one.
 
 **Invoke the Scout** using the `Agent` tool:
 
-1. Read `plugins/ideation/agents/scout.md` to get the scout's full workflow and output format
+1. Read `${CLAUDE_PLUGIN_ROOT}/agents/scout.md` to get the scout's full workflow and output format
 2. Use the `Agent` tool with:
    - **subagent_type**: `general-purpose`
    - **prompt**: Include the full content of `scout.md` as the agent's instructions, followed by the specific inputs: spec file path, project directory, phase number, and whether a prior `context-map.md` exists
@@ -276,7 +276,7 @@ If any validation command fails, fix the issue before proceeding to review. Do n
 
 **Invoke the Reviewer agent** using the `Agent` tool:
 
-1. Read `plugins/ideation/agents/reviewer.md` to get the reviewer's full workflow and output format
+1. Read `${CLAUDE_PLUGIN_ROOT}/agents/reviewer.md` to get the reviewer's full workflow and output format
 2. Use the `Agent` tool with:
    - **subagent_type**: `general-purpose`
    - **prompt**: Include the full content of `reviewer.md` as the agent's instructions, followed by:

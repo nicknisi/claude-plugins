@@ -40,6 +40,11 @@ Read `contract.md` and extract the Execution Plan:
 
 5. **Validate** — confirm each spec file exists. If any are missing, report which and ask the user whether to continue without them or abort.
 
+6. **Detect already-completed phases** — run `git log --oneline --grep="spec-phase"` (or similar) to find commits that reference spec files. For each phase whose spec path appears in a commit message, mark it as already completed and exclude it from execution. Report which phases are being skipped:
+   ```
+   Skipping Phase 1 (already committed: abc1234)
+   ```
+
 ## Phase 2: Plan Execution Order
 
 From the dependency graph, compute execution waves — groups of phases that can run in parallel because all their blockers are satisfied.
@@ -47,7 +52,7 @@ From the dependency graph, compute execution waves — groups of phases that can
 **Algorithm:**
 
 ```
-completed = {}
+completed = {already-committed phases from Phase 1, step 6}
 waves = []
 while uncompleted phases remain:
   ready = phases where all blockedBy are in completed
