@@ -1,6 +1,6 @@
 # Ideation Plugin
 
-Transform brain dumps into structured implementation artifacts: interactive HTML contracts and implementation specs. HTML is the primary output for human review (tabs, confidence meter, SVG dependency graphs, copy buttons, dark mode). Equivalent Markdown specs are auto-generated at handoff for `/execute-spec` compatibility. Includes execution workflow for implementing specs in fresh sessions with per-component feedback loops.
+Transform brain dumps into structured implementation artifacts through a conversational interview. HTML is used for interactive decision-making (contract with scope slider, codebase exploration maps, visual comparisons during the interview). Markdown is used for reference documents (specs, PRDs) consumed directly by `/execute-spec`. Includes execution workflow for implementing specs in fresh sessions with per-component feedback loops.
 
 ## Skills
 
@@ -34,10 +34,10 @@ I want to build something. Here's what I'm thinking...
 2. **Interview loop** - One question at a time, each with a recommended answer. Explores the codebase inline — if it can look something up instead of asking, it does. Challenges vague demand, undefined terms, and hypothetical users. Loops until confidence >= 95%.
 3. **Exploration visualization** - Generates `_exploration.html` — a visual context map of codebase findings (file tree, pattern cards, infrastructure badges). Opens in your browser so you can see what the agent discovered.
 4. **Contract** - When >= 95% confident, write `contract.html` with a **scope slider** (MVP / Full / Stretch tiers). Drag the slider to see what's in scope at each level, then pick your tier in the terminal. Includes revision lineage tracking via `Supersedes` link.
-5. **Visual comparisons** - At key decision points (phasing strategy, orchestration approach), generates temporary side-by-side HTML comparisons in your browser before asking you to choose.
-6. **Phasing & specs** - Determine phases, generate interactive HTML specs with feedback loops and failure mode catalogs
+5. **HTML visualizations** - During interview and phasing, generates ephemeral HTML pages for decisions: side-by-side comparisons, UI mockups, architecture options. Deleted after you choose.
+6. **Phasing & specs** - Determine phases, generate Markdown specs with feedback loops and failure mode catalogs
 7. **Feedback quality check** - Self-review specs for feedback loop coverage before presenting
-8. **Execution handoff** - SVG dependency graph, copy-to-clipboard execute commands, auto-generated MD specs for `/execute-spec`
+8. **Execution handoff** - SVG dependency graph in contract, copy-to-clipboard execute commands
 
 **Output artifacts:**
 
@@ -45,32 +45,25 @@ All artifacts are written to `./docs/ideation/{project-name}/`:
 
 ```
 _exploration.html              # Codebase context map (file tree, patterns, infrastructure)
-contract.html                  # Interactive contract with scope slider (primary, for review)
+_comparison.html               # Ephemeral decision aid (deleted after choice is made)
+contract.html                  # Interactive contract with scope slider (for review)
 contract.md                    # Plain contract (for /execute-spec lineage)
-prd-phase-1.html               # Phase 1 requirements (only if PRDs chosen)
-prd-phase-1.md                 # MD PRD (only if PRDs chosen)
-spec-phase-1.html              # Interactive spec (primary, for review)
-spec-phase-1.md                # Plain spec (for /execute-spec)
-spec-template-{pattern}.html   # Shared template for repeatable phases (if applicable)
-spec-template-{pattern}.md     # MD version of repeatable template (if applicable)
-spec-phase-N.html              # Per-phase delta or full HTML spec
-spec-phase-N.md                # Per-phase delta or full MD spec
-_comparison.html               # Temporary visual comparison (deleted after decision)
+prd-phase-1.md                 # Phase 1 requirements (only if PRDs chosen)
+spec-phase-1.md                # Implementation spec (for /execute-spec)
+spec-template-{pattern}.md     # Shared template for repeatable phases (if applicable)
+spec-phase-N.md                # Per-phase delta or full spec
 ```
 
-HTML artifacts are self-contained single files with all CSS/JS inlined — no external dependencies. They open in your browser automatically after writing. Features include:
+HTML artifacts (contract, exploration, ephemeral visualizations) are self-contained single files with all CSS/JS inlined — no external dependencies. They open in your browser automatically. Features include:
 
 - **Tabs** for section navigation (CSS-only, no JS framework)
 - **Confidence meter** showing scoring across 5 dimensions
 - **Scope slider** with MVP / Full / Stretch tiers (drag to see what's included)
-- **Sidebar navigation** in specs for jumping between sections
-- **Collapsible sections** for implementation details and failure modes
 - **SVG dependency graphs** for execution planning
 - **Copy-to-clipboard buttons** on `/execute-spec` commands
 - **Dark mode** automatic via `prefers-color-scheme`
-- **Print-friendly** via `@media print` rules
 
-The Markdown specs are auto-generated at handoff (Phase 5) so `/ideation:execute-spec` can consume them. They are equally detailed — generated from the same interview context using the MD templates directly, not converted from HTML.
+Specs and PRDs are Markdown — readable as-is and consumed directly by `/execute-spec`.
 
 **Bundled references:**
 
@@ -80,10 +73,10 @@ Shared (plugin root):
 - `feedback-loop-guide.md` - Component-type mapping and design criteria for feedback loops
 
 Skill-specific:
-- `html-guide.md` - HTML component library, design tokens, and constraints
+- `html-guide.md` - HTML component library, design tokens, and constraints (for contract, exploration, visualizations)
 - `contract-template.html` / `contract-template.md` - Contract templates
-- `prd-template.html` / `prd-template.md` - PRD templates
-- `spec-template.html` / `spec-template.md` - Implementation spec templates (includes feedback loops and failure modes)
+- `prd-template.md` - PRD template
+- `spec-template.md` - Implementation spec template (includes feedback loops and failure modes)
 
 ## Interview Loop
 
@@ -174,10 +167,9 @@ search too...
 7. Generates `contract.html` with scope slider — drag between MVP / Full / Stretch to see what's included at each tier. Pick your scope in the terminal.
 8. After approval, asks: "Straight to specs or PRDs first?"
 9. At decision points (phasing, orchestration), opens side-by-side visual comparisons in browser
-10. Generates interactive HTML specs with feedback loops and failure modes
-11. Auto-generates MD specs for `/execute-spec` compatibility
+10. Generates Markdown specs with feedback loops and failure modes
 
-**Result:** Interactive HTML artifacts you actually want to read, plus machine-consumable MD specs for execution.
+**Result:** Interactive HTML contract for reviewing the plan, plus Markdown specs ready for `/execute-spec`.
 
 ## Full Workflow Diagram
 
@@ -323,9 +315,50 @@ Executes a spec file generated by the ideation skill. Invokes the Scout agent fo
 8. **Fix** — if critical/high findings, fix and re-verify/re-review (up to 3 cycles)
 9. **Commit** — only after review passes or user accepts remaining issues
 
-## Cross-Session Execution
+### /ideation:run
 
-**Recommended workflow:**
+Orchestrates full project execution — reads the contract, walks the phase dependency graph, and dispatches subagents to execute each spec. Parallel for independent phases, sequential for dependent ones.
+
+**Usage:**
+
+```bash
+# Auto-detect contract
+/ideation:run
+
+# Specify contract path
+/ideation:run docs/ideation/my-project/contract.md
+```
+
+**Behavior:**
+
+- Parses the contract's Execution Plan to derive phase dependencies and spec paths
+- Computes execution waves — groups of phases whose blockers are all satisfied
+- Dispatches each phase as a subagent with a clean context running `/execute-spec`
+- Independent phases within a wave run in parallel
+- **Full auto** — continues without pausing on success
+- **Gates on failure** — if a phase fails review after 3 cycles, pauses to ask: skip, retry, or stop
+- Each phase commits independently — completed work is durable even if later phases fail
+
+**Example execution:**
+
+```
+Execution plan for bookmark-feature:
+  Wave 1: Phase 1 (Core data model)
+  Wave 2: Phase 2 (API endpoints) + Phase 3 (UI components)  [parallel]
+  Wave 3: Phase 4 (Search integration)
+
+4 phases across 3 waves. Starting now.
+
+Wave 1/3: Phase 1 — PASS (abc1234)
+Wave 2/3: Phase 2 + Phase 3 — PASS (def5678, ghi9012)
+Wave 3/3: Phase 4 — PASS (jkl3456)
+
+All 4 phases complete.
+```
+
+## Manual Cross-Session Execution
+
+For manual control, run specs individually:
 
 ```bash
 # Phase 1
@@ -338,10 +371,6 @@ Executes a spec file generated by the ideation skill. Invokes the Scout agent fo
 /ideation:execute-spec         # previous task completed, picks up next
 # ... implement, commit ...
 ```
-
-**For parallel execution across phases, use agent teams** — when 2+ phases are independent, the contract's Execution Plan section includes a ready-to-paste agent team prompt. Start a new session, enter delegate mode (Shift+Tab), and paste the prompt from the contract. The lead spawns teammates with plan approval, each implementing their assigned spec in parallel.
-
-Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` enabled in settings.
 
 **Within a single phase, use `--parallel`:**
 

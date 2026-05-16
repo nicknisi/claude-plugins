@@ -1,7 +1,7 @@
 {
   "name": "ideation",
   "version": "0.12.0",
-  "description": "Transform brain dumps into structured implementation artifacts: interactive HTML contracts, phased PRDs, and implementation specs (tabs, confidence meter, SVG dependency graphs, copy buttons). Auto-generates Markdown specs at handoff for /execute-spec compatibility.",
+  "description": "Transform brain dumps into implementation specs through conversational interviews. Interactive HTML contract for planning decisions, Markdown specs for execution. /ideation:run orchestrates full project execution — dispatches subagents per phase, parallel when possible, gates on failures.",
   "author": {
     "name": "Nick Nisi",
     "email": "nick@nisi.org"
@@ -13,8 +13,7 @@
     "prd",
     "specification",
     "execution",
-    "visual",
-    "html",
+    "orchestration",
     "interactive"
   ]
 }
