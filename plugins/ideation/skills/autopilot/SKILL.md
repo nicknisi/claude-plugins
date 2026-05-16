@@ -94,20 +94,25 @@ Dispatch one subagent:
 Agent({
   description: "Execute Phase {N}: {title}",
   subagent_type: "general-purpose",
-  mode: "auto",
+  mode: "bypassPermissions",
   prompt: "<instructions>
 You are executing Phase {N} of the {project-name} ideation project.
 
-Run the execute-spec skill:
-/ideation:execute-spec {spec-file-path}
+Run the execute-spec skill in headless mode:
+/ideation:execute-spec --headless {spec-file-path}
 
 Follow the skill's full workflow: Scout → Build → Verify-Review-Fix → Commit.
+The --headless flag auto-proceeds through confirmation steps so execution
+does not block.
 
 When complete, report:
 - RESULT: PASS or FAIL
 - Summary of what was implemented
 - Any findings from the review cycle
 - The commit hash (if committed)
+
+If the review cycle fails after 3 cycles, report RESULT: FAIL with the
+remaining findings. Do not ask the user — the orchestrator handles failure gates.
 </instructions>"
 })
 ```
