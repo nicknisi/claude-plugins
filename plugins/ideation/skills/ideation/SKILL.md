@@ -67,7 +67,7 @@ When confidence ≥ 95%, generate the contract as an interactive HTML document. 
    - **MVP** — minimum viable version, core functionality only
    - **Full** — everything in the contract's "In Scope" section
    - **Stretch** — full scope plus items from "Future Considerations" that could be pulled in
-   For each tier, list what's included and excluded. Use a range input (`<input type="range">`) with 3 stops that reveals/hides scope items as the user drags. The slider is a visual aid — the user sees what each tier includes, then tells you in the terminal which tier to target. This replaces the static in-scope/out-of-scope lists for the Scope tab.
+     For each tier, list what's included and excluded. Use a range input (`<input type="range">`) with 3 stops that reveals/hides scope items as the user drags. The slider is a visual aid — the user sees what each tier includes, then tells you in the terminal which tier to target. This replaces the static in-scope/out-of-scope lists for the Scope tab.
 9. After writing, open in browser: run `open ./docs/ideation/{project-name}/contract.html` (macOS) or `xdg-open` (Linux)
 10. Use `AskUserQuestion` to get approval — include the scope tier question:
 
@@ -341,6 +341,7 @@ When generating artifacts, reference these examples for tone, structure, and lev
 During the interview and phasing stages, generate ephemeral HTML pages when visual context helps the user make better decisions. These are disposable aids — created, reviewed, then deleted.
 
 **When to use this:**
+
 - **Interview examples** — show UI mockups, layout options, or component structures the user is choosing between
 - **Architecture comparisons** — 2-3 valid approaches with meaningfully different trade-offs shown side-by-side
 - **Phasing strategies** — "core-first vs. risk-first vs. value-first" with visual dependency flows
@@ -348,6 +349,7 @@ During the interview and phasing stages, generate ephemeral HTML pages when visu
 - Any decision where visual layout would clarify trade-offs better than text
 
 **How it works:**
+
 1. Write `_comparison.html` (or `_examples.html`, `_mockup.html` — prefix with `_` to mark as ephemeral) to the project's ideation directory using `references/html-guide.md` components
 2. Show each option as a card or column with: name, description, trade-offs, and a visual where appropriate
 3. Open in browser: `open ./docs/ideation/{project-name}/_comparison.html`

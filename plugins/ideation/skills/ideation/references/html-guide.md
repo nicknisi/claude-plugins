@@ -87,10 +87,10 @@ Paste this **entire** block into the `<style>` element of every artifact.
 
   /* Typography */
   --font-sans:
-    system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     sans-serif;
   --font-mono:
-    "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", Menlo, Consolas,
+    'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas,
     monospace;
 
   /* Spacing scale */
@@ -112,7 +112,7 @@ Paste this **entire** block into the `<style>` element of every artifact.
 }
 
 @media (prefers-color-scheme: dark) {
-  [data-theme="auto"] {
+  [data-theme='auto'] {
     --color-bg: #1a1a2e;
     --color-surface: #16213e;
     --color-border: #2a2a4a;
@@ -271,7 +271,7 @@ Hidden radio inputs control which panel shows. Each tab group **must** use a uni
   overflow: hidden;
 }
 
-.tabs > input[type="radio"] {
+.tabs > input[type='radio'] {
   position: absolute;
   opacity: 0;
   pointer-events: none;
@@ -360,7 +360,7 @@ Native `<details>` / `<summary>`.
 }
 
 .collapsible > summary::before {
-  content: "▸";
+  content: '▸';
   display: inline-block;
   transition: transform 0.15s ease;
   color: var(--color-text-muted);
@@ -538,10 +538,24 @@ Five dimensions with a gradient fill.
 Vertical flow for sequential dependencies, horizontal for parallel. Boxes are 200x60px, 8px radius. Colors come from CSS custom properties.
 
 ```html
-<svg class="dep-graph" viewBox="0 0 240 280" width="240" height="280" role="img" aria-label="Sequential dependency graph">
+<svg
+  class="dep-graph"
+  viewBox="0 0 240 280"
+  width="240"
+  height="280"
+  role="img"
+  aria-label="Sequential dependency graph"
+>
   <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
-            markerWidth="6" markerHeight="6" orient="auto">
+    <marker
+      id="arrow"
+      viewBox="0 0 10 10"
+      refX="9"
+      refY="5"
+      markerWidth="6"
+      markerHeight="6"
+      orient="auto"
+    >
       <path d="M0,0 L10,5 L0,10 z" />
     </marker>
   </defs>
@@ -599,10 +613,24 @@ Vertical flow for sequential dependencies, horizontal for parallel. Boxes are 20
 For **parallel** tasks, lay nodes out horizontally with a single source node fanning out:
 
 ```html
-<svg class="dep-graph" viewBox="0 0 680 200" width="680" height="200" role="img" aria-label="Parallel dependency graph">
+<svg
+  class="dep-graph"
+  viewBox="0 0 680 200"
+  width="680"
+  height="200"
+  role="img"
+  aria-label="Parallel dependency graph"
+>
   <defs>
-    <marker id="arrow-p" viewBox="0 0 10 10" refX="9" refY="5"
-            markerWidth="6" markerHeight="6" orient="auto">
+    <marker
+      id="arrow-p"
+      viewBox="0 0 10 10"
+      refX="9"
+      refY="5"
+      markerWidth="6"
+      markerHeight="6"
+      orient="auto"
+    >
       <path d="M0,0 L10,5 L0,10 z" />
     </marker>
   </defs>
@@ -716,7 +744,9 @@ For **parallel** tasks, lay nodes out horizontally with a single source node fan
 
 <div class="scope-out">
   <strong>Out of scope:</strong> SAML federation
-  <div class="scope-reason">Tracked in follow-up RFC; needs separate review.</div>
+  <div class="scope-reason">
+    Tracked in follow-up RFC; needs separate review.
+  </div>
 </div>
 ```
 
@@ -780,7 +810,7 @@ Inline badges for file change indicators.
 }
 
 .file-new::before {
-  content: "+ ";
+  content: '+ ';
   font-weight: 700;
 }
 
@@ -791,7 +821,7 @@ Inline badges for file change indicators.
 }
 
 .file-mod::before {
-  content: "~ ";
+  content: '~ ';
   font-weight: 700;
 }
 
@@ -802,7 +832,7 @@ Inline badges for file change indicators.
 }
 
 .file-del::before {
-  content: "− ";
+  content: '− ';
   font-weight: 700;
 }
 ```
@@ -900,9 +930,15 @@ Interactive range input that shows/hides scope items based on the selected tier 
     <span>MVP</span><span>Full</span><span>Stretch</span>
   </div>
   <div class="scope-items">
-    <div class="scope-item scope-in" data-tier="0">{MVP item — always visible}</div>
-    <div class="scope-item scope-in" data-tier="1">{Full item — visible at Full+}</div>
-    <div class="scope-item scope-out" data-tier="2">{Stretch item — visible at Stretch only}</div>
+    <div class="scope-item scope-in" data-tier="0">
+      {MVP item — always visible}
+    </div>
+    <div class="scope-item scope-in" data-tier="1">
+      {Full item — visible at Full+}
+    </div>
+    <div class="scope-item scope-out" data-tier="2">
+      {Stretch item — visible at Stretch only}
+    </div>
   </div>
 </div>
 ```
@@ -963,16 +999,16 @@ Interactive range input that shows/hides scope items based on the selected tier 
 JS (paste alongside the clipboard snippet in the `<script>` block — see Section 6):
 
 ```javascript
-const scopeRange = document.getElementById("scope-range");
-const scopeLabel = document.getElementById("scope-label");
-const tierNames = ["MVP", "Full", "Stretch"];
+const scopeRange = document.getElementById('scope-range');
+const scopeLabel = document.getElementById('scope-label');
+const tierNames = ['MVP', 'Full', 'Stretch'];
 if (scopeRange) {
-  scopeRange.addEventListener("input", () => {
+  scopeRange.addEventListener('input', () => {
     const tier = parseInt(scopeRange.value);
     scopeLabel.textContent = tierNames[tier];
-    document.querySelectorAll(".scope-item").forEach((item) => {
+    document.querySelectorAll('.scope-item').forEach(item => {
       const itemTier = parseInt(item.dataset.tier);
-      item.style.display = itemTier <= tier ? "" : "none";
+      item.style.display = itemTier <= tier ? '' : 'none';
     });
   });
 }
@@ -1031,7 +1067,7 @@ Components for the codebase context map (`_exploration.html`) — turns discover
 }
 
 .tree-file::before {
-  content: "- ";
+  content: '- ';
 }
 ```
 
@@ -1139,7 +1175,7 @@ Components for the codebase context map (`_exploration.html`) — turns discover
 
   /* Show all tab panels, hide tab UI */
   .tabs > label,
-  .tabs > input[type="radio"] {
+  .tabs > input[type='radio'] {
     display: none !important;
   }
   .tabs > .tab-panel {
@@ -1196,7 +1232,7 @@ document.querySelectorAll('.copy-btn').forEach(btn => {
     const target = document.getElementById(btn.dataset.copy);
     navigator.clipboard.writeText(target.textContent).then(() => {
       btn.textContent = 'Copied!';
-      setTimeout(() => btn.textContent = 'Copy', 2000);
+      setTimeout(() => (btn.textContent = 'Copy'), 2000);
     });
   });
 });

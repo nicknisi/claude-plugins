@@ -21,21 +21,21 @@ be on planes or whatever and sync when they come back online
 2. **Interview loop** (one question at a time, interleaved with codebase exploration):
 
    **Q1**: "What type of items are users bookmarking? I'd recommend scoping this to articles — your app already has an `Article` model with content rendering, and that's the primary content type. Does that match your intent, or are you thinking broader?"
-   - *User*: "Yeah, articles for now, maybe products later"
+   - _User_: "Yeah, articles for now, maybe products later"
 
-   **Q2**: *(explores codebase — finds existing tag system on articles)* "Your codebase already has a `Tag` model with a many-to-many relation on `Article`. I'd recommend reusing that system for bookmark organization rather than building a new one. The existing tags are admin-created — should bookmark tags be user-created, or reuse the existing set?"
-   - *User*: "User-created, separate from the content tags"
+   **Q2**: _(explores codebase — finds existing tag system on articles)_ "Your codebase already has a `Tag` model with a many-to-many relation on `Article`. I'd recommend reusing that system for bookmark organization rather than building a new one. The existing tags are admin-created — should bookmark tags be user-created, or reuse the existing set?"
+   - _User_: "User-created, separate from the content tags"
 
    **Q3**: "You said 'tags might be better because folders are too rigid' — that's a preference, not evidence. Have users complained about folder-based organization? My recommendation: start with tags since your codebase already has the pattern, but don't rule out folders until you have usage data."
-   - *User*: "Fair, no complaints — it's just my gut. Tags first, revisit later."
+   - _User_: "Fair, no complaints — it's just my gut. Tags first, revisit later."
 
    **Q4**: "Is offline support MVP or can it wait? I'd recommend deferring it — your app is currently fully server-rendered with no service worker infrastructure. Adding offline would mean introducing IndexedDB, a sync layer, and conflict resolution. That's a separate project."
-   - *User*: "Yeah, defer it. Phase 2 at earliest."
+   - _User_: "Yeah, defer it. Phase 2 at earliest."
 
    **Q5**: "When you say 'sharing eventually,' what does that look like? My recommendation: sharing a read-only link to a bookmark collection — simplest version, no auth required for viewers."
-   - *User*: "Exactly, just a public link."
+   - _User_: "Exactly, just a public link."
 
-   *(Confidence now at 96% — all dimensions ≥ 18)*
+   _(Confidence now at 96% — all dimensions ≥ 18)_
 
 3. **Contract generated** → Artifacts written to `./docs/ideation/bookmarks/contract.md` only now — no files created during the interview
 

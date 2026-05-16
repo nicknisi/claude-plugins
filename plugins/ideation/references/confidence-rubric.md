@@ -179,7 +179,7 @@ Use this to track your assessment:
 | Consistency      | /20      |       |
 | **TOTAL**        | **/100** |       |
 
-**Lowest dimension**: ********\_******** (target questions here first)
+**Lowest dimension**: **\*\*\*\***\_**\*\*\*\*** (target questions here first)
 
 **Questions to ask**:
 

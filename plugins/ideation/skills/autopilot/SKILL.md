@@ -29,9 +29,11 @@ Read `contract.md` and extract the Execution Plan:
 
 1. **Find the `## Execution Plan` section**
 2. **Parse the Dependency Graph** — extract phase numbers, titles, and blocking relationships from the ASCII tree. Build an adjacency list:
+
    ```
    { 1: [], 2: [1], 3: [1], 4: [3] }
    ```
+
    Where values are the phases that block each key.
 
 3. **Parse Execution Steps** — extract spec file paths from the fenced `bash` blocks. Each `/execute-spec path/to/spec.md` line maps a phase number to its spec file.
@@ -141,16 +143,19 @@ AskUserQuestion:
 ```
 
 **If "Skip and continue":**
+
 - Mark the phase as failed
 - Remove it from `completed` set for dependency resolution
 - Any phase whose `blockedBy` includes the failed phase is also skipped
 - Log which phases were skipped and why
 
 **If "Retry phase":**
+
 - Re-dispatch the same phase with a new subagent
 - If it fails again, re-present the gate (no retry limit, but each retry is explicit)
 
 **If "Stop here":**
+
 - Report what completed and what remains
 - Exit
 

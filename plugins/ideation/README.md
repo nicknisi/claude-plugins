@@ -68,11 +68,13 @@ Specs and PRDs are Markdown — readable as-is and consumed directly by `/execut
 **Bundled references:**
 
 Shared (plugin root):
+
 - `interview-engine.md` - Shared interview engine (Phases 1-2)
 - `confidence-rubric.md` - Scoring criteria for confidence assessment and spec feedback quality
 - `feedback-loop-guide.md` - Component-type mapping and design criteria for feedback loops
 
 Skill-specific:
+
 - `html-guide.md` - HTML component library, design tokens, and constraints (for contract, exploration, visualizations)
 - `contract-template.html` / `contract-template.md` - Contract templates
 - `prd-template.md` - PRD template

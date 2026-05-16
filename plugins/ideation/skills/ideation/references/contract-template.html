@@ -29,10 +29,10 @@
 
         /* Typography */
         --font-sans:
-          system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+          system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
           sans-serif;
         --font-mono:
-          "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", Menlo,
+          'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', Menlo,
           Consolas, monospace;
 
         /* Spacing scale */
@@ -54,7 +54,7 @@
       }
 
       @media (prefers-color-scheme: dark) {
-        [data-theme="auto"] {
+        [data-theme='auto'] {
           --color-bg: #1a1a2e;
           --color-surface: #16213e;
           --color-border: #2a2a4a;
@@ -184,7 +184,7 @@
         overflow: hidden;
       }
 
-      .tabs > input[type="radio"] {
+      .tabs > input[type='radio'] {
         position: absolute;
         opacity: 0;
         pointer-events: none;
@@ -256,7 +256,7 @@
       }
 
       .collapsible > summary::before {
-        content: "▸";
+        content: '▸';
         display: inline-block;
         transition: transform 0.15s ease;
         color: var(--color-text-muted);
@@ -568,7 +568,7 @@
       }
 
       .file-new::before {
-        content: "+ ";
+        content: '+ ';
         font-weight: 700;
       }
 
@@ -579,7 +579,7 @@
       }
 
       .file-mod::before {
-        content: "~ ";
+        content: '~ ';
         font-weight: 700;
       }
 
@@ -590,7 +590,7 @@
       }
 
       .file-del::before {
-        content: "− ";
+        content: '− ';
         font-weight: 700;
       }
 
@@ -657,7 +657,7 @@
         gap: var(--space-2);
       }
 
-      .criteria-list input[type="checkbox"] {
+      .criteria-list input[type='checkbox'] {
         margin-top: 4px;
         flex-shrink: 0;
       }
@@ -673,7 +673,7 @@
 
         /* Show all tab panels, hide tab UI */
         .tabs > label,
-        .tabs > input[type="radio"] {
+        .tabs > input[type='radio'] {
           display: none !important;
         }
         .tabs > .tab-panel {
@@ -976,13 +976,7 @@
                 Phase 1: {phase-1-title}
               </text>
             </g>
-            <line
-              x1="120"
-              y1="70"
-              x2="120"
-              y2="100"
-              marker-end="url(#arrow)"
-            />
+            <line x1="120" y1="70" x2="120" y2="100" marker-end="url(#arrow)" />
 
             <g class="node">
               <rect x="20" y="100" width="200" height="60" rx="8" ry="8" />
@@ -1085,27 +1079,27 @@
       */
 
       /* === CLIPBOARD === */
-      document.querySelectorAll(".copy-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
+      document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
           const target = document.getElementById(btn.dataset.copy);
           navigator.clipboard.writeText(target.textContent).then(() => {
-            btn.textContent = "Copied!";
-            setTimeout(() => (btn.textContent = "Copy"), 2000);
+            btn.textContent = 'Copied!';
+            setTimeout(() => (btn.textContent = 'Copy'), 2000);
           });
         });
       });
 
       /* === SCOPE SLIDER === */
-      const scopeRange = document.getElementById("scope-range");
-      const scopeLabel = document.getElementById("scope-label");
-      const tierNames = ["MVP", "Full", "Stretch"];
+      const scopeRange = document.getElementById('scope-range');
+      const scopeLabel = document.getElementById('scope-label');
+      const tierNames = ['MVP', 'Full', 'Stretch'];
       if (scopeRange) {
-        scopeRange.addEventListener("input", () => {
+        scopeRange.addEventListener('input', () => {
           const tier = parseInt(scopeRange.value);
           scopeLabel.textContent = tierNames[tier];
-          document.querySelectorAll(".scope-item").forEach((item) => {
+          document.querySelectorAll('.scope-item').forEach(item => {
             const itemTier = parseInt(item.dataset.tier);
-            item.style.display = itemTier <= tier ? "" : "none";
+            item.style.display = itemTier <= tier ? '' : 'none';
           });
         });
       }
