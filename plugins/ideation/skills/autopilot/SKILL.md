@@ -1,5 +1,5 @@
 ---
-name: run
+name: autopilot
 description: Orchestrate full execution of an ideation project — reads the contract, walks the phase dependency graph, and dispatches subagents to execute specs. Parallel for independent phases, sequential for dependent ones. Auto-continues on success, gates on failure. Use after ideation is complete and specs are approved.
 disable-model-invocation: true
 allowed-tools:

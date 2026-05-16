@@ -277,13 +277,13 @@ Open contract.html in your browser to review the full plan — dependency graph,
 execution commands, and scope are all in the Execution Plan tab.
 
 Specs (spec-phase-*.md) are ready. To execute all phases:
-  /ideation:run
+  /ideation:autopilot
 
 Or run individual phases manually:
   /ideation:execute-spec docs/ideation/{project-name}/spec-phase-1.md
 ```
 
-**Recommend `/ideation:run`** as the default. It reads the contract, walks the dependency graph, dispatches subagents per phase (parallel when possible), and only stops on failures. Manual `/execute-spec` is available for finer control.
+**Recommend `/ideation:autopilot`** as the default. It reads the contract, walks the dependency graph, dispatches subagents per phase (parallel when possible), and only stops on failures. Manual `/execute-spec` is available for finer control.
 
 </supporting-info>
 
