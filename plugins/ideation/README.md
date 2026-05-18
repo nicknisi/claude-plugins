@@ -8,7 +8,7 @@ Transform brain dumps into structured implementation artifacts through a convers
 
 Transforms raw, unstructured brain dumps (dictated freestyle) into actionable implementation artifacts through a confidence-gated workflow.
 
-Use this when you have messy ideas, scattered thoughts, or dictated stream-of-consciousness, or when you want to plan a feature, spec something out, or turn rough ideas into actionable specs.
+Use this before building any new feature, planning a migration, designing a system, or turning scattered ideas into a plan. Covers small single-spec projects through multi-phase initiatives.
 
 **How to invoke:**
 
@@ -278,8 +278,6 @@ flowchart TD
 3. **Review** cycles verify → review → fix up to 3 times before commit
 
 The loop between phases (`next phase → Load Spec`) shows multi-phase execution across fresh sessions, each loading the persisted context map.
-
-## Skills
 
 ### /ideation:execute-spec
 
