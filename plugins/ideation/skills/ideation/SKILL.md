@@ -1,6 +1,6 @@
 ---
 name: ideation
-description: Use when the user needs to shape a solution before writing code — brain dumps, scattered ideas, planning features, speccing out migrations, or pressure-testing approaches. Triggers on "help me plan," "spec this out," "think through this," "interview me," or unstructured ideas asking for structure. Runs a conversational interview, writes an interactive HTML contract, then generates Markdown specs for execution. Skip for well-defined implementation tasks (writing code, fixing bugs, refactoring, explaining code).
+description: "You MUST use this before building any new feature, planning a migration, designing a system, or turning scattered ideas into a plan. Triggers on: feature requests, project ideas, brain dumps, 'help me plan,' 'spec this out,' 'think through this,' 'interview me,' 'I want to build,' 'let's design,' or any unstructured idea that needs structure before code. Covers small single-spec projects through multi-phase initiatives. Runs a conversational interview, writes an interactive HTML contract, then generates implementation-ready Markdown specs. Skip ONLY for well-defined implementation tasks (writing code to a known spec, fixing bugs, refactoring, explaining code)."
 ---
 
 <what-to-do>
