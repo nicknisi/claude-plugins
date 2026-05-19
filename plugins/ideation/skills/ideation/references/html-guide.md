@@ -1014,6 +1014,44 @@ if (scopeRange) {
 }
 ```
 
+### 4.12 Implementation Notes
+
+Styles for the `implementation-notes-phase-{N}.html` log written during execute-spec.
+
+```css
+.note-entry {
+  padding: var(--space-3);
+  margin: var(--space-3) 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius-md);
+}
+
+.note-entry h3 {
+  margin: 0 0 var(--space-2) 0;
+  font-size: 1em;
+}
+
+.note-entry dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  font-size: 0.9em;
+}
+
+.note-entry dt {
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.note-entry dd {
+  margin: 0;
+}
+```
+
 ---
 
 ## 5. Print Styles

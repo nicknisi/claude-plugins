@@ -50,9 +50,10 @@ prd-phase-1.md                 # Phase 1 requirements (only if PRDs chosen)
 spec-phase-1.md                # Implementation spec (for /execute-spec)
 spec-template-{pattern}.md     # Shared template for repeatable phases (if applicable)
 spec-phase-N.md                # Per-phase delta or full spec
+implementation-notes-phase-1.html  # Decisions made during execution (per-phase)
 ```
 
-HTML artifacts (contract, exploration, ephemeral visualizations) are self-contained single files with all CSS/JS inlined — no external dependencies. They open in your browser automatically. Features include:
+HTML artifacts (contract, implementation notes, ephemeral visualizations) are self-contained single files with all CSS/JS inlined — no external dependencies. They open in your browser automatically. Features include:
 
 - **Tabs** for section navigation (CSS-only, no JS framework)
 - **Confidence meter** showing scoring across 5 dimensions
@@ -101,6 +102,12 @@ Specs now include a **Failure Modes** section that catalogs how each non-trivial
 | Mitigation   | How to handle or acknowledge     |
 
 Trivial components (config, types, constants) skip failure mode enumeration — same rule as feedback loops.
+
+## Implementation Notes
+
+During execute-spec, the agent keeps a running `implementation-notes-phase-{N}.html` log of decisions it made that weren't covered by the spec — spec gaps, deviations, tradeoffs, codebase surprises, and dependency mismatches. Each entry records what the spec said (or didn't), what the agent chose, and what it rejected.
+
+One file per phase. Opens in your browser automatically after execution. If the agent followed the spec without any judgment calls, no file is created.
 
 ## Contract Lineage
 

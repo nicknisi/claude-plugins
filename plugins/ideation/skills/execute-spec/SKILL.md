@@ -178,6 +178,43 @@ Before implementing any component, establish the spec's feedback environment. Th
 
 5. **Fallback**: If no Feedback Strategy in the spec AND no feedback infrastructure detected, fall back to Validation Commands as the post-implementation check. Not all specs will have feedback loops.
 
+### 7. Initialize Implementation Notes
+
+Create `{project-directory}/implementation-notes-phase-{n}.html` — a running log of decisions made during implementation that weren't covered by the spec. This is for the human to review after execution.
+
+Write the HTML shell once using the base styles from `${CLAUDE_PLUGIN_ROOT}/skills/ideation/references/html-guide.md` (Section 1: Base Styles only — no tabs, sliders, or interactive components needed). The document should have:
+
+- Title: "Implementation Notes — Phase {N}"
+- Empty `<main>` element where entries will be appended
+
+**When to log an entry** — append a `<section>` to the notes file whenever you encounter:
+
+- **Spec gap**: The spec didn't address something and you had to make a judgment call
+- **Spec deviation**: You intentionally diverged from the spec (and why)
+- **Tradeoff**: Multiple valid approaches existed, you picked one
+- **Codebase surprise**: Existing code was in an unexpected state that affected implementation
+- **Dependency decision**: A dependency version, API, or behavior differed from what the spec assumed
+
+**Entry format** — each entry is a simple card:
+
+```html
+<section class="note-entry">
+  <h3>{Component Name} — {short decision title}</h3>
+  <dl>
+    <dt>Context</dt>
+    <dd>{what the spec said, or didn't say}</dd>
+    <dt>Decision</dt>
+    <dd>{what you chose and why}</dd>
+    <dt>Alternative</dt>
+    <dd>{what you considered but rejected}</dd>
+  </dl>
+</section>
+```
+
+**Don't log routine implementation** — only decisions where the human would benefit from knowing what happened. If the spec was clear and you followed it, there's nothing to log.
+
+**If no entries are logged by the end of the phase**, delete the empty HTML file rather than leaving an empty document.
+
 ## Build Phase
 
 ### Check Task Progress
@@ -352,6 +389,11 @@ Only reached after PASS or user acceptance:
 
 - {List of files created/modified}
 
+### Implementation Notes
+
+- {count} decisions logged → `implementation-notes-phase-{N}.html`
+- {brief summary of most significant decisions, if any}
+
 ### Review Summary
 
 - Cycles: {N} of 3 max
@@ -372,9 +414,12 @@ Only reached after PASS or user acceptance:
 
 ### Next Steps
 
+- Review implementation notes: `open docs/ideation/{project}/implementation-notes-phase-{N}.html`
 - Review changes: `git log -1 --stat`
 - For next phase: `/ideation:execute-spec spec-phase-{N+1}.md`
 ```
+
+After presenting the completion report, if implementation notes exist, open them in the browser: `open {project-directory}/implementation-notes-phase-{N}.html`
 
 ## Key Principles
 
