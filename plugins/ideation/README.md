@@ -1,6 +1,6 @@
 # Ideation Plugin
 
-Transform brain dumps into structured implementation artifacts through a conversational interview. HTML is used for interactive decision-making (contract with scope slider, codebase exploration maps, visual comparisons during the interview). Markdown is used for reference documents (specs, PRDs) consumed directly by `/execute-spec`. Includes execution workflow for implementing specs in fresh sessions with per-component feedback loops.
+Transform brain dumps into structured implementation artifacts through a conversational interview. HTML is used for interactive decision-making (contract with scope slider, visual comparisons during the interview). Markdown is used for reference documents (specs, PRDs) consumed directly by `/execute-spec`. Includes execution workflow for implementing specs in fresh sessions with per-component feedback loops.
 
 ## Skills
 
@@ -32,19 +32,17 @@ I want to build something. Here's what I'm thinking...
 
 1. **Intake** - Accept your messy, unstructured input without judgment. Take a position upfront — what's strong, what's weak.
 2. **Interview loop** - One question at a time, each with a recommended answer. Explores the codebase inline — if it can look something up instead of asking, it does. Challenges vague demand, undefined terms, and hypothetical users. Loops until confidence >= 95%.
-3. **Exploration visualization** - Generates `_exploration.html` — a visual context map of codebase findings (file tree, pattern cards, infrastructure badges). Opens in your browser so you can see what the agent discovered.
-4. **Contract** - When >= 95% confident, write `contract.html` with a **scope slider** (MVP / Full / Stretch tiers). Drag the slider to see what's in scope at each level, then pick your tier in the terminal. Includes revision lineage tracking via `Supersedes` link.
-5. **HTML visualizations** - During interview and phasing, generates ephemeral HTML pages for decisions: side-by-side comparisons, UI mockups, architecture options. Deleted after you choose.
-6. **Phasing & specs** - Determine phases, generate Markdown specs with feedback loops and failure mode catalogs
-7. **Feedback quality check** - Self-review specs for feedback loop coverage before presenting
-8. **Execution handoff** - SVG dependency graph in contract, copy-to-clipboard execute commands
+3. **Contract** - When >= 95% confident, write `contract.html` with a **scope slider** (MVP / Full / Stretch tiers). Drag the slider to see what's in scope at each level, then pick your tier in the terminal. Includes revision lineage tracking via `Supersedes` link.
+4. **HTML visualizations** - During interview and phasing, generates ephemeral HTML pages for decisions: side-by-side comparisons, UI mockups, architecture options. Deleted after you choose.
+5. **Phasing & specs** - Determine phases, generate Markdown specs with feedback loops and failure mode catalogs
+6. **Feedback quality check** - Self-review specs for feedback loop coverage before presenting
+7. **Execution handoff** - SVG dependency graph in contract, copy-to-clipboard execute commands
 
 **Output artifacts:**
 
 All artifacts are written to `./docs/ideation/{project-name}/`:
 
 ```
-_exploration.html              # Codebase context map (file tree, patterns, infrastructure)
 _comparison.html               # Ephemeral decision aid (deleted after choice is made)
 contract.html                  # Interactive contract with scope slider (for review)
 contract.md                    # Plain contract (for /execute-spec lineage)
@@ -165,11 +163,10 @@ search too...
 3. Explores codebase inline — finds existing tag system, recommends reusing it instead of asking
 4. Challenges assumptions: "Have users complained about folders, or is this your gut?"
 5. Confidence rises to 96/100 after ~5 questions
-6. Generates `_exploration.html` — opens in browser showing the file tree, discovered patterns, and infrastructure (test runner, dev server, etc.)
-7. Generates `contract.html` with scope slider — drag between MVP / Full / Stretch to see what's included at each tier. Pick your scope in the terminal.
-8. After approval, asks: "Straight to specs or PRDs first?"
-9. At decision points (phasing, orchestration), opens side-by-side visual comparisons in browser
-10. Generates Markdown specs with feedback loops and failure modes
+6. Generates `contract.html` with scope slider — drag between MVP / Full / Stretch to see what's included at each tier. Pick your scope in the terminal.
+7. After approval, asks: "Straight to specs or PRDs first?"
+8. At decision points (phasing, orchestration), opens side-by-side visual comparisons in browser
+9. Generates Markdown specs with feedback loops and failure modes
 
 **Result:** Interactive HTML contract for reviewing the plan, plus Markdown specs ready for `/execute-spec`.
 
@@ -182,8 +179,7 @@ flowchart TD
         B --> C{"Confidence<br/>Score"}
         C -->|"< 95"| D["Interview Loop<br/><i>one question at a time,<br/>recommended answer,<br/>explore codebase inline</i>"]
         D --> C
-        C -->|"≥ 95"| EX["Exploration Viz<br/><i>file tree, patterns,<br/>infrastructure badges</i>"]
-        EX --> E["Generate Contract<br/><i>scope slider: MVP/Full/Stretch,<br/>confidence meter, tabs</i>"]
+        C -->|"≥ 95"| E["Generate Contract<br/><i>scope slider: MVP/Full/Stretch,<br/>confidence meter, tabs</i>"]
         E --> F{"User<br/>Approval<br/>(pick scope tier)"}
         F -->|"Needs changes"| E
         F -->|"Approved"| G{"PRDs or<br/>straight to specs?"}
@@ -269,7 +265,7 @@ flowchart TD
 
 ### Reading the Diagram
 
-**Ideation (left/top)** — brain dump → confidence-gated questioning → exploration visualization → contract with scope slider → specs → execution plan. Human approves at each gate.
+**Ideation (left/top)** — brain dump → confidence-gated questioning → contract with scope slider → specs → execution plan. Human approves at each gate.
 
 **Execute-Spec (right/bottom)** — three phases per spec:
 

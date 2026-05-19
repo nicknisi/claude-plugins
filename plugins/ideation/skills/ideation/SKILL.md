@@ -27,30 +27,13 @@ Read and follow `${CLAUDE_PLUGIN_ROOT}/references/interview-engine.md` for the c
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/confidence-rubric.md` for the detailed scoring criteria.
 
-## Phase 2.5: Exploration Visualization
-
-After the interview engine completes and before generating the contract, produce a visual context map of everything discovered during codebase exploration. This helps the user see what the agent found and verify the exploration was thorough.
-
-1. Create output directory `./docs/ideation/{project-name}/` **only now**
-2. Write `_exploration.html` using `references/html-guide.md` components:
-   - **Project overview** — language, framework, key directories, package manager
-   - **File tree** — collapsible tree of relevant directories explored (not the entire repo — just the areas related to the brain dump's scope)
-   - **Pattern cards** — each existing pattern found gets a card: file path, what it does, why it's relevant to this project. These are the "Pattern to follow" references that will appear in specs later.
-   - **Infrastructure badges** — test runner, dev server, CI, linting, type checking — what exists and where
-   - **Conventions found** — naming, file organization, error handling patterns, import style
-   - **Related code** — files and functions most relevant to the proposed feature, with brief descriptions
-3. Open in browser: `open ./docs/ideation/{project-name}/_exploration.html`
-4. Present briefly: "I've mapped out the relevant parts of your codebase — take a look in your browser. Moving on to the contract."
-
-This visualization is a reference artifact — it stays in the project directory and is useful when reviewing specs later. Do not ask for approval; it's informational, not a decision gate. If the interview didn't involve codebase exploration (e.g., a greenfield project with no existing code), skip this step.
-
 ## Phase 3: Contract (HTML)
 
 When confidence ≥ 95%, generate the contract as an interactive HTML document. **Not before.** The contract output is `.html`, NOT `.md`.
 
 1. Use `AskUserQuestion` to confirm project name if not obvious from context
 2. Convert to kebab-case for directory name
-3. The output directory `./docs/ideation/{project-name}/` should already exist from Phase 2.5. If it doesn't (greenfield project with no exploration), create it now.
+3. Create output directory `./docs/ideation/{project-name}/`
 4. **Check for prior contract (lineage detection)**:
    - Check if `./docs/ideation/{project-name}/contract.html` already exists
    - If it does, read it, extract the Created date from the meta line, and rename it to `contract-{created-date}.html`
@@ -292,7 +275,6 @@ Or run individual phases manually:
 All artifacts written to `./docs/ideation/{project-name}/`:
 
 ```
-_exploration.html                  # Codebase context map (if exploration occurred)
 _comparison.html                   # Ephemeral decision aid (deleted after choice is made)
 contract.html                      # Interactive contract with scope slider (for review)
 contract.md                        # Plain contract (for execute-spec lineage)
@@ -360,7 +342,7 @@ During the interview and phasing stages, generate ephemeral HTML pages when visu
 
 ## Important Notes
 
-- **HTML is for interactive artifacts only** — contract, exploration map, and ephemeral decision visualizations. Specs and PRDs are Markdown.
+- **HTML is for interactive artifacts only** — contract and ephemeral decision visualizations. Specs and PRDs are Markdown.
 - **Use the `Read` tool to load templates before writing.** You MUST read `references/html-guide.md` before Phase 3 and read `references/contract-template.html` before generating the contract. Read `references/spec-template.md` before generating specs.
 - **Use `AskUserQuestion` for all questions and approvals.** One question at a time, with your recommended answer.
 - **Score confidence conservatively.** When uncertain, score lower. No fixed question limit.
