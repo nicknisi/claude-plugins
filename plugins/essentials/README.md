@@ -321,6 +321,36 @@ Compact the current conversation into a handoff document so a fresh agent can co
 /essentials:handoff finish the paragraph-level detection
 ```
 
+#### `/essentials:zoom-out` - Codebase Orientation Map
+
+Go up a layer of abstraction and map the surrounding architecture when you're unfamiliar with an area of code.
+
+**When to use:**
+
+- You're looking at unfamiliar code and need the big picture
+- You want to understand how a file or module connects to the rest of the system
+- You need to know what calls something, or what it depends on
+
+**What it produces:**
+
+1. **One-sentence orientation** — what this module is and why it exists
+2. **Ancestry** — the call chain or module hierarchy 2-3 levels up
+3. **Sibling map** — peer modules at the same abstraction level
+4. **Key connections** — inbound callers and outbound dependencies
+5. **Domain vocabulary** — the 3-5 most important domain terms in context
+
+**What it doesn't do:**
+
+- No line-by-line code explanation
+- No refactoring suggestions — orientation only
+- No guessing — it reads the code first
+
+**Example:**
+
+```bash
+/essentials:zoom-out
+```
+
 #### `/essentials:security-audit` - Dispatch Security Auditor
 
 Explicit entry point for the security-auditor agent. User-invocable only — does not auto-trigger, so ambiguous phrasing won't kick it off unintentionally.
@@ -386,7 +416,7 @@ Claude: *engages ultrathink mode, questions assumptions, crafts elegant solution
 
 ## Keywords
 
-`git`, `commit`, `ultrathink`, `workflow`, `agents`, `link-reader`, `twitter`, `reddit`, `pr`, `review`, `simplify`, `de-slopify`, `codebase-cleanup`, `cleanup`, `code-quality`, `security`, `audit`, `vulnerability`, `squad-review`, `parallel-review`, `multi-agent`, `handoff`, `context`, `session`
+`git`, `commit`, `ultrathink`, `workflow`, `agents`, `link-reader`, `twitter`, `reddit`, `pr`, `review`, `simplify`, `de-slopify`, `codebase-cleanup`, `cleanup`, `code-quality`, `security`, `audit`, `vulnerability`, `squad-review`, `parallel-review`, `multi-agent`, `handoff`, `context`, `session`, `zoom-out`, `orientation`, `architecture`
 
 ## Technical Details
 
