@@ -1,6 +1,6 @@
 {
   "name": "ideation",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "Transform brain dumps into implementation specs through conversational interviews. Interactive HTML contract for planning decisions, Markdown specs for execution. /ideation:autopilot orchestrates full project execution — dispatches subagents per phase, parallel when possible, gates on failures.",
   "author": {
     "name": "Nick Nisi",

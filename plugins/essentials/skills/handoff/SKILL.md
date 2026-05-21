@@ -26,7 +26,7 @@ Include these sections (skip any that don't apply):
 
 **Next steps** — Concrete actions for the next session, ordered by priority.
 
-**Suggested skills** — Skills that would help the next session (e.g., `test-driven-development`, `systematic-debugging`).
+**Suggested skills** — Include a "suggested skills" section in the document, which suggests skills that the agent should invoke.
 
 ## What NOT to include
 

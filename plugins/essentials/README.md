@@ -4,7 +4,7 @@ Essential agents, commands, and tools for enhanced Claude Code workflows.
 
 ## Overview
 
-The Essentials plugin provides foundational capabilities that improve how you work with Claude Code. It includes specialized agents for common development tasks and skills for deep thinking, reading blocked URLs, simplifying code, creating PRs, auditing code for security vulnerabilities, and running repo-wide quality sweeps.
+The Essentials plugin provides foundational capabilities that improve how you work with Claude Code. It includes specialized agents for common development tasks and skills for deep thinking, reading blocked URLs, simplifying code, creating PRs, auditing code for security vulnerabilities, running repo-wide quality sweeps, codebase orientation, and throwaway prototyping.
 
 ## What's Included
 
