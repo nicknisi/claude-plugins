@@ -25,7 +25,18 @@ Use whatever the host project uses. If the project has no obvious runtime (e.g. 
 
 Match the project's existing conventions for tooling — don't add a new package manager or runtime just for the prototype.
 
-### 3. Isolate the logic in a portable module
+### 3. Scaffold, then replace the domain logic
+
+Run the scaffolder first to generate the shell and a starter logic module:
+
+```bash
+bash ${CLAUDE_PLUGIN_ROOT}/skills/prototype/scripts/scaffold.sh tui \
+  --name <prototype-name> --lang <ts|py> --outdir <target-dir>
+```
+
+This gives you a `logic.ts`/`logic.py` with a placeholder reducer and a `shell.ts`/`shell.py` that drives it. Replace the placeholder `State`, `Action`, and `reduce` with the real domain logic — that's the interesting part.
+
+#### Isolate the logic in a portable module
 
 Put the actual logic — the bit that's answering the question — behind a small, pure interface that could be lifted out and dropped into the real codebase later. The interactive shell around it is throwaway; the logic module shouldn't be.
 

@@ -28,6 +28,20 @@ Identify which question is being answered — from the user's prompt, the argume
 
 The two branches produce very different artifacts — getting this wrong wastes the whole prototype. If the question is genuinely ambiguous and the user isn't reachable, default to whichever branch better matches the surrounding code (a backend module → logic; a page or component → UI) and state the assumption at the top of the prototype.
 
+## Scaffolder
+
+Before writing boilerplate, run the bundled scaffolder to generate the repetitive parts (switcher component, TUI shell, variant stubs). Then fill in the interesting parts — the actual variants or the domain logic.
+
+```bash
+# UI prototype: generates PrototypeSwitcher + variant shells
+bash scripts/scaffold.sh ui --variants 3 --framework next --outdir ./src/app/settings
+
+# Logic prototype: generates portable logic module + TUI shell
+bash scripts/scaffold.sh tui --name checkout-flow --lang ts --outdir ./src/checkout
+```
+
+Use `${CLAUDE_PLUGIN_ROOT}/skills/prototype/scripts/scaffold.sh` as the script path. The scaffolder handles React (Next, React Router, Vite), TypeScript TUI, and Python TUI. For other frameworks, it creates the directory structure and you fill in the components manually.
+
 ## Rules that apply to both
 
 1. **Throwaway from day one, and clearly marked as such.** Locate the prototype code close to where it will actually be used (next to the module or page it's prototyping for) so context is obvious. Use a naming convention that makes it impossible to confuse with production code — prefix files or folders with `__prototype-` or put them in a `prototype/` subfolder next to the target module. For throwaway UI routes, obey whatever routing convention the project already uses; don't invent a new top-level structure.

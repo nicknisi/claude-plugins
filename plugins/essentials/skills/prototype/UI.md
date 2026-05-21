@@ -55,19 +55,33 @@ Variants must be **structurally different** — different layout, different info
 
 **Use realistic data** — real string lengths, real item counts, real edge cases like long names or empty states. Lorem ipsum and 3-item placeholder lists hide the UX problems the prototype is supposed to find. If the page fetches real data, use it. If not, write fixtures that match production shapes and volumes.
 
-### 3. Wire them together
+### 3. Scaffold, then wire together
 
-Create a single switcher component on the route. Adapt to whatever framework the project uses — the pattern is the same, only the router API differs:
+Run the scaffolder to generate the `PrototypeSwitcher` component, variant shell files, and wiring example:
+
+```bash
+bash ${CLAUDE_PLUGIN_ROOT}/skills/prototype/scripts/scaffold.sh ui \
+  --variants 3 --framework next --outdir <target-dir>
+```
+
+This creates an `__prototype/` directory with:
+- `PrototypeSwitcher.tsx` — the floating bottom bar (keyboard nav, URL param sync, production guard)
+- `VariantA.tsx`, `VariantB.tsx`, `VariantC.tsx` — shell files to fill in
+- `wiring-example.tsx` — copy-paste snippet showing how to mount in the route
+
+For non-React frameworks (Vue, Svelte), the scaffolder creates the directory structure — adapt the components to your framework's conventions. The pattern is identical: variants as components, switcher reads a URL search param.
+
+Wire the switcher into the route:
 
 ```tsx
-// React/Next.js example — adapt for Vue, Svelte, etc.
 const variant = searchParams.get('variant') ?? 'A';
 return (
   <>
     {variant === 'A' && <VariantA {...data} />}
     {variant === 'B' && <VariantB {...data} />}
     {variant === 'C' && <VariantC {...data} />}
-    <PrototypeSwitcher variants={['A', 'B', 'C']} current={variant} />
+    <PrototypeSwitcher variants={['A', 'B', 'C']} current={variant}
+      onChange={(v) => router.replace(`?variant=${v}`)} />
   </>
 );
 ```
@@ -76,22 +90,7 @@ For sub-shape A (existing page): keep all the existing data fetching above the s
 
 For sub-shape B (new page): the throwaway route under `/prototype/<name>` mounts the same switcher.
 
-### 4. Build the floating switcher
-
-A small fixed-position bar at the bottom-centre of the screen with three pieces:
-
-- **Left arrow** — cycles to the previous variant (wraps around).
-- **Variant label** — shows the current variant key and, if the variant exports a name, that name too. e.g. `B — Sidebar layout`.
-- **Right arrow** — cycles forward (wraps around).
-
-Behaviour:
-
-- Clicking an arrow updates the URL search param (use the framework's router — `router.replace` on Next, `navigate` on React Router, `goto` on SvelteKit, etc.) so the variant is shareable and reload-stable.
-- Keyboard: `←` and `→` arrow keys also cycle. Don't intercept arrow keys when an `<input>`, `<textarea>`, or `[contenteditable]` is focused.
-- Visually distinct from the page (e.g. high-contrast pill, subtle shadow) so it's obviously not part of the design being evaluated.
-- Hidden outside development — gate on whatever dev/prod flag the project already uses (`process.env.NODE_ENV`, `import.meta.env.DEV`, a feature flag, etc.) so a stray prototype merge can't ship the bar to users.
-
-Put the switcher in a single shared component so both sub-shapes can reuse it. Locate it wherever shared UI lives in the project.
+Now fill in each variant file with a **structurally different** layout — the scaffolder only gives you the shell.
 
 ### 5. Hand it over
 
