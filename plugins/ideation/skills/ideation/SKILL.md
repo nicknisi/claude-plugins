@@ -29,30 +29,53 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/confidence-rubric.md` for the detailed sc
 
 ## Phase 3: Contract (HTML)
 
-When confidence ≥ 95%, generate the contract as an interactive HTML document. **Not before.** The contract output is `.html`, NOT `.md`.
+When confidence ≥ 95%, generate the contract as an interactive HTML document. **Not before.**
 
 1. Use `AskUserQuestion` to confirm project name if not obvious from context
-2. Convert to kebab-case for directory name
-3. Create output directory `./docs/ideation/{project-name}/`
-4. **Check for prior contract (lineage detection)**:
-   - Check if `./docs/ideation/{project-name}/contract.html` already exists
-   - If it does, read it, extract the Created date from the meta line, and rename it to `contract-{created-date}.html`
-   - Also rename any sibling `contract.md` to `contract-{created-date}.md` so both formats stay in sync
-   - Set the new contract's Supersedes link to the renamed HTML file path
-   - If no prior contract exists, omit the Supersedes link
-5. **MANDATORY: Use `Read` tool to read `references/html-guide.md` now.** This file contains all CSS design tokens, component patterns, and the document skeleton. You cannot generate correct HTML without it. Do not skip this step.
-6. **MANDATORY: Use `Read` tool to read `references/contract-template.html` now.** This is the HTML structure to follow. Fill in the `{placeholder}` values with contract content.
-7. Write `contract.html` following the template structure with ALL CSS and JS inlined. The file must be a complete, self-contained HTML document that opens correctly in a browser from `file://`.
+2. Convert to kebab-case for directory name (this becomes the `slug`)
+3. Create output directory `./docs/ideation/{slug}/`
+4. **Write `contract-data.json`** in the output directory. This is a JSON file conforming to the `ContractData` schema — the CLI generates the HTML from it. The JSON captures all interview findings:
 
-**The contract is HTML, not Markdown.** If you find yourself writing `# Heading` or `- bullet` to the contract file, stop — you are writing Markdown. Write `<h1>Heading</h1>` and `<li>bullet</li>` instead.
+   ```json
+   {
+     "projectName": "Human-Readable Name",
+     "slug": "kebab-case-name",
+     "date": "YYYY-MM-DD",
+     "status": "Draft",
+     "supersedes": null,
+     "confidence": { "score": 97, "scope": "High", "risk": "Med", "effort": "High", "clarity": "High", "tests": "Med" },
+     "problem": ["paragraph 1", "paragraph 2"],
+     "goals": ["Measurable goal 1", "Measurable goal 2"],
+     "successCriteria": ["Pass/fail criterion 1", "Pass/fail criterion 2"],
+     "scope": {
+       "mvp": [{"item": "Core feature", "reason": "Why it's MVP"}],
+       "full": [{"item": "Full feature", "reason": "Optional rationale"}],
+       "stretch": [{"item": "Stretch feature"}],
+       "outOfScope": [{"item": "Excluded item", "reason": "Why excluded"}],
+       "future": ["Deferred idea 1"]
+     },
+     "execution": {
+       "strategy": "Sequential",
+       "phases": [
+         {"title": "Phase name", "prototype": {"question": "question to answer", "branch": "logic"}}
+       ],
+       "agentTeamPrompt": "only if 2+ phases parallelizable"
+     }
+   }
+   ```
 
-8. **Include a scope slider** in the Scope tab. Define 3 scope tiers based on the interview findings:
-   - **MVP** — minimum viable version, core functionality only
-   - **Full** — everything in the contract's "In Scope" section
-   - **Stretch** — full scope plus items from "Future Considerations" that could be pulled in
-     For each tier, list what's included and excluded. Use a range input (`<input type="range">`) with 3 stops that reveals/hides scope items as the user drags. The slider is a visual aid — the user sees what each tier includes, then tells you in the terminal which tier to target. This replaces the static in-scope/out-of-scope lists for the Scope tab.
-9. After writing, open in browser: run `open ./docs/ideation/{project-name}/contract.html` (macOS) or `xdg-open` (Linux)
-10. Use `AskUserQuestion` to get approval — include the scope tier question:
+   For each phase, include a `prototype` field only when the phase involves a design question that benefits from spiking before building — UI exploration with multiple valid layouts, or a state model whose edge cases are hard to reason about on paper. Most phases won't need one.
+
+5. **Run the contract generator**:
+   ```bash
+   npx tsx ${CLAUDE_PLUGIN_ROOT}/scripts/contract-gen.ts \
+     --input ./docs/ideation/{slug}/contract-data.json \
+     --output ./docs/ideation/{slug}/contract.html
+   ```
+   The CLI handles lineage automatically — if `contract.html` already exists, it renames it to `contract-{date}.html` and sets the supersedes link.
+
+6. Open in browser: run `open ./docs/ideation/{slug}/contract.html` (macOS) or `xdg-open` (Linux)
+7. Use `AskUserQuestion` to get approval — include the scope tier question:
 
 ```
 Question: "Does this contract capture your intent? Use the scope slider in your browser to pick a tier."
