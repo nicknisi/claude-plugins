@@ -351,6 +351,36 @@ Go up a layer of abstraction and map the surrounding architecture when you're un
 /essentials:zoom-out
 ```
 
+#### `/essentials:prototype` - Throwaway Prototype Builder
+
+Build throwaway code that answers a design question before committing to real implementation. Routes between two branches based on what kind of question you're asking.
+
+**When to use:**
+
+- Spiking out a state machine or data model before building it for real
+- Exploring several radically different UI layouts before picking one
+- Validating an API surface or business logic flow
+- Any time you'd say "let me try something before committing"
+
+**Two branches:**
+
+- **Logic** — builds a tiny interactive app (TUI or localhost page) that lets you drive a state model by hand. The logic module is portable and liftable into production; the interactive shell gets deleted.
+- **UI** — generates 3+ structurally different UI variants on a single route, switchable via a floating bottom bar and `?variant=` URL param. Pick a winner, steal parts from others, delete the rest.
+
+**Features:**
+
+- Auto-routes to the right branch based on the question type
+- Accepts arguments: `/essentials:prototype the checkout flow state machine`
+- Locates prototype code next to the module it's prototyping
+- One command to run — wired into the project's existing task runner
+- Captures the answer (the only durable output) before cleanup
+
+**Example:**
+
+```bash
+/essentials:prototype what should the settings page look like
+```
+
 #### `/essentials:security-audit` - Dispatch Security Auditor
 
 Explicit entry point for the security-auditor agent. User-invocable only — does not auto-trigger, so ambiguous phrasing won't kick it off unintentionally.
@@ -416,7 +446,7 @@ Claude: *engages ultrathink mode, questions assumptions, crafts elegant solution
 
 ## Keywords
 
-`git`, `commit`, `ultrathink`, `workflow`, `agents`, `link-reader`, `twitter`, `reddit`, `pr`, `review`, `simplify`, `de-slopify`, `codebase-cleanup`, `cleanup`, `code-quality`, `security`, `audit`, `vulnerability`, `squad-review`, `parallel-review`, `multi-agent`, `handoff`, `context`, `session`, `zoom-out`, `orientation`, `architecture`
+`git`, `commit`, `ultrathink`, `workflow`, `agents`, `link-reader`, `twitter`, `reddit`, `pr`, `review`, `simplify`, `de-slopify`, `codebase-cleanup`, `cleanup`, `code-quality`, `security`, `audit`, `vulnerability`, `squad-review`, `parallel-review`, `multi-agent`, `handoff`, `context`, `session`, `zoom-out`, `orientation`, `architecture`, `prototype`, `spike`, `poc`, `proof-of-concept`
 
 ## Technical Details
 
