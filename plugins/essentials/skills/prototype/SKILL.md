@@ -34,13 +34,13 @@ Before writing boilerplate, run the bundled scaffolder to generate the repetitiv
 
 ```bash
 # UI prototype: generates PrototypeSwitcher + variant shells
-bash scripts/scaffold.sh ui --variants 3 --framework next --outdir ./src/app/settings
+npx tsx ${CLAUDE_PLUGIN_ROOT}/skills/prototype/scripts/scaffold.ts ui --variants 3 --framework next --outdir ./src/app/settings
 
 # Logic prototype: generates portable logic module + TUI shell
-bash scripts/scaffold.sh tui --name checkout-flow --lang ts --outdir ./src/checkout
+npx tsx ${CLAUDE_PLUGIN_ROOT}/skills/prototype/scripts/scaffold.ts tui --name checkout-flow --outdir ./src/checkout
 ```
 
-Use `${CLAUDE_PLUGIN_ROOT}/skills/prototype/scripts/scaffold.sh` as the script path. The scaffolder handles React (Next, React Router, Vite), TypeScript TUI, and Python TUI. For other frameworks, it creates the directory structure and you fill in the components manually.
+The scaffolder handles React UI (Next, React Router, Vite) and TypeScript TUI. For other UI frameworks, it creates the directory structure with React components — adapt them to your framework.
 
 ## Rules that apply to both
 

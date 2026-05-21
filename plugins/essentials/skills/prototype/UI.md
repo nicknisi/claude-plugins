@@ -60,7 +60,7 @@ Variants must be **structurally different** — different layout, different info
 Run the scaffolder to generate the `PrototypeSwitcher` component, variant shell files, and wiring example:
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/skills/prototype/scripts/scaffold.sh ui \
+npx tsx ${CLAUDE_PLUGIN_ROOT}/skills/prototype/scripts/scaffold.ts ui \
   --variants 3 --framework next --outdir <target-dir>
 ```
 

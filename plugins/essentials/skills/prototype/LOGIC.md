@@ -30,11 +30,11 @@ Match the project's existing conventions for tooling — don't add a new package
 Run the scaffolder first to generate the shell and a starter logic module:
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/skills/prototype/scripts/scaffold.sh tui \
-  --name <prototype-name> --lang <ts|py> --outdir <target-dir>
+npx tsx ${CLAUDE_PLUGIN_ROOT}/skills/prototype/scripts/scaffold.ts tui \
+  --name <prototype-name> --outdir <target-dir>
 ```
 
-This gives you a `logic.ts`/`logic.py` with a placeholder reducer and a `shell.ts`/`shell.py` that drives it. Replace the placeholder `State`, `Action`, and `reduce` with the real domain logic — that's the interesting part.
+This gives you a `logic.ts` with a placeholder reducer and a `shell.ts` that drives it. Replace the placeholder `State`, `Action`, and `reduce` with the real domain logic — that's the interesting part.
 
 #### Isolate the logic in a portable module
 
