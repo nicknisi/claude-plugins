@@ -11,10 +11,6 @@ interface ScopeItem {
 
 interface Phase {
   title: string;
-  prototype?: {
-    question: string;
-    branch: "logic" | "ui";
-  };
 }
 
 interface ContractData {
@@ -86,26 +82,15 @@ function outOfScopeItems(items: ScopeItem[]): string {
 
 // --- SVG Dependency Graph ---
 
-function buildSvg(phases: Phase[], slug: string): string {
-  const nodes: { label: string; y: number; isPrototype: boolean }[] = [];
-  let y = 10;
+function buildSvg(phases: Phase[]): string {
   const stride = 90;
-
-  for (const phase of phases) {
-    if (phase.prototype) {
-      nodes.push({
-        label: `▸ Prototype: ${phase.title}`,
-        y,
-        isPrototype: true,
-      });
-      y += stride;
-    }
-    nodes.push({ label: phase.title, y, isPrototype: false });
-    y += stride;
-  }
-
-  const height = y - stride + 70;
+  const height = phases.length * stride - stride + 80;
   const width = 280;
+  const boxX = 20;
+  const boxW = width - 40;
+  const boxH = 60;
+  const rx = 8;
+  const cx = boxX + boxW / 2;
 
   let svg = `          <svg
             class="dep-graph"
@@ -121,31 +106,17 @@ function buildSvg(phases: Phase[], slug: string): string {
               </marker>
             </defs>\n`;
 
-  for (let i = 0; i < nodes.length; i++) {
-    const n = nodes[i];
-    const boxX = 20;
-    const boxW = width - 40;
-    const boxH = 60;
-    const rx = 8;
-    const cx = boxX + boxW / 2;
-
-    if (n.isPrototype) {
-      svg += `
+  for (let i = 0; i < phases.length; i++) {
+    const y = 10 + i * stride;
+    svg += `
             <g class="node">
-              <rect x="${boxX}" y="${n.y}" width="${boxW}" height="${boxH}" rx="${rx}" ry="${rx}" stroke-dasharray="6 3" />
-              <text x="${cx}" y="${n.y + 35}" text-anchor="middle">${esc(n.label)}</text>
+              <rect x="${boxX}" y="${y}" width="${boxW}" height="${boxH}" rx="${rx}" ry="${rx}" />
+              <text x="${cx}" y="${y + 35}" text-anchor="middle">${esc(phases[i].title)}</text>
             </g>\n`;
-    } else {
-      svg += `
-            <g class="node">
-              <rect x="${boxX}" y="${n.y}" width="${boxW}" height="${boxH}" rx="${rx}" ry="${rx}" />
-              <text x="${cx}" y="${n.y + 35}" text-anchor="middle">${esc(n.label)}</text>
-            </g>\n`;
-    }
 
-    if (i < nodes.length - 1) {
-      const lineY1 = n.y + boxH;
-      const lineY2 = nodes[i + 1].y;
+    if (i < phases.length - 1) {
+      const lineY1 = y + boxH;
+      const lineY2 = 10 + (i + 1) * stride;
       svg += `            <line x1="${cx}" y1="${lineY1}" x2="${cx}" y2="${lineY2}" marker-end="url(#arrow)" />\n`;
     }
   }
@@ -158,36 +129,20 @@ function buildSvg(phases: Phase[], slug: string): string {
 
 function buildExecutionSteps(phases: Phase[], slug: string): string {
   let html = "";
-  let cmdIdx = 1;
 
   for (let i = 0; i < phases.length; i++) {
-    const phase = phases[i];
     const phaseNum = i + 1;
     const blocking = i === 0 ? " <em>(blocking)</em>" : "";
 
-    if (phase.prototype) {
-      html += `
-          <h3>Prototype — ${esc(phase.title)}</h3>
-          <div class="code-block">
-            <div class="code-header">
-              <span class="code-lang">bash</span>
-              <button class="copy-btn" data-copy="cmd-${cmdIdx}" type="button">Copy</button>
-            </div>
-            <pre><code id="cmd-${cmdIdx}">/essentials:prototype ${esc(phase.prototype.question)}</code></pre>
-          </div>\n`;
-      cmdIdx++;
-    }
-
     html += `
-          <h3>Phase ${phaseNum} — ${esc(phase.title)}${blocking}</h3>
+          <h3>Phase ${phaseNum} — ${esc(phases[i].title)}${blocking}</h3>
           <div class="code-block">
             <div class="code-header">
               <span class="code-lang">bash</span>
-              <button class="copy-btn" data-copy="cmd-${cmdIdx}" type="button">Copy</button>
+              <button class="copy-btn" data-copy="cmd-${phaseNum}" type="button">Copy</button>
             </div>
-            <pre><code id="cmd-${cmdIdx}">/execute-spec docs/ideation/${esc(slug)}/spec-phase-${phaseNum}.md</code></pre>
+            <pre><code id="cmd-${phaseNum}">/execute-spec docs/ideation/${esc(slug)}/spec-phase-${phaseNum}.md</code></pre>
           </div>\n`;
-    cmdIdx++;
   }
 
   return html;
@@ -413,7 +368,7 @@ ${d.scope.future.map((f) => `                <li>${esc(f)}</li>`).join("\n")}
 
         <div class="tab-panel">
           <h2>Dependency Graph</h2>
-${buildSvg(d.execution.phases, d.slug)}
+${buildSvg(d.execution.phases)}
 
           <h2>Execution Steps</h2>
           <p><strong>Strategy:</strong> ${esc(d.execution.strategy)}</p>

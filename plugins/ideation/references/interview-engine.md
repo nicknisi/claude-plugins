@@ -49,19 +49,19 @@ When confidence reaches ≥ 95%, stop interviewing and generate the contract. Th
 
 ### When to suggest a prototype
 
-Some questions can't be answered by discussion — they need to be tried. When you hit a question where the answer is "we won't know until we build it" (e.g., "does this state model handle the edge case where X then Y?", "which of these layouts feels right?"), suggest a prototype spike instead of pushing through with low confidence:
+Some questions can't be answered by discussion — they need to be tried. When you hit a question where the answer is "we won't know until we build it" (e.g., "does this state model handle the edge cases?", "which of these layouts feels right?"), suggest a quick spike instead of pushing through with low confidence:
 
 ```
 Question: "This question is hard to answer in the abstract. Want to spike a quick prototype to find out?"
 Options:
-- "Yes, spike it now" — Run /essentials:prototype to answer the question, then resume the interview
+- "Yes, spike it now" — Build a quick throwaway prototype to answer the question, then resume the interview
 - "No, make a decision and move on (Recommended)" — Pick the most defensible option and continue
 - "Flag it for later" — Note it as an open question in the contract
 ```
 
-If the user chooses to spike, invoke `/essentials:prototype` with the question as the argument. When the prototype answers the question, fold the answer back into the interview and continue. The prototype itself is throwaway — only the answer matters.
+If the user chooses to spike, help them build the simplest possible throwaway that answers the question. When it does, fold the answer back into the interview and continue. The prototype itself is disposable — only the answer matters.
 
-This is optional — most interviews don't need it. But when a question is genuinely blocked on "we'd have to try it to know," a 10-minute prototype beats a 30-minute circular discussion.
+This is optional — most interviews don't need it. But when a question is genuinely blocked on "we'd have to try it to know," a 10-minute spike beats a 30-minute circular discussion.
 
 ### What to challenge during the interview
 

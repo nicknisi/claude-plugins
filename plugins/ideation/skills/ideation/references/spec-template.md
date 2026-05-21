@@ -19,13 +19,6 @@ Use this template when generating `spec-phase-{n}.md` for each approved phase.
 - Patterns or frameworks to use
 - Any spikes or research needed}
 
-**Prototype recommended**: {yes/no — set to "yes" when the phase involves UI exploration with multiple valid layouts, or a state model whose edge cases are hard to reason about on paper. When "yes", include the prototype question and branch:}
-- **Question**: {The question the prototype should answer, e.g., "Which layout works best for the settings page?"}
-- **Branch**: {logic or ui}
-- **Run**: `/essentials:prototype {the question}`
-
-{Omit this block entirely when no prototype is needed — most phases won't need one. Reserve it for phases where the design decision genuinely benefits from trying before committing.}
-
 ## Feedback Strategy
 
 **Inner-loop command**: `{single command that validates the most common change — e.g., pnpm test --filter bookmarks, curl localhost:3000/api/health, pnpm storybook --ci}`

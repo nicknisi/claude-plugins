@@ -57,14 +57,12 @@ When confidence ≥ 95%, generate the contract as an interactive HTML document. 
      "execution": {
        "strategy": "Sequential",
        "phases": [
-         {"title": "Phase name", "prototype": {"question": "question to answer", "branch": "logic"}}
+         {"title": "Phase name"}
        ],
        "agentTeamPrompt": "only if 2+ phases parallelizable"
      }
    }
    ```
-
-   For each phase, include a `prototype` field only when the phase involves a design question that benefits from spiking before building — UI exploration with multiple valid layouts, or a state model whose edge cases are hard to reason about on paper. Most phases won't need one.
 
 5. **Run the contract generator**:
    ```bash
