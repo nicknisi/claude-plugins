@@ -43,7 +43,16 @@ When confidence ≥ 95%, generate the contract as an interactive HTML document. 
      "date": "YYYY-MM-DD",
      "status": "Draft",
      "supersedes": null,
-     "confidence": { "score": 97, "scope": "High", "risk": "Med", "effort": "High", "clarity": "High", "tests": "Med" },
+     "confidence": {
+       "score": 96,
+       "dimensions": [
+         { "key": "scope", "score": 100, "label": "Scope", "reason": "One sentence explaining the score" },
+         { "key": "risk", "score": 92, "label": "Risk", "reason": "One sentence" },
+         { "key": "effort", "score": 95, "label": "Effort", "reason": "One sentence" },
+         { "key": "clarity", "score": 98, "label": "Clarity", "reason": "One sentence" },
+         { "key": "tests", "score": 95, "label": "Tests", "reason": "One sentence" }
+       ]
+     },
      "problem": ["paragraph 1", "paragraph 2"],
      "goals": ["Measurable goal 1", "Measurable goal 2"],
      "successCriteria": ["Pass/fail criterion 1", "Pass/fail criterion 2"],
@@ -57,12 +66,22 @@ When confidence ≥ 95%, generate the contract as an interactive HTML document. 
      "execution": {
        "strategy": "Sequential",
        "phases": [
-         {"title": "Phase name"}
+         {
+           "title": "Phase name",
+           "risk": "low",
+           "blocking": true,
+           "specPath": "docs/ideation/slug/spec-phase-1.md",
+           "notes": "Brief description of what this phase covers"
+         }
        ],
        "agentTeamPrompt": "only if 2+ phases parallelizable"
      }
    }
    ```
+
+   **Confidence dimensions:** Each dimension gets a numeric score (0-100) and a one-sentence reason. The overall `score` is what the hero displays; dimensions show the breakdown.
+
+   **Phase fields:** `risk` (high/medium/low), `blocking` (boolean), `specPath` (path to spec), `notes` (brief description). Optional: `kind` ("gate" for human checkpoints), `prereqs` (array of phase titles this depends on).
 
 5. **Run the contract generator**:
    ```bash

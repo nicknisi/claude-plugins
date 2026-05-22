@@ -1,6 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const CSS = readFileSync(join(__dirname, "contract-gen.css"), "utf8");
 
 // --- Types ---
 
@@ -9,8 +13,21 @@ interface ScopeItem {
   reason?: string;
 }
 
+interface ConfidenceDimension {
+  key: string;
+  score: number;
+  label: string;
+  reason: string;
+}
+
 interface Phase {
   title: string;
+  risk?: "high" | "medium" | "low";
+  blocking?: boolean;
+  kind?: "gate" | "phase";
+  prereqs?: string[];
+  specPath?: string;
+  notes?: string;
 }
 
 interface ContractData {
@@ -21,11 +38,7 @@ interface ContractData {
   supersedes: string | null;
   confidence: {
     score: number;
-    scope: "High" | "Med" | "Low";
-    risk: "High" | "Med" | "Low";
-    effort: "High" | "Med" | "Low";
-    clarity: "High" | "Med" | "Low";
-    tests: "High" | "Med" | "Low";
+    dimensions: ConfidenceDimension[];
   };
   problem: string[];
   goals: string[];
@@ -38,13 +51,13 @@ interface ContractData {
     future: string[];
   };
   execution: {
-    strategy: "Sequential" | "Agent Team" | "Hybrid";
+    strategy: string;
     phases: Phase[];
     agentTeamPrompt?: string;
   };
 }
 
-// --- HTML Helpers ---
+// --- Helpers ---
 
 function esc(s: string): string {
   return s
@@ -54,369 +67,343 @@ function esc(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function scopeItems(items: ScopeItem[], tier: number, label: string, cssClass: string): string {
-  return items
-    .map(
-      (it) =>
-        `              <div class="scope-item ${cssClass}" data-tier="${tier}">
-                <strong>${label}:</strong> ${esc(it.item)}${
-                  it.reason ? `\n                <div class="scope-reason">${esc(it.reason)}</div>` : ""
-                }
-              </div>`,
-    )
-    .join("\n");
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
 }
 
-function outOfScopeItems(items: ScopeItem[]): string {
-  return items
-    .map(
-      (it) =>
-        `          <div class="scope-out">
-            <strong>Out of scope:</strong> ${esc(it.item)}${
-              it.reason ? `\n            <div class="scope-reason">${esc(it.reason)}</div>` : ""
-            }
-          </div>`,
-    )
-    .join("\n");
+function confidenceColor(score: number): string {
+  if (score < 60) return "var(--red-9)";
+  if (score < 75) return "var(--yellow-11)";
+  return "var(--green-9)";
 }
 
-// --- SVG Dependency Graph ---
-
-function buildSvg(phases: Phase[]): string {
-  const stride = 90;
-  const height = phases.length * stride - stride + 80;
-  const width = 280;
-  const boxX = 20;
-  const boxW = width - 40;
-  const boxH = 60;
-  const rx = 8;
-  const cx = boxX + boxW / 2;
-
-  let svg = `          <svg
-            class="dep-graph"
-            viewBox="0 0 ${width} ${height}"
-            width="${width}"
-            height="${height}"
-            role="img"
-            aria-label="Phase dependency graph"
-          >
-            <defs>
-              <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-                <path d="M0,0 L10,5 L0,10 z" />
-              </marker>
-            </defs>\n`;
-
-  for (let i = 0; i < phases.length; i++) {
-    const y = 10 + i * stride;
-    svg += `
-            <g class="node">
-              <rect x="${boxX}" y="${y}" width="${boxW}" height="${boxH}" rx="${rx}" ry="${rx}" />
-              <text x="${cx}" y="${y + 35}" text-anchor="middle">${esc(phases[i].title)}</text>
-            </g>\n`;
-
-    if (i < phases.length - 1) {
-      const lineY1 = y + boxH;
-      const lineY2 = 10 + (i + 1) * stride;
-      svg += `            <line x1="${cx}" y1="${lineY1}" x2="${cx}" y2="${lineY2}" marker-end="url(#arrow)" />\n`;
-    }
+function riskMeta(risk: string): { color: string; label: string } {
+  switch (risk) {
+    case "high":
+      return { color: "var(--red-9)", label: "high" };
+    case "medium":
+      return { color: "var(--yellow-11)", label: "med" };
+    default:
+      return { color: "var(--green-11)", label: "low" };
   }
-
-  svg += `          </svg>`;
-  return svg;
 }
 
-// --- Execution Steps ---
+function phaseCommand(phase: Phase, slug: string, index: number): string {
+  if (phase.kind === "gate" && phase.specPath) return `/essentials:review --against ${phase.specPath}`;
+  if (phase.specPath) return `/execute-spec ${phase.specPath}`;
+  return `/execute-spec docs/ideation/${slug}/spec-phase-${index + 1}.md`;
+}
 
-function buildExecutionSteps(phases: Phase[], slug: string): string {
-  let html = "";
+// --- Section Builders ---
 
-  for (let i = 0; i < phases.length; i++) {
-    const phaseNum = i + 1;
-    const blocking = i === 0 ? " <em>(blocking)</em>" : "";
-
-    html += `
-          <h3>Phase ${phaseNum} — ${esc(phases[i].title)}${blocking}</h3>
-          <div class="code-block">
-            <div class="code-header">
-              <span class="code-lang">bash</span>
-              <button class="copy-btn" data-copy="cmd-${phaseNum}" type="button">Copy</button>
+function buildHero(d: ContractData): string {
+  const c = d.confidence;
+  return `
+    <header class="hero">
+      <div class="hero-grid" aria-hidden="true"></div>
+      <div class="hero-content">
+        <div class="hero-top">
+          <div>
+            <div class="hero-slug">
+              <span class="slug-dot"></span>
+              <span>Mission brief · ${esc(d.slug)}</span>
             </div>
-            <pre><code id="cmd-${phaseNum}">/execute-spec docs/ideation/${esc(slug)}/spec-phase-${phaseNum}.md</code></pre>
-          </div>\n`;
-  }
+            <h1 class="hero-title">${esc(d.projectName)}</h1>
+          </div>
+          <div class="hero-meta">
+            <div class="hero-status">${esc(d.status)}</div>
+            <div>${esc(d.date)}</div>
+            ${d.supersedes ? `<div class="hero-supersedes">supersedes ${esc(d.supersedes)}</div>` : ""}
+          </div>
+        </div>
 
-  return html;
+        <div class="hero-score-row">
+          <div class="hero-score-block">
+            <div class="kicker">Plan confidence</div>
+            <div class="score-display">
+              <span class="score-num" style="color: ${confidenceColor(c.score)}">${c.score}</span>
+              <span class="score-denom">/100</span>
+            </div>
+            <div class="score-bar-track">
+              <div class="score-bar-fill" style="width: ${c.score}%; background: ${confidenceColor(c.score)}"></div>
+            </div>
+          </div>
+          <div class="hero-dims">
+            <div class="kicker">By dimension</div>
+            <div class="dim-grid">
+${c.dimensions
+  .map(
+    (dim) => `              <div class="dim-row">
+                <span class="dim-score" style="color: ${confidenceColor(dim.score)}">${dim.score}</span>
+                <div class="dim-detail">
+                  <div class="dim-label">${esc(dim.label.toLowerCase())}</div>
+                  <div class="dim-reason">${esc(dim.reason)}</div>
+                </div>
+              </div>`,
+  )
+  .join("\n")}
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>`;
+}
+
+function buildFirstMove(d: ContractData): string {
+  const phase = d.execution.phases[0];
+  if (!phase) return "";
+  const cmd = phaseCommand(phase, d.slug, 0);
+  return `
+    <section class="first-move">
+      <div class="first-move-grid">
+        <div>
+          <div class="kicker kicker-accent">First move</div>
+          <div class="first-move-headline">Run this.</div>
+          <div class="first-move-phase">Phase 01 — <strong>${esc(phase.title)}</strong></div>
+        </div>
+        <div class="copy-cmd">
+          <span class="copy-cmd-text" id="cmd-first">${esc(cmd)}</span>
+          <button type="button" class="copy-btn copy-btn-accent" data-copy="cmd-first">copy</button>
+        </div>
+      </div>
+    </section>`;
+}
+
+function buildProblemGoals(d: ContractData): string {
+  return `
+    <div class="two-col">
+      <section>
+        <div class="section-hdr">
+          <div class="kicker">Context · 01</div>
+          <h2 class="section-title">The problem</h2>
+        </div>
+        <div class="stack-14">
+${d.problem
+  .map(
+    (p, i) => `          <p class="body-text"><span class="line-num">${pad2(i + 1)}</span>${esc(p)}</p>`,
+  )
+  .join("\n")}
+        </div>
+      </section>
+      <section>
+        <div class="section-hdr">
+          <div class="kicker">Commit · 02</div>
+          <h2 class="section-title">Goals</h2>
+        </div>
+        <div class="stack-14">
+${d.goals
+  .map(
+    (g, i) => `          <div class="goal-card">
+            <span class="goal-num">${i + 1}</span>
+            <span class="goal-text">${esc(g)}</span>
+          </div>`,
+  )
+  .join("\n")}
+        </div>
+      </section>
+    </div>`;
+}
+
+function buildSuccess(d: ContractData): string {
+  return `
+    <section class="section-block">
+      <div class="section-hdr">
+        <div class="kicker">Signal · 03</div>
+        <div class="section-title-row">
+          <h2 class="section-title">Done when…</h2>
+          <span class="section-count">${d.successCriteria.length} signals</span>
+        </div>
+      </div>
+      <ul class="criteria-grid">
+${d.successCriteria
+  .map(
+    (c, i) => `        <li class="criteria-item">
+          <span class="line-num">${pad2(i + 1)}</span>
+          <span>${esc(c)}</span>
+        </li>`,
+  )
+  .join("\n")}
+      </ul>
+    </section>`;
+}
+
+function buildScope(d: ContractData): string {
+  const tierList = (title: string, tone: string, items: ScopeItem[]) => {
+    if (!items.length) return "";
+    return `
+          <div class="tier-group">
+            <div class="tier-header">
+              <span class="tier-dot tier-${tone}"></span>
+              <span class="tier-title">${esc(title)}</span>
+              <span class="tier-rule"></span>
+              <span class="tier-count">×${items.length}</span>
+            </div>
+            <ul class="tier-items">
+${items
+  .map(
+    (it) =>
+      `              <li><strong>${esc(it.item)}</strong>${it.reason ? `<span class="tier-reason">— ${esc(it.reason)}</span>` : ""}</li>`,
+  )
+  .join("\n")}
+            </ul>
+          </div>`;
+  };
+
+  return `
+    <section class="section-block">
+      <div class="section-hdr">
+        <div class="kicker">Boundary · 04</div>
+        <div class="section-title-row">
+          <h2 class="section-title">Scope</h2>
+          <span class="section-count">MVP nests inside Full nests inside Stretch</span>
+        </div>
+      </div>
+
+      <div class="scope-layout">
+        <div class="nested-tiers">
+          <div class="tier-box tier-stretch"><span class="tier-box-label">Stretch <span class="tier-box-count">×${d.scope.stretch.length}</span></span></div>
+          <div class="tier-box tier-full"><span class="tier-box-label">Full <span class="tier-box-count">×${d.scope.full.length}</span></span></div>
+          <div class="tier-box tier-mvp"><span class="tier-box-label">MVP <span class="tier-box-count">×${d.scope.mvp.length}</span></span></div>
+        </div>
+        <div class="tier-lists">
+${tierList("MVP — must ship", "solid", d.scope.mvp)}
+${tierList("Full — target outcome", "soft", d.scope.full)}
+${tierList("Stretch — if time permits", "ghost", d.scope.stretch)}
+        </div>
+      </div>
+
+      <div class="two-col scope-extras">
+        <div class="scope-out-panel">
+          <div class="kicker kicker-danger">Out of scope — said no on purpose</div>
+          <ul class="scope-out-list">
+${d.scope.outOfScope
+  .map(
+    (it) =>
+      `            <li><span class="scope-out-item">${esc(it.item)}</span>${it.reason ? ` <span class="scope-out-reason">— ${esc(it.reason)}</span>` : ""}</li>`,
+  )
+  .join("\n")}
+          </ul>
+        </div>
+        <div class="scope-future-panel">
+          <div class="kicker kicker-muted">Future — someday, maybe</div>
+          <ul class="scope-future-list">
+${d.scope.future.map((f) => `            <li>${esc(f)}</li>`).join("\n")}
+          </ul>
+        </div>
+      </div>
+    </section>`;
+}
+
+function buildExecution(d: ContractData): string {
+  const phases = d.execution.phases;
+  return `
+    <section class="section-block">
+      <div class="section-hdr">
+        <div class="kicker">Run · 05</div>
+        <div class="section-title-row">
+          <h2 class="section-title">Execution</h2>
+          <span class="section-count">${esc(d.execution.strategy)}</span>
+        </div>
+      </div>
+
+      <div class="phase-track" style="grid-template-columns: repeat(${phases.length}, 1fr)">
+${phases
+  .map((p, i) => {
+    const rm = riskMeta(p.risk ?? "low");
+    const isGate = p.kind === "gate";
+    return `        <div class="phase-card${isGate ? " phase-gate" : ""}" style="border-top-color: ${rm.color}">
+          ${i < phases.length - 1 ? '<div class="phase-arrow" aria-hidden="true"></div>' : ""}
+          <div class="phase-head">
+            <span class="phase-num">${pad2(i + 1)}</span>
+            <span class="phase-risk" style="color: ${rm.color}">${rm.label}</span>
+          </div>
+          <div class="phase-title">${esc(p.title)}</div>
+          <div class="phase-kind">${isGate ? "gate" : "phase"}${p.blocking ? " · blocking" : ""}</div>
+          ${p.notes ? `<div class="phase-notes">${esc(p.notes)}</div>` : ""}
+        </div>`;
+  })
+  .join("\n")}
+      </div>
+
+      <div class="autopilot-bar">
+        <div class="autopilot-left">
+          <div class="kicker kicker-accent">Run all phases</div>
+          <div class="autopilot-desc">Autopilot reads the contract, walks the dependency graph, and dispatches phases automatically.</div>
+        </div>
+        <div class="copy-cmd copy-cmd-accent">
+          <span class="copy-cmd-text" id="cmd-autopilot">/ideation:autopilot</span>
+          <button type="button" class="copy-btn copy-btn-accent" data-copy="cmd-autopilot">copy</button>
+        </div>
+      </div>
+
+      <div class="cmd-list-header kicker">Or run individual phases</div>
+      <div class="cmd-list">
+${phases
+  .map((p, i) => {
+    const cmd = phaseCommand(p, d.slug, i);
+    const cmdId = `cmd-${i + 1}`;
+    return `        <div class="cmd-row">
+          <span class="cmd-num">${pad2(i + 1)}</span>
+          <span class="cmd-title">${esc(p.title)}</span>
+          <div class="copy-cmd">
+            <span class="copy-cmd-text" id="${cmdId}">${esc(cmd)}</span>
+            <button type="button" class="copy-btn" data-copy="${cmdId}">copy</button>
+          </div>
+        </div>`;
+  })
+  .join("\n")}
+      </div>
+${
+  d.execution.agentTeamPrompt
+    ? `
+      <details class="agent-team-details">
+        <summary>Agent Team Prompt (parallel execution)</summary>
+        <div class="agent-team-body">
+          <div class="copy-cmd copy-cmd-wide">
+            <span class="copy-cmd-text" id="agent-team-prompt">${esc(d.execution.agentTeamPrompt)}</span>
+            <button type="button" class="copy-btn" data-copy="agent-team-prompt">copy</button>
+          </div>
+        </div>
+      </details>`
+    : ""
+}
+    </section>`;
 }
 
 // --- Main Template ---
 
 function generate(data: ContractData): string {
   const d = data;
-  const c = d.confidence;
 
   return `<!doctype html>
-<html lang="en" data-theme="auto">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${esc(d.projectName)} Contract — Ideation</title>
+    <title>${esc(d.projectName)} — Mission Brief</title>
     <style>
-      :root {
-        --color-bg: #ffffff;
-        --color-surface: #f8f9fa;
-        --color-border: #dee2e6;
-        --color-text: #212529;
-        --color-text-muted: #6c757d;
-        --color-accent: #4361ee;
-        --color-accent-bg: #eef0ff;
-        --color-success: #2d6a4f;
-        --color-success-bg: #d8f3dc;
-        --color-danger: #9b2226;
-        --color-danger-bg: #fde8e8;
-        --color-warning: #b45309;
-        --color-warning-bg: #fef3c7;
-        --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-        --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace;
-        --space-1: 4px; --space-2: 8px; --space-3: 16px; --space-4: 24px; --space-5: 32px; --space-6: 48px;
-        --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px;
-        --max-width: 900px; --sidebar-width: 220px;
-      }
-      @media (prefers-color-scheme: dark) {
-        [data-theme='auto'] {
-          --color-bg: #1a1a2e; --color-surface: #16213e; --color-border: #2a2a4a;
-          --color-text: #e0e0e0; --color-text-muted: #a0a0b0;
-          --color-accent: #6c83f7; --color-accent-bg: #1e2a4a;
-          --color-success: #4ade80; --color-success-bg: #14352a;
-          --color-danger: #f87171; --color-danger-bg: #3a1818;
-          --color-warning: #fbbf24; --color-warning-bg: #3a2a08;
-        }
-      }
-      *, *::before, *::after { box-sizing: border-box; }
-      html, body { margin: 0; padding: 0; }
-      body { font-family: var(--font-sans); font-size: 16px; line-height: 1.6; color: var(--color-text); background: var(--color-bg); max-width: var(--max-width); margin: 0 auto; padding: var(--space-5) var(--space-4); }
-      .doc-header { border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-3); margin-bottom: var(--space-5); }
-      .doc-header h1 { margin: 0 0 var(--space-1) 0; font-size: 28px; line-height: 1.25; }
-      .doc-meta { color: var(--color-text-muted); font-size: 14px; margin: 0; }
-      .doc-content h2 { margin-top: var(--space-6); padding-bottom: var(--space-2); border-bottom: 1px solid var(--color-border); font-size: 22px; }
-      .doc-content h3 { margin-top: var(--space-5); font-size: 18px; }
-      .doc-content p, .doc-content li { font-size: 15px; }
-      a { color: var(--color-accent); }
-      .doc-layout { display: grid; grid-template-columns: var(--sidebar-width) 1fr; gap: var(--space-4); }
-      .doc-sidebar { position: sticky; top: var(--space-4); align-self: start; font-size: 14px; }
-      .doc-sidebar ul { list-style: none; padding: 0; margin: 0; }
-      .doc-sidebar li { padding: var(--space-1) 0; }
-      @media (max-width: 768px) { .doc-layout { grid-template-columns: 1fr; } .doc-sidebar { position: static; } .feedback-grid { grid-template-columns: 1fr !important; } }
-      .tabs { margin: var(--space-4) 0; border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow: hidden; }
-      .tabs > input[type='radio'] { position: absolute; opacity: 0; pointer-events: none; }
-      .tabs > label { display: inline-block; padding: var(--space-2) var(--space-3); cursor: pointer; font-size: 14px; font-weight: 500; color: var(--color-text-muted); border-bottom: 2px solid transparent; }
-      .tabs > label:hover { color: var(--color-text); }
-      .tabs > input:focus-visible + label { outline: 2px solid var(--color-accent); outline-offset: -2px; }
-      .tabs > .tab-panel { display: none; padding: var(--space-3); border-top: 1px solid var(--color-border); }
-      .tabs > input:nth-of-type(1):checked ~ .tab-panel:nth-of-type(1),
-      .tabs > input:nth-of-type(2):checked ~ .tab-panel:nth-of-type(2),
-      .tabs > input:nth-of-type(3):checked ~ .tab-panel:nth-of-type(3),
-      .tabs > input:nth-of-type(4):checked ~ .tab-panel:nth-of-type(4),
-      .tabs > input:nth-of-type(5):checked ~ .tab-panel:nth-of-type(5) { display: block; }
-      .tabs > input:nth-of-type(1):checked ~ label:nth-of-type(1),
-      .tabs > input:nth-of-type(2):checked ~ label:nth-of-type(2),
-      .tabs > input:nth-of-type(3):checked ~ label:nth-of-type(3),
-      .tabs > input:nth-of-type(4):checked ~ label:nth-of-type(4),
-      .tabs > input:nth-of-type(5):checked ~ label:nth-of-type(5) { color: var(--color-accent); border-bottom-color: var(--color-accent); }
-      .collapsible { border: 1px solid var(--color-border); border-radius: var(--radius-md); margin: var(--space-3) 0; overflow: hidden; }
-      .collapsible > summary { list-style: none; cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--color-surface); font-weight: 500; display: flex; align-items: center; gap: var(--space-2); }
-      .collapsible > summary::-webkit-details-marker { display: none; }
-      .collapsible > summary::before { content: '▸'; display: inline-block; transition: transform 0.15s ease; color: var(--color-text-muted); }
-      .collapsible[open] > summary::before { transform: rotate(90deg); }
-      .collapsible > summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }
-      .collapsible-body { padding: var(--space-3); border-top: 1px solid var(--color-border); }
-      .confidence { border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-3); margin: var(--space-3) 0; background: var(--color-surface); }
-      .confidence-overall { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
-      .confidence-label { font-weight: 600; font-size: 14px; min-width: 80px; }
-      .confidence-bar { flex: 1; height: 10px; border-radius: 5px; background: var(--color-border); overflow: hidden; }
-      .confidence-fill { height: 100%; background: linear-gradient(90deg, var(--color-danger) 0%, var(--color-warning) 50%, var(--color-success) 100%); border-radius: 5px; }
-      .confidence-value { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 40px; text-align: right; }
-      .confidence-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-2); }
-      .confidence-dim { text-align: center; padding: var(--space-2); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: 13px; display: flex; flex-direction: column; gap: var(--space-1); }
-      .confidence-dim strong { color: var(--color-text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
-      .dep-graph { display: block; margin: var(--space-3) auto; max-width: 100%; height: auto; }
-      .dep-graph .node rect { fill: var(--color-accent-bg); stroke: var(--color-accent); stroke-width: 1.5; }
-      .dep-graph .node text { fill: var(--color-text); font-family: var(--font-sans); font-size: 13px; font-weight: 500; }
-      .dep-graph line { stroke: var(--color-text-muted); stroke-width: 1.5; }
-      .dep-graph marker path { fill: var(--color-text-muted); }
-      .code-block { border: 1px solid var(--color-border); border-radius: var(--radius-md); margin: var(--space-3) 0; background: var(--color-surface); overflow: hidden; }
-      .code-header { display: flex; justify-content: space-between; align-items: center; padding: var(--space-1) var(--space-3); border-bottom: 1px solid var(--color-border); background: var(--color-bg); }
-      .code-lang { font-family: var(--font-mono); font-size: 12px; color: var(--color-text-muted); text-transform: lowercase; }
-      .copy-btn { font-family: var(--font-sans); font-size: 12px; padding: var(--space-1) var(--space-2); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); border-radius: var(--radius-sm); cursor: pointer; }
-      .copy-btn:hover { background: var(--color-accent-bg); border-color: var(--color-accent); color: var(--color-accent); }
-      .copy-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
-      .code-block pre { margin: 0; padding: var(--space-3); overflow-x: auto; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; }
-      .code-block code { font-family: inherit; color: var(--color-text); background: none; padding: 0; }
-      .scope-in, .scope-out { padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); margin: var(--space-2) 0; border-left: 4px solid; font-size: 14px; }
-      .scope-in { background: var(--color-success-bg); border-left-color: var(--color-success); }
-      .scope-out { background: var(--color-danger-bg); border-left-color: var(--color-danger); }
-      .scope-reason { color: var(--color-text-muted); font-size: 13px; margin-top: var(--space-1); }
-      .scope-slider { margin: var(--space-4) 0; }
-      .scope-slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2); }
-      .scope-slider-header label { font-weight: 600; }
-      .scope-slider-header output { font-weight: 600; color: var(--color-accent); padding: 2px 8px; background: var(--color-accent-bg); border-radius: var(--radius-sm); font-size: 0.85em; }
-      #scope-range { width: 100%; height: 6px; -webkit-appearance: none; appearance: none; background: var(--color-border); border-radius: 3px; outline: none; }
-      #scope-range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: var(--color-accent); border-radius: 50%; cursor: pointer; }
-      .scope-tier-labels { display: flex; justify-content: space-between; font-size: 0.8em; color: var(--color-text-muted); margin-top: var(--space-1); }
-      .criteria-list { list-style: none; padding: 0; margin: var(--space-3) 0; }
-      .criteria-list li { padding: var(--space-1) 0; display: flex; align-items: flex-start; gap: var(--space-2); }
-      .criteria-list input[type='checkbox'] { margin-top: 4px; flex-shrink: 0; }
-      @media print {
-        body { font-size: 11pt; max-width: none; color: #000; background: #fff; }
-        .tabs > label, .tabs > input[type='radio'] { display: none !important; }
-        .tabs > .tab-panel { display: block !important; border-top: none !important; page-break-inside: avoid; }
-        .copy-btn { display: none !important; }
-        details { display: block; }
-        details > summary { list-style: none; }
-        details > summary::before { display: none; }
-        details:not([open]) > *:not(summary) { display: block !important; }
-        .code-block, .confidence, .dep-graph { page-break-inside: avoid; }
-        a { color: #000; text-decoration: underline; }
-      }
+${CSS}
     </style>
   </head>
   <body>
-    <header class="doc-header">
-      <h1>${esc(d.projectName)} Contract — Ideation</h1>
-      <p class="doc-meta">
-        Created ${esc(d.date)}
-        · Confidence ${c.score}/100
-        · ${esc(d.status)}
-        · Supersedes ${d.supersedes ? esc(d.supersedes) : "None"}
-      </p>
-    </header>
-
-    <main class="doc-content">
-      <div class="confidence">
-        <div class="confidence-overall">
-          <span class="confidence-label">Confidence</span>
-          <div class="confidence-bar">
-            <div class="confidence-fill" style="width: ${c.score}%;"></div>
-          </div>
-          <span class="confidence-value">${c.score}%</span>
-        </div>
-        <div class="confidence-grid">
-          <div class="confidence-dim"><strong>Scope</strong><span>${esc(c.scope)}</span></div>
-          <div class="confidence-dim"><strong>Risk</strong><span>${esc(c.risk)}</span></div>
-          <div class="confidence-dim"><strong>Effort</strong><span>${esc(c.effort)}</span></div>
-          <div class="confidence-dim"><strong>Clarity</strong><span>${esc(c.clarity)}</span></div>
-          <div class="confidence-dim"><strong>Tests</strong><span>${esc(c.tests)}</span></div>
-        </div>
-      </div>
-
-      <div class="tabs" role="tablist">
-        <input type="radio" name="contract-tabs" id="tab-problem" checked />
-        <label for="tab-problem">Problem</label>
-        <input type="radio" name="contract-tabs" id="tab-goals" />
-        <label for="tab-goals">Goals</label>
-        <input type="radio" name="contract-tabs" id="tab-scope" />
-        <label for="tab-scope">Scope</label>
-        <input type="radio" name="contract-tabs" id="tab-execution" />
-        <label for="tab-execution">Execution Plan</label>
-
-        <div class="tab-panel">
-          <h2>Problem Statement</h2>
-${d.problem.map((p) => `          <p>${esc(p)}</p>`).join("\n")}
-        </div>
-
-        <div class="tab-panel">
-          <h2>Goals</h2>
-          <ol>
-${d.goals.map((g) => `            <li>${esc(g)}</li>`).join("\n")}
-          </ol>
-
-          <h2>Success Criteria</h2>
-          <ul class="criteria-list">
-${d.successCriteria.map((cr) => `            <li><input type="checkbox" disabled /><span>${esc(cr)}</span></li>`).join("\n")}
-          </ul>
-        </div>
-
-        <div class="tab-panel">
-          <h2>Scope</h2>
-          <div class="scope-slider">
-            <div class="scope-slider-header">
-              <label for="scope-range">Scope Tier</label>
-              <output id="scope-label">Full</output>
-            </div>
-            <input type="range" id="scope-range" min="0" max="2" value="1" step="1" />
-            <div class="scope-tier-labels">
-              <span>MVP</span><span>Full</span><span>Stretch</span>
-            </div>
-            <div class="scope-items">
-${scopeItems(d.scope.mvp, 0, "In scope (MVP)", "scope-in")}
-${scopeItems(d.scope.full, 1, "In scope (Full)", "scope-in")}
-${scopeItems(d.scope.stretch, 2, "Stretch", "scope-out")}
-            </div>
-          </div>
-
-          <h2>Out of Scope</h2>
-${outOfScopeItems(d.scope.outOfScope)}
-
-          <details class="collapsible">
-            <summary>Future Considerations</summary>
-            <div class="collapsible-body">
-              <ul>
-${d.scope.future.map((f) => `                <li>${esc(f)}</li>`).join("\n")}
-              </ul>
-            </div>
-          </details>
-        </div>
-
-        <div class="tab-panel">
-          <h2>Dependency Graph</h2>
-${buildSvg(d.execution.phases)}
-
-          <h2>Execution Steps</h2>
-          <p><strong>Strategy:</strong> ${esc(d.execution.strategy)}</p>
-${buildExecutionSteps(d.execution.phases, d.slug)}
-${
-  d.execution.agentTeamPrompt
-    ? `
-          <details class="collapsible">
-            <summary>Agent Team Prompt (parallel execution)</summary>
-            <div class="collapsible-body">
-              <div class="code-block">
-                <div class="code-header">
-                  <span class="code-lang">prompt</span>
-                  <button class="copy-btn" data-copy="agent-team-prompt" type="button">Copy</button>
-                </div>
-                <pre><code id="agent-team-prompt">${esc(d.execution.agentTeamPrompt)}</code></pre>
-              </div>
-            </div>
-          </details>`
-    : ""
-}
-        </div>
-      </div>
-    </main>
+${buildHero(d)}
+${buildFirstMove(d)}
+${buildProblemGoals(d)}
+${buildSuccess(d)}
+${buildScope(d)}
+${buildExecution(d)}
 
     <script>
       document.querySelectorAll('.copy-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const target = document.getElementById(btn.dataset.copy);
-          navigator.clipboard.writeText(target.textContent).then(() => {
-            btn.textContent = 'Copied!';
-            setTimeout(() => (btn.textContent = 'Copy'), 2000);
+          if (!target) return;
+          navigator.clipboard.writeText(target.textContent.trim()).then(() => {
+            btn.textContent = 'copied';
+            setTimeout(() => (btn.textContent = 'copy'), 1500);
           });
         });
       });
-      const scopeRange = document.getElementById('scope-range');
-      const scopeLabel = document.getElementById('scope-label');
-      const tierNames = ['MVP', 'Full', 'Stretch'];
-      if (scopeRange) {
-        scopeRange.addEventListener('input', () => {
-          const tier = parseInt(scopeRange.value);
-          scopeLabel.textContent = tierNames[tier];
-          document.querySelectorAll('.scope-item').forEach(item => {
-            const itemTier = parseInt(item.dataset.tier);
-            item.style.display = itemTier <= tier ? '' : 'none';
-          });
-        });
-      }
     </script>
   </body>
 </html>
