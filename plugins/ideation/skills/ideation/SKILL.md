@@ -95,16 +95,16 @@ When confidence ≥ 95%, generate the contract as an interactive HTML document. 
 7. Use `AskUserQuestion` to get approval — include the scope tier question:
 
 ```
-Question: "Does this contract capture your intent? Use the scope slider in your browser to pick a tier."
+Question: "Does this contract capture your intent? Which scope tier should we target?"
 Options:
+- "Approved — Full scope (Recommended)" - Build everything in the In Scope list
 - "Approved — MVP scope" - Ship the minimum viable version first
-- "Approved — Full scope" - Build everything in the In Scope list
 - "Approved — Stretch scope" - Include Future Considerations items too
 - "Needs changes" - Some parts need revision before approving
 - "Start over" - Fundamentally off track, re-interview
 ```
 
-The approved scope tier determines what goes into specs. Items outside the chosen tier move to "Future Considerations" in the contract.
+The approved scope tier determines what goes into specs. Items outside the chosen tier move to "Future Considerations."
 
 **If not approved:** Revise based on feedback. If feedback reveals a fundamental misunderstanding, return to the interview loop. Otherwise re-write the HTML file and re-open in browser. Iterate until approved.
 

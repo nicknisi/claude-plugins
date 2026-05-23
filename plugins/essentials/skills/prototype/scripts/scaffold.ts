@@ -45,9 +45,11 @@ function scaffoldUI() {
     console.log("Adapt the generated React components to your framework.");
   }
 
+  const clientDirective = framework === "next" ? `"use client";\n\n` : "";
+
   write(
     join(dir, "PrototypeSwitcher.tsx"),
-    `import { useCallback, useEffect } from "react";
+    `${clientDirective}import { useCallback, useEffect } from "react";
 
 interface Props {
   variants: string[];

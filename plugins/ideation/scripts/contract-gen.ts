@@ -89,9 +89,9 @@ function riskMeta(risk: string): { color: string; label: string } {
 }
 
 function phaseCommand(phase: Phase, slug: string, index: number): string {
-  if (phase.kind === "gate" && phase.specPath) return `/essentials:review --against ${phase.specPath}`;
-  if (phase.specPath) return `/execute-spec ${phase.specPath}`;
-  return `/execute-spec docs/ideation/${slug}/spec-phase-${index + 1}.md`;
+  if (phase.kind === "gate") return `# Review: ${phase.specPath ?? phase.title}`;
+  if (phase.specPath) return `/ideation:execute-spec ${phase.specPath}`;
+  return `/ideation:execute-spec docs/ideation/${slug}/spec-phase-${index + 1}.md`;
 }
 
 // --- Section Builders ---
@@ -436,7 +436,7 @@ if (outputDir && !existsSync(outputDir)) {
 
 if (existsSync(outputPath)) {
   const existing = readFileSync(outputPath, "utf8");
-  const dateMatch = existing.match(/Created (\d{4}-\d{2}-\d{2})/);
+  const dateMatch = existing.match(/(\d{4}-\d{2}-\d{2})/);
   const existingDate = dateMatch?.[1] ?? "unknown";
   const renamedBase = basename(outputPath, ".html") + `-${existingDate}.html`;
   const renamedPath = join(outputDir, renamedBase);
