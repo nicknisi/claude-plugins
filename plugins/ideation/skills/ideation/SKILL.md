@@ -18,7 +18,7 @@ INTAKE → INTERVIEW LOOP → CONTRACT.HTML → PHASING → SPEC.MD GENERATION �
                             at a time,      tabs +          ↓              + copy buttons
                             explore code    meter        Template +        in contract
                             + show HTML     + scope       per-phase
-                            examples        slider        deltas
+                            examples        scope tiers   deltas
 ```
 
 ## Phases 1-2: Interview
@@ -316,7 +316,7 @@ All artifacts written to `./docs/ideation/{project-name}/`:
 
 ```
 _comparison.html                   # Ephemeral decision aid (deleted after choice is made)
-contract.html                      # Interactive contract with scope slider (for review)
+contract.html                      # Mission Brief contract (for review)
 contract.md                        # Plain contract (for execute-spec lineage)
 prd-phase-1.md                     # Phase 1 requirements (only if PRDs chosen)
 ...
