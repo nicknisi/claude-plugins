@@ -7,18 +7,18 @@ description: "You MUST use this before building any new feature, planning a migr
 
 # Ideation
 
-Transform unstructured brain dumps into implementation artifacts through a conversational interview that builds shared understanding before writing anything. HTML is used for interactive decision-making (visualizations, comparisons, contract); Markdown is used for reference documents (specs, PRDs).
+Transform unstructured brain dumps into implementation artifacts through a conversational interview that builds shared understanding before writing anything. HTML is used for interactive decision-making (visualizations, comparisons, Mission Brief contract); Markdown is used for reference documents (specs, PRDs).
 
 ## Workflow
 
 ```
 INTAKE → INTERVIEW LOOP → CONTRACT.HTML → PHASING → SPEC.MD GENERATION → HANDOFF
               ↓                  ↓             ↓             ↓                ↓
-         Accept the mess    One question    HTML with     Repeatable?      SVG graph
-                            at a time,      tabs +          ↓              + copy buttons
-                            explore code    meter        Template +        in contract
-                            + show HTML     + scope       per-phase
-                            examples        scope tiers   deltas
+         Accept the mess    One question    Mission       Repeatable?      Phase track
+                            at a time,      Brief with      ↓              + copy buttons
+                            explore code    confidence   Template +        in contract
+                            + show HTML     + scope      per-phase
+                            examples        tiers        deltas
 ```
 
 ## Phases 1-2: Interview
@@ -29,7 +29,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/confidence-rubric.md` for the detailed sc
 
 ## Phase 3: Contract (HTML)
 
-When confidence ≥ 95%, generate the contract as an interactive HTML document. **Not before.**
+When confidence ≥ 95%, generate the Mission Brief contract as an HTML document. **Not before.**
 
 1. Use `AskUserQuestion` to confirm project name if not obvious from context
 2. Convert to kebab-case for directory name (this becomes the `slug`)
@@ -97,9 +97,9 @@ When confidence ≥ 95%, generate the contract as an interactive HTML document. 
 ```
 Question: "Does this contract capture your intent? Which scope tier should we target?"
 Options:
-- "Approved — Full scope (Recommended)" - Build everything in the In Scope list
+- "Approved — Full scope (Recommended)" - Build MVP + Full tiers
 - "Approved — MVP scope" - Ship the minimum viable version first
-- "Approved — Stretch scope" - Include Future Considerations items too
+- "Approved — Stretch scope" - Include MVP + Full + Stretch tiers
 - "Needs changes" - Some parts need revision before approving
 - "Start over" - Fundamentally off track, re-interview
 ```
@@ -237,11 +237,11 @@ If not approved, revise the relevant specs based on feedback and re-present. Ite
 
 ## Phase 5: Execution Handoff
 
-After specs are approved, update the contract HTML with the execution plan and auto-generate Markdown specs for `/execute-spec`.
+After specs are approved, update the contract HTML with the execution plan and auto-generate Markdown specs for `/ideation:execute-spec`.
 
 ### 5.1 Analyze Orchestration Strategy
 
-Do not create tasks during ideation handoff — they are ephemeral and will be lost when the user starts a fresh session. Each `/execute-spec` session creates its own granular implementation tasks.
+Do not create tasks during ideation handoff — they are ephemeral and will be lost when the user starts a fresh session. Each `/ideation:execute-spec` session creates its own granular implementation tasks.
 
 Analyze the phase dependency graph to determine the best execution strategy.
 
@@ -260,15 +260,15 @@ Analyze the phase dependency graph to determine the best execution strategy.
 | 2+ independent phases         | **Agent team** — lead orchestrates teammates in parallel                      |
 | Mixed dependencies            | **Hybrid** — sequential for dependent chain, agent team for independent group |
 
-### 5.2 Update Contract HTML with Execution Plan
+### 5.2 Update Contract Data with Execution Plan
 
-Read the existing `contract.html` and update the Execution Plan tab panel. This makes the contract fully self-contained — someone can pick it up cold and know exactly how to execute.
+Update `contract-data.json` with the final execution plan, then re-run `contract-gen.ts`. This makes the contract fully self-contained — someone can pick it up cold and know exactly how to execute.
 
-1. **SVG Dependency Graph** — generate inline SVG using the dep-graph component from `references/html-guide.md`. Vertical flow for sequential, horizontal spread for parallel phases at the same depth.
+1. **Phase Track** — populate `execution.phases` with phase titles, risk, blockers, spec paths, notes, and human gates. The CLI renders the horizontal phase track with risk coloring.
 
-2. **Execution Steps** — code blocks with copy buttons for each `/execute-spec` command. Mark which are sequential vs parallel.
+2. **Execution Commands** — the CLI renders copy buttons for `/ideation:autopilot` and each `/ideation:execute-spec` command.
 
-3. **Agent Team Prompt** — only if 2+ phases are parallelizable. Place in a collapsible section with a copy button. **Omit this subsection entirely** for fully sequential projects.
+3. **Agent Team Prompt** — only if 2+ phases are parallelizable. Set `execution.agentTeamPrompt` so the CLI renders it in a collapsible section with a copy button. **Omit this field entirely** for fully sequential projects.
 
 **Shared file detection:** Before writing the agent team prompt, scan spec files' "Modified Files" sections. If multiple specs modify the same files, include a coordination note:
 
@@ -279,7 +279,7 @@ only one teammate should modify a shared file at a time.
 
 **Batching:** If more than 5 parallelizable phases, note in the execution steps to start with the highest-priority batch first.
 
-Re-open the contract in the browser after updating.
+Re-open the regenerated contract in the browser after updating.
 
 ### 5.3 Generate Contract Markdown
 
@@ -296,8 +296,8 @@ After updating the contract and generating MD specs, present a brief conversatio
 ```
 Ideation complete. Artifacts written to `./docs/ideation/{project-name}/`.
 
-Open contract.html in your browser to review the full plan — dependency graph,
-execution commands, and scope are all in the Execution Plan tab.
+Open contract.html in your browser to review the full plan — phase track,
+execution commands, and scope are all in the Mission Brief.
 
 Specs (spec-phase-*.md) are ready. To execute all phases:
   /ideation:autopilot
@@ -306,7 +306,7 @@ Or run individual phases manually:
   /ideation:execute-spec docs/ideation/{project-name}/spec-phase-1.md
 ```
 
-**Recommend `/ideation:autopilot`** as the default. It reads the contract, walks the dependency graph, dispatches subagents per phase (parallel when possible), and only stops on failures. Manual `/execute-spec` is available for finer control.
+**Recommend `/ideation:autopilot`** as the default. It reads the contract, walks the dependency graph, dispatches subagents per phase (parallel when possible), and only stops on failures. Manual `/ideation:execute-spec` is available for finer control.
 
 </supporting-info>
 

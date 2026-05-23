@@ -58,7 +58,7 @@ be on planes or whatever and sync when they come back online
 
 8. **Implementation** (fresh sessions): For each phase:
    - Start fresh Claude session (or use agent team for parallel phases)
-   - Run `/execute-spec spec-phase-{n}.md`
+   - Run `/ideation:execute-spec spec-phase-{n}.md`
    - Agent sets up feedback environment first (test runner, dev server, etc.)
    - For each component: set up loop → build incrementally → check → iterate
    - Review, test, commit

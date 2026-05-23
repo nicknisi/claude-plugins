@@ -36,7 +36,7 @@ Read `contract.md` and extract the Execution Plan:
 
    Where values are the phases that block each key.
 
-3. **Parse Execution Steps** — extract spec file paths from the fenced `bash` blocks. Each `/execute-spec path/to/spec.md` line maps a phase number to its spec file.
+3. **Parse Execution Steps** — extract spec file paths from the fenced `bash` blocks. Each `/ideation:execute-spec path/to/spec.md` line maps a phase number to its spec file.
 
 4. **Derive the project directory** from the contract path. If the contract is at `docs/ideation/my-project/contract.md`, the project directory is `docs/ideation/my-project/`.
 

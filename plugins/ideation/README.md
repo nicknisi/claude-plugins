@@ -1,6 +1,6 @@
 # Ideation Plugin
 
-Transform brain dumps into structured implementation artifacts through a conversational interview. HTML is used for interactive decision-making (contract with confidence scoring, visual comparisons during the interview). Markdown is used for reference documents (specs, PRDs) consumed directly by `/execute-spec`. Includes execution workflow for implementing specs in fresh sessions with per-component feedback loops.
+Transform brain dumps into structured implementation artifacts through a conversational interview. HTML is used for interactive decision-making (contract with confidence scoring, visual comparisons during the interview). Markdown is used for reference documents (specs, PRDs) consumed directly by `/ideation:execute-spec`. Includes execution workflow for implementing specs in fresh sessions with per-component feedback loops.
 
 ## Skills
 
@@ -36,7 +36,7 @@ I want to build something. Here's what I'm thinking...
 4. **HTML visualizations** - During interview and phasing, generates ephemeral HTML pages for decisions: side-by-side comparisons, UI mockups, architecture options. Deleted after you choose.
 5. **Phasing & specs** - Determine phases, generate Markdown specs with feedback loops and failure mode catalogs
 6. **Feedback quality check** - Self-review specs for feedback loop coverage before presenting
-7. **Execution handoff** - SVG dependency graph in contract, copy-to-clipboard execute commands
+7. **Execution handoff** - Phase track in contract, copy-to-clipboard ideation commands
 
 **Output artifacts:**
 
@@ -45,9 +45,9 @@ All artifacts are written to `./docs/ideation/{project-name}/`:
 ```
 _comparison.html               # Ephemeral decision aid (deleted after choice is made)
 contract.html                  # Mission Brief contract (for review)
-contract.md                    # Plain contract (for /execute-spec lineage)
+contract.md                    # Plain contract (for execute-spec lineage)
 prd-phase-1.md                 # Phase 1 requirements (only if PRDs chosen)
-spec-phase-1.md                # Implementation spec (for /execute-spec)
+spec-phase-1.md                # Implementation spec (for execute-spec)
 spec-template-{pattern}.md     # Shared template for repeatable phases (if applicable)
 spec-phase-N.md                # Per-phase delta or full spec
 implementation-notes-phase-1.html  # Decisions made during execution (per-phase)
@@ -63,7 +63,7 @@ HTML artifacts (contract, implementation notes, ephemeral visualizations) are se
 - **Copy-to-clipboard buttons** on `/ideation:autopilot` and per-phase commands
 - **Dark mode** automatic via `prefers-color-scheme`
 
-Specs and PRDs are Markdown — readable as-is and consumed directly by `/execute-spec`.
+Specs and PRDs are Markdown — readable as-is and consumed directly by `/ideation:execute-spec`.
 
 **Bundled references:**
 
@@ -176,7 +176,7 @@ search too...
 8. At decision points (phasing, orchestration), opens side-by-side visual comparisons in browser
 9. Generates Markdown specs with feedback loops and failure modes
 
-**Result:** Interactive HTML contract for reviewing the plan, plus Markdown specs ready for `/execute-spec`.
+**Result:** Mission Brief HTML contract for reviewing the plan, plus Markdown specs ready for `/ideation:execute-spec`.
 
 ## Full Workflow Diagram
 
@@ -195,7 +195,7 @@ flowchart TD
         G -->|"Straight to specs"| I["Generate Specs<br/><i>with feedback loops</i>"]
         I --> J["Self-Review<br/>Feedback Quality"]
         J -->|"Weak"| I
-        J -->|"Strong/Adequate"| K["Write Execution Plan<br/><i>dependency graph,<br/>commands, agent team prompt</i>"]
+        J -->|"Strong/Adequate"| K["Write Execution Plan<br/><i>phase track,<br/>commands, agent team prompt</i>"]
         K --> L["📄 Artifacts in<br/>docs/ideation/project/"]
     end
 
@@ -337,7 +337,7 @@ Orchestrates full project execution — reads the contract, walks the phase depe
 
 - Parses the contract's Execution Plan to derive phase dependencies and spec paths
 - Computes execution waves — groups of phases whose blockers are all satisfied
-- Dispatches each phase as a subagent with a clean context running `/execute-spec`
+- Dispatches each phase as a subagent with a clean context running `/ideation:execute-spec`
 - Independent phases within a wave run in parallel
 - **Full auto** — continues without pausing on success
 - **Gates on failure** — if a phase fails review after 3 cycles, pauses to ask: skip, retry, or stop

@@ -357,7 +357,7 @@ Escalation. The review has failed 3 times. Present remaining findings to the use
 ```
 Question: "Review cycle 3 still has {N} critical/high findings. How to proceed?"
 Options:
-- "Fix manually" — You fix the remaining issues yourself. Re-run /execute-spec after fixing to re-enter the review cycle.
+- "Fix manually" — You fix the remaining issues yourself. Re-run /ideation:execute-spec after fixing to re-enter the review cycle.
 - "Accept with issues" — Commit with known issues. Findings included in completion report as acknowledged items.
 - "Abort" — Do not commit. Leave changes unstaged for manual review.
 ```
