@@ -343,6 +343,8 @@ Orchestrates full project execution — reads the contract, walks the phase depe
 - **Gates on failure** — if a phase fails review after 3 cycles, pauses to ask: skip, retry, or stop
 - Each phase commits independently — completed work is durable even if later phases fail
 
+> _The wave planning and parallel dispatch run on a deterministic [dynamic Workflow](https://claude.com/blog/introducing-dynamic-workflows-in-claude-code) engine in [`workflows/`](workflows/README.md) — see its README for the `args` contract and return shape._
+
 **Example execution:**
 
 ```
