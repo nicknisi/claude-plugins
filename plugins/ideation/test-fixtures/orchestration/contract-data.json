@@ -1,0 +1,26 @@
+{
+  "projectName": "Orchestration Fixture",
+  "slug": "orchestration",
+  "date": "2026-06-01",
+  "status": "Approved",
+  "supersedes": null,
+  "confidence": {
+    "score": 100,
+    "dimensions": [
+      { "key": "scope", "score": 100, "label": "Scope", "reason": "Trivial fixture — exercises the orchestrator, not real code." }
+    ]
+  },
+  "problem": ["A synthetic project used only to validate the autopilot Workflow engine's wave ordering, parallel dispatch, failure gating, skip propagation, and resume."],
+  "goals": ["Prove the engine behaves correctly on a diamond graph with one rigged failure."],
+  "successCriteria": ["completed = [P1, P2]; failed = [P3]; skipped = [P4]."],
+  "scope": { "mvp": [{ "item": "Four trivial phases" }], "full": [], "stretch": [], "outOfScope": [], "future": [] },
+  "execution": {
+    "strategy": "Hybrid",
+    "phases": [
+      { "title": "Phase 1 — root", "risk": "low", "blocking": true, "prereqs": [], "specPath": "plugins/ideation/test-fixtures/orchestration/spec-phase-1.md", "notes": "Writes sentinel phase1.done." },
+      { "title": "Phase 2 — independent branch", "risk": "low", "blocking": false, "prereqs": ["Phase 1 — root"], "specPath": "plugins/ideation/test-fixtures/orchestration/spec-phase-2.md", "notes": "Writes sentinel phase2.done. Sibling of Phase 3; must still complete when Phase 3 fails." },
+      { "title": "Phase 3 — rigged failure", "risk": "high", "blocking": false, "prereqs": ["Phase 1 — root"], "specPath": "plugins/ideation/test-fixtures/orchestration/spec-phase-3.md", "notes": "Validation deliberately exits 1 — forces the failure gate." },
+      { "title": "Phase 4 — dependent on the failure", "risk": "low", "blocking": false, "prereqs": ["Phase 3 — rigged failure"], "specPath": "plugins/ideation/test-fixtures/orchestration/spec-phase-4.md", "notes": "Depends on Phase 3 — must be SKIPPED when Phase 3 fails." }
+    ]
+  }
+}

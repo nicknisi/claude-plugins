@@ -40,7 +40,7 @@ parse `RESULT:` text yourself — the engine returns a structured summary.**
 
 ## Step 2: Git Skip Pre-Pass
 
-Run `git log --oneline --grep="spec-phase"` to find commits that already reference spec files. For each phase whose `specPath` filename appears in a commit message, add its **title** to a `completedPhases` list. Report what's being skipped:
+Run `git log --oneline --grep="<slug>"` (or `git log --oneline -F --grep="<specPath>"`) to find commits that already reference this project's spec files. **Match on the slug-qualified spec path, not the bare filename** — `spec-phase-1.md` alone collides across projects (every ideation project has one), so a commit from a different project must not be mistaken for this one's. Treat a phase as complete only when a commit references its `specPath` including the project directory/slug (e.g. `<slug>/spec-phase-1.md`). Add each matched phase's **title** to a `completedPhases` list. Report what's being skipped:
 
 ```
 Skipping "Phase title" (already committed: abc1234)
