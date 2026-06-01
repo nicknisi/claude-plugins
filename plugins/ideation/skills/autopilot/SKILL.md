@@ -1,12 +1,13 @@
 ---
 name: autopilot
-description: Orchestrate full execution of an ideation project — reads the contract, walks the phase dependency graph, and dispatches subagents to execute specs. Parallel for independent phases, sequential for dependent ones. Auto-continues on success, gates on failure. Use after ideation is complete and specs are approved.
+description: Orchestrate full execution of an ideation project — reads the contract, builds an execution manifest, and runs all phases on the deterministic Workflow engine (parallel for independent phases, sequential for dependent ones). Auto-continues on success, gates on failure. Use after ideation is complete and specs are approved.
 disable-model-invocation: true
 allowed-tools:
   - Read
   - Bash
   - Glob
   - Grep
+  - Workflow
   - Agent
   - AskUserQuestion
 ---
@@ -15,7 +16,14 @@ allowed-tools:
 
 ## Arguments: $ARGUMENTS
 
-Orchestrate the execution of all phases in an ideation project.
+Orchestrate execution of all phases in an ideation project by driving the
+deterministic **Workflow engine** at `${CLAUDE_PLUGIN_ROOT}/workflows/execute-contract.mjs`.
+
+**This skill does the three things the sandboxed engine cannot:** read the
+contract, run the `git log` skip pre-pass, and own interactive failure-gating +
+resume. The engine does everything between — topological wave planning, parallel
+dispatch, and schema-validated per-phase results. **You do not compute waves or
+parse `RESULT:` text yourself — the engine returns a structured summary.**
 
 **Parse arguments:**
 
@@ -23,176 +31,99 @@ Orchestrate the execution of all phases in an ideation project.
 - If omitted, auto-detect by globbing `./docs/ideation/*/contract.md`
 - If multiple contracts found, use `AskUserQuestion` to select one
 
-## Phase 1: Parse the Contract
+## Step 1: Locate & Parse the Contract
 
-Read `contract.md` and extract the Execution Plan:
+1. Resolve the contract path (argument or glob). Derive the **project directory** from it — for `docs/ideation/my-project/contract.md`, that's `docs/ideation/my-project/`.
+2. Read the sibling **`contract-data.json`** in that directory. Its `execution.phases` array already holds each phase's `title`, `specPath`, `prereqs`, and `risk` — this is the manifest. Also read `projectName` and `slug`.
+3. **Validate** each `specPath` exists. If any are missing, report which and ask the user whether to continue without them or abort.
+4. **Fallback if `contract-data.json` is absent** (older projects with only `contract.md`): parse the `## Execution Plan` section of `contract.md` — phase titles, spec paths from the `/ideation:execute-spec <path>` lines, and blocking relationships from the dependency graph — and build the same phase list. If you cannot, abort with guidance to re-run ideation.
 
-1. **Find the `## Execution Plan` section**
-2. **Parse the Dependency Graph** — extract phase numbers, titles, and blocking relationships from the ASCII tree. Build an adjacency list:
+## Step 2: Git Skip Pre-Pass
 
-   ```
-   { 1: [], 2: [1], 3: [1], 4: [3] }
-   ```
-
-   Where values are the phases that block each key.
-
-3. **Parse Execution Steps** — extract spec file paths from the fenced `bash` blocks. Each `/ideation:execute-spec path/to/spec.md` line maps a phase number to its spec file.
-
-4. **Derive the project directory** from the contract path. If the contract is at `docs/ideation/my-project/contract.md`, the project directory is `docs/ideation/my-project/`.
-
-5. **Validate** — confirm each spec file exists. If any are missing, report which and ask the user whether to continue without them or abort.
-
-6. **Detect already-completed phases** — run `git log --oneline --grep="spec-phase"` (or similar) to find commits that reference spec files. For each phase whose spec path appears in a commit message, mark it as already completed and exclude it from execution. Report which phases are being skipped:
-   ```
-   Skipping Phase 1 (already committed: abc1234)
-   ```
-
-## Phase 2: Plan Execution Order
-
-From the dependency graph, compute execution waves — groups of phases that can run in parallel because all their blockers are satisfied.
-
-**Algorithm:**
+Run `git log --oneline --grep="spec-phase"` to find commits that already reference spec files. For each phase whose `specPath` filename appears in a commit message, add its **title** to a `completedPhases` list. Report what's being skipped:
 
 ```
-completed = {already-committed phases from Phase 1, step 6}
-waves = []
-while uncompleted phases remain:
-  ready = phases where all blockedBy are in completed
-  waves.append(ready)
-  completed = completed ∪ ready
+Skipping "Phase title" (already committed: abc1234)
 ```
 
-**Example:**
+The engine excludes these from dispatch, so a resumed run only executes what remains.
 
-```
-Dependencies: { 1: [], 2: [1], 3: [1], 4: [3] }
+## Step 3: Build the Engine `args`
 
-Wave 1: [Phase 1]           — no blockers
-Wave 2: [Phase 2, Phase 3]  — both blocked only by Phase 1
-Wave 3: [Phase 4]           — blocked by Phase 3
-```
+Assemble the manifest exactly per `${CLAUDE_PLUGIN_ROOT}/workflows/README.md`:
 
-Present the execution plan to the user before starting:
-
-```
-Execution plan for {project-name}:
-  Wave 1: Phase 1 ({title})
-  Wave 2: Phase 2 ({title}) + Phase 3 ({title})  [parallel]
-  Wave 3: Phase 4 ({title})
-
-{N} phases across {M} waves. Parallel phases in waves 2+.
-Starting now — I'll pause only if a phase fails review.
+```jsonc
+{
+  "projectName": "...",
+  "slug": "...",
+  "projectDir": "docs/ideation/<slug>/",
+  "phases": [
+    { "title": "...", "specPath": "...", "prereqs": ["<other titles>"], "risk": "low" }
+  ],
+  "completedPhases": ["<titles from Step 2>"]
+}
 ```
 
-## Phase 3: Execute Waves
+- `prereqs` are **phase titles** — pass `contract-data.json`'s values straight through; do not remap to indices.
+- Before invoking, sanity-check that every `prereqs` entry matches some phase `title` (or a `completedPhases` entry). If a title doesn't resolve, it's a manifest bug — report it rather than dispatching a broken graph (the engine will otherwise throw "Unknown prereq").
 
-Process waves sequentially. Within each wave, dispatch phases in parallel if the wave has multiple phases.
+## Step 4: Invoke the Engine
 
-### Single-phase wave
+1. Resolve the engine's **absolute path** — run `echo "$CLAUDE_PLUGIN_ROOT/workflows/execute-contract.mjs"` via `Bash` and confirm the file exists.
+2. Call the **`Workflow`** tool with `scriptPath` set to that absolute path and `args` set to the manifest object from Step 3 (pass it as an actual JSON value, **not** a stringified one).
+3. Tell the user before it starts: how many phases, how many already skipped, and that you'll pause only if a phase fails.
+4. **Capture the returned `runId`** — you need it for same-session resume.
 
-Dispatch one subagent:
+The engine runs in the background and notifies on completion. Watch progress with `/workflows`.
 
-```
-Agent({
-  description: "Execute Phase {N}: {title}",
-  subagent_type: "general-purpose",
-  mode: "bypassPermissions",
-  prompt: "<instructions>
-You are executing Phase {N} of the {project-name} ideation project.
+**If the `Workflow` tool is unavailable** (feature not enabled in this Claude Code): degrade gracefully — tell the user, then walk the phases yourself in dependency order using `/ideation:execute-spec <specPath>` per phase (the contract's per-phase commands), committing each before the next. This is the legacy manual path.
 
-Run the execute-spec skill in headless mode:
-/ideation:execute-spec --headless {spec-file-path}
+## Step 5: Handle the Summary
 
-Follow the skill's full workflow: Scout → Build → Verify-Review-Fix → Commit.
-The --headless flag auto-proceeds through confirmation steps so execution
-does not block.
+The engine returns `{ completed, failed, skipped, results }`. Print the three buckets.
 
-When complete, report:
-- RESULT: PASS or FAIL
-- Summary of what was implemented
-- Any findings from the review cycle
-- The commit hash (if committed)
+**If `failed` is empty:** proceed to the Completion Report.
 
-If the review cycle fails after 3 cycles, report RESULT: FAIL with the
-remaining findings. Do not ask the user — the orchestrator handles failure gates.
-</instructions>"
-})
-```
-
-### Multi-phase wave (parallel)
-
-Dispatch all phases in the wave simultaneously using multiple `Agent` tool calls in a single message. Each subagent gets the same prompt structure above with its own phase number and spec path.
-
-### After each wave completes
-
-**Parse each subagent's result.** Look for `RESULT: PASS` or `RESULT: FAIL` in the output.
-
-**If all phases PASS:** Log completion, move to next wave.
-
-**If any phase FAIL:**
-
-This is the failure gate. Stop and present the situation:
+**If `failed` is non-empty:** this is the failure gate. Present it via `AskUserQuestion`:
 
 ```
-AskUserQuestion:
-  Question: "Phase {N} failed review after 3 cycles. {summary of findings}. How to proceed?"
-  Options:
-  - "Skip and continue" — Mark phase as failed, continue with remaining waves. Phases that depend on this one will also be skipped.
-  - "Retry phase" — Re-dispatch the failed phase with a fresh subagent.
-  - "Stop here" — Halt execution. Completed phases are already committed.
+Question: "Phase(s) {failed titles} failed. {one-line summary from results[].summary}. Dependent phases {skipped titles} were skipped. How to proceed?"
+Options:
+- "Retry failed phases" — Re-run the engine; it resumes from where it stopped.
+- "Stop here" — Halt. Completed phases are already committed.
+- "Accept and finish" — Treat failures as acknowledged; report and finish.
 ```
 
-**If "Skip and continue":**
+**If "Retry failed phases":**
 
-- Mark the phase as failed
-- Remove it from `completed` set for dependency resolution
-- Any phase whose `blockedBy` includes the failed phase is also skipped
-- Log which phases were skipped and why
+- **Same session:** re-invoke the `Workflow` tool with `resumeFromRunId: <runId>` (and the same `scriptPath`). Cached passing phases return instantly; only the failed/unreached phases re-run.
+- **New session, or resume rejected:** simply re-run this skill from Step 1 — the Step 2 git pre-pass re-derives `completedPhases` from the commits, so already-committed phases are skipped regardless. This is the cross-session resume path.
 
-**If "Retry phase":**
+**If "Stop here":** report completed vs. remaining and exit.
 
-- Re-dispatch the same phase with a new subagent
-- If it fails again, re-present the gate (no retry limit, but each retry is explicit)
+**If "Accept and finish":** include the unresolved findings in the Completion Report under "Acknowledged Issues" and finish.
 
-**If "Stop here":**
+## Completion Report
 
-- Report what completed and what remains
-- Exit
+After the engine finishes (or execution stops), present a summary:
 
-### Progress Reporting
-
-After each wave, print a brief status line:
-
-```
-Wave {M}/{total}: Phase(s) {list} — {PASS/FAIL}
-  Completed: {list of all completed phases}
-  Remaining: {list of remaining phases}
-```
-
-## Phase 4: Completion Report
-
-After all waves complete (or execution stops), present a summary:
-
-```
+```markdown
 ## Execution Complete
 
 ### Completed Phases
-- Phase 1: {title} — {commit hash}
-- Phase 2: {title} — {commit hash}
-- Phase 3: {title} — {commit hash}
+- {title} — {commitHash from results}
 
 ### Skipped Phases
-- Phase 4: {title} — blocked by failed Phase 3
+- {title} — blocked by failed {prereq}
 
 ### Failed Phases
-- Phase 3: {title} — {summary of failure}
+- {title} — {summary}
 
 ### Summary
-{M} of {N} phases completed successfully.
-{commits committed, files changed across all phases}
+{N} of {M} phases completed successfully.
 ```
 
-If all phases completed successfully:
+If all phases completed:
 
 ```
 All {N} phases complete. Run `git log --oneline -{N}` to see the commits.
@@ -200,9 +131,9 @@ All {N} phases complete. Run `git log --oneline -{N}` to see the commits.
 
 ## Key Principles
 
-1. **Subagents get clean contexts** — each phase runs in a fresh agent with no prior phase's context. This is why we use the Agent tool, not inline execution.
-2. **The contract is the source of truth** — phase order, dependencies, and spec paths all come from the contract's Execution Plan.
-3. **Gate on failures, not successes** — the happy path is fully hands-off. User intervention only when review fails.
-4. **Parallel when possible** — independent phases run simultaneously. The dependency graph determines what's safe to parallelize.
-5. **Already-committed phases are durable** — each phase commits independently. If execution stops at wave 3, waves 1 and 2 are already committed.
-6. **Don't re-execute completed phases** — if a spec's changes are already committed (check `git log` for the spec name in commit messages), skip it.
+1. **The engine orchestrates; the skill prepares and gates.** Wave planning, parallelism, and result handling are deterministic JS in `workflows/execute-contract.mjs`. This skill builds the `args`, runs the git pre-pass, and handles the human-in-the-loop moments the sandbox can't.
+2. **No wave math, no `RESULT:` parsing here.** Pass `prereqs` through untouched; read the structured summary the engine returns.
+3. **The contract is the source of truth** — phase order, dependencies, and spec paths all come from `contract-data.json` (`contract.md` Execution Plan as fallback).
+4. **Subagents get clean contexts** — the engine dispatches each phase as a fresh-context subagent running `/ideation:execute-spec --headless`. No phase inherits another's context.
+5. **Gate on failures, not successes** — the happy path is fully hands-off; the engine runs everything still reachable and only the skill pauses, after the run, when something failed.
+6. **Already-committed phases are durable** — each phase commits independently. The git pre-pass makes resume work across sessions; `resumeFromRunId` makes it instant within a session.
