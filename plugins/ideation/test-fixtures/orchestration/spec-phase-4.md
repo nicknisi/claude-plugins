@@ -15,8 +15,8 @@ Would write a sentinel — but should never run because Phase 3 fails.
 
 ### New Files
 
-| File Path                       | Purpose                                            |
-| ------------------------------- | -------------------------------------------------- |
+| File Path                       | Purpose                                                      |
+| ------------------------------- | ------------------------------------------------------------ |
 | `/tmp/wfbe-fixture/phase4.done` | Sentinel — its ABSENCE after a failure run is the assertion. |
 
 ## Implementation Details

@@ -15,12 +15,12 @@ Phase 1 — root
 
 Expected engine behavior:
 
-| Phase   | Outcome   | Why                                              |
-| ------- | --------- | ------------------------------------------------ |
-| Phase 1 | completed | root, no prereqs                                 |
-| Phase 2 | completed | sibling of the failure — must still run          |
-| Phase 3 | **failed**  | validation deliberately `exit 1`               |
-| Phase 4 | **skipped** | depends on the failed Phase 3                   |
+| Phase   | Outcome     | Why                                     |
+| ------- | ----------- | --------------------------------------- |
+| Phase 1 | completed   | root, no prereqs                        |
+| Phase 2 | completed   | sibling of the failure — must still run |
+| Phase 3 | **failed**  | validation deliberately `exit 1`        |
+| Phase 4 | **skipped** | depends on the failed Phase 3           |
 
 Final summary: `completed = [P1, P2]`, `failed = [P3]`, `skipped = [P4]`.
 

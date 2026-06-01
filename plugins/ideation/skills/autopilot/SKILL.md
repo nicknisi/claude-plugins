@@ -58,9 +58,14 @@ Assemble the manifest exactly per `${CLAUDE_PLUGIN_ROOT}/workflows/README.md`:
   "slug": "...",
   "projectDir": "docs/ideation/<slug>/",
   "phases": [
-    { "title": "...", "specPath": "...", "prereqs": ["<other titles>"], "risk": "low" }
+    {
+      "title": "...",
+      "specPath": "...",
+      "prereqs": ["<other titles>"],
+      "risk": "low",
+    },
   ],
-  "completedPhases": ["<titles from Step 2>"]
+  "completedPhases": ["<titles from Step 2>"],
 }
 ```
 
@@ -111,15 +116,19 @@ After the engine finishes (or execution stops), present a summary:
 ## Execution Complete
 
 ### Completed Phases
+
 - {title} — {commitHash from results}
 
 ### Skipped Phases
+
 - {title} — blocked by failed {prereq}
 
 ### Failed Phases
+
 - {title} — {summary}
 
 ### Summary
+
 {N} of {M} phases completed successfully.
 ```
 

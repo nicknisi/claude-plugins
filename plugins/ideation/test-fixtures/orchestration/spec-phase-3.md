@@ -16,9 +16,9 @@ so `execute-spec` reports this phase as failed after its review/validation cycle
 
 ### New Files
 
-| File Path                       | Purpose                                       |
-| ------------------------------- | --------------------------------------------- |
-| `/tmp/wfbe-fixture/phase3.done` | Sentinel (written, but validation still fails)|
+| File Path                       | Purpose                                        |
+| ------------------------------- | ---------------------------------------------- |
+| `/tmp/wfbe-fixture/phase3.done` | Sentinel (written, but validation still fails) |
 
 ## Implementation Details
 

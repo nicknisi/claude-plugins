@@ -15,9 +15,9 @@ Create the fixture scratch directory and write a sentinel marking this phase don
 
 ### New Files
 
-| File Path                       | Purpose                          |
-| ------------------------------- | -------------------------------- |
-| `/tmp/wfbe-fixture/phase1.done` | Sentinel proving Phase 1 ran.    |
+| File Path                       | Purpose                       |
+| ------------------------------- | ----------------------------- |
+| `/tmp/wfbe-fixture/phase1.done` | Sentinel proving Phase 1 ran. |
 
 ## Implementation Details
 
