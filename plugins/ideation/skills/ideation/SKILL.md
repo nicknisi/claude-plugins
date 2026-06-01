@@ -46,21 +46,46 @@ When confidence ≥ 95%, generate the Mission Brief contract as an HTML document
      "confidence": {
        "score": 96,
        "dimensions": [
-         { "key": "scope", "score": 100, "label": "Scope", "reason": "One sentence explaining the score" },
-         { "key": "risk", "score": 92, "label": "Risk", "reason": "One sentence" },
-         { "key": "effort", "score": 95, "label": "Effort", "reason": "One sentence" },
-         { "key": "clarity", "score": 98, "label": "Clarity", "reason": "One sentence" },
-         { "key": "tests", "score": 95, "label": "Tests", "reason": "One sentence" }
+         {
+           "key": "scope",
+           "score": 100,
+           "label": "Scope",
+           "reason": "One sentence explaining the score"
+         },
+         {
+           "key": "risk",
+           "score": 92,
+           "label": "Risk",
+           "reason": "One sentence"
+         },
+         {
+           "key": "effort",
+           "score": 95,
+           "label": "Effort",
+           "reason": "One sentence"
+         },
+         {
+           "key": "clarity",
+           "score": 98,
+           "label": "Clarity",
+           "reason": "One sentence"
+         },
+         {
+           "key": "tests",
+           "score": 95,
+           "label": "Tests",
+           "reason": "One sentence"
+         }
        ]
      },
      "problem": ["paragraph 1", "paragraph 2"],
      "goals": ["Measurable goal 1", "Measurable goal 2"],
      "successCriteria": ["Pass/fail criterion 1", "Pass/fail criterion 2"],
      "scope": {
-       "mvp": [{"item": "Core feature", "reason": "Why it's MVP"}],
-       "full": [{"item": "Full feature", "reason": "Optional rationale"}],
-       "stretch": [{"item": "Stretch feature"}],
-       "outOfScope": [{"item": "Excluded item", "reason": "Why excluded"}],
+       "mvp": [{ "item": "Core feature", "reason": "Why it's MVP" }],
+       "full": [{ "item": "Full feature", "reason": "Optional rationale" }],
+       "stretch": [{ "item": "Stretch feature" }],
+       "outOfScope": [{ "item": "Excluded item", "reason": "Why excluded" }],
        "future": ["Deferred idea 1"]
      },
      "execution": {
@@ -84,11 +109,13 @@ When confidence ≥ 95%, generate the Mission Brief contract as an HTML document
    **Phase fields:** `risk` (high/medium/low), `blocking` (boolean), `specPath` (path to spec), `notes` (brief description). Optional: `kind` ("gate" for human checkpoints), `prereqs` (array of phase titles this depends on).
 
 5. **Run the contract generator**:
+
    ```bash
    npx tsx ${CLAUDE_PLUGIN_ROOT}/scripts/contract-gen.ts \
      --input ./docs/ideation/{slug}/contract-data.json \
      --output ./docs/ideation/{slug}/contract.html
    ```
+
    The CLI handles lineage automatically — if `contract.html` already exists, it renames it to `contract-{date}.html` and sets the supersedes link.
 
 6. Open in browser: run `open ./docs/ideation/{slug}/contract.html` (macOS) or `xdg-open` (Linux)
@@ -289,24 +316,38 @@ Specs and PRDs are already Markdown from Phase 4 — no conversion needed.
 
 ### 5.4 Present Handoff Summary
 
-After updating the contract and generating MD specs, present a brief conversational summary.
+After updating the contract and generating MD specs, present a brief conversational summary, then **recommend one execution entry point** — do not hand the user an undifferentiated menu. You just designed this project; you know its shape. Decide for them.
 
-**Always include:**
+**Always include the artifacts line:**
 
 ```
 Ideation complete. Artifacts written to `./docs/ideation/{project-name}/`.
-
-Open contract.html in your browser to review the full plan — phase track,
-execution commands, and scope are all in the Mission Brief.
-
-Specs (spec-phase-*.md) are ready. To execute all phases:
-  /ideation:autopilot
-
-Or run individual phases manually:
-  /ideation:execute-spec docs/ideation/{project-name}/spec-phase-1.md
+Open contract.html to review the full plan — phase track, scope, and the Mission Brief.
 ```
 
-**Recommend `/ideation:autopilot`** as the default. It reads the contract, walks the dependency graph, dispatches subagents per phase (parallel when possible), and only stops on failures. Manual `/ideation:execute-spec` is available for finer control.
+**Then apply the decision rule** to recommend the next step:
+
+- **Single phase** (no phasing happened): recommend running the one spec directly. No question needed.
+
+  > Your next step: `/ideation:execute-spec docs/ideation/{project-name}/spec.md`
+  > _(One phase — orchestration adds nothing.)_
+
+- **Multi-phase**: ask exactly one question via `AskUserQuestion` — the only thing you can't infer (whether they'll watch the run or walk away):
+
+  ```
+  Question: "How do you want to run this?"
+  Options:
+  - "Watch it run now (Recommended)" — /ideation:autopilot runs the phases on its Workflow engine while you watch.
+  - "Start it and walk away" — get a /goal that drives autopilot to completion unattended, recovering from failures.
+  - "I'll run phases myself" — run each /ideation:execute-spec manually.
+  ```
+
+  Then echo back the **exact command** for their choice as "Your next step:":
+  - Watch now → `/ideation:autopilot docs/ideation/{project-name}/contract.md`
+  - Walk away → `run /ideation:get-goal-prompt docs/ideation/{project-name}/contract.md, then paste the /goal it copies`
+  - Manually → the per-phase `/ideation:execute-spec` commands in dependency order
+
+**The layered model underneath** (state once if helpful, don't belabor): `/ideation:autopilot` is the deterministic Workflow **engine**; the `/goal` is a durability **wrapper** that drives it unattended; `/ideation:execute-spec` is the per-phase **unit** all of them call. The graph shape (parallel vs. sequential) does not change _which_ entry point to recommend — the engine handles parallelism internally — so route only on phase count and attended-vs-unattended.
 
 </supporting-info>
 

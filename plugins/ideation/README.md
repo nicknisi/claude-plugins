@@ -364,7 +364,7 @@ All 4 phases complete.
 
 ### get-goal-prompt
 
-Generate a `/goal` command to execute specs autonomously. Reads the contract, builds a goal prompt with phase ordering and spec paths, and copies it to your clipboard. Paste to start.
+Generate a `/goal` command that runs the project **unattended** by driving `/ideation:autopilot`. The `/goal` is a durability wrapper — it keeps autopilot going across hours/sessions and recovers from failed phases — while autopilot's Workflow engine does the dependency-ordered dispatch. Copies the command to your clipboard; paste to start.
 
 **Usage:**
 
@@ -378,16 +378,34 @@ Generate a `/goal` command to execute specs autonomously. Reads the contract, bu
 
 **How it works:**
 
-- Reads the contract, extracts phases with spec paths and dependency order
-- Skips already-committed phases (checks git log)
-- Constructs a `/goal` condition (under 4000 chars) with execution instructions
-- Copies the full `/goal` command to clipboard and prints it
-- You paste the command to start — `/goal` handles autonomous execution with a separate evaluator checking completion after each turn
+- Reads the contract and project name
+- Builds a short `/goal` whose objective is "run `/ideation:autopilot` to completion; on failure, fix and re-run; repeat until every phase is committed"
+- The `/goal` does **not** inline per-phase steps — autopilot + the specs hold that detail
+- Copies the `/goal` to clipboard and prints it; you paste to start
 
-**When to use this vs autopilot:**
+**When to use this vs. plain autopilot:**
 
-- **autopilot** — parallel dispatch, dependency-wave computation, failure gates with skip/retry/stop
-- **get-goal-prompt** — simpler, built-in retry via `/goal`, session resumable with `--resume`, runs in non-interactive mode via `claude -p`
+- **`/ideation:autopilot`** — run it now and watch; lighter, interactive.
+- **`get-goal-prompt` → `/goal`** — start it and walk away; durable across sessions, self-heals on failure. Same engine underneath.
+
+## Execution model (engine · wrapper · unit)
+
+Execution is layered — three roles, one engine underneath:
+
+| Role        | What                                                                                                                                                                              | Reach for it when                                  |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| **Engine**  | `/ideation:autopilot` — drives the deterministic [Workflow](workflows/README.md) that plans dependency waves, dispatches phases in parallel, and returns schema-validated results | You want to run the project and watch it           |
+| **Wrapper** | A `/goal` from `get-goal-prompt` — a durability layer that _drives_ autopilot across hours/sessions and recovers from failures                                                    | You want to start it and walk away (unattended)    |
+| **Unit**    | `/ideation:execute-spec` — executes one phase (scout → build → verify-review-fix → commit)                                                                                        | You want fine-grained, one-phase-at-a-time control |
+
+The wrapper drives the engine; the engine dispatches the unit. The graph shape
+(parallel vs. sequential) is handled **inside** the engine — it doesn't change which
+entry point you pick. ideation's handoff recommends one for you based on phase count and
+whether you'll watch the run.
+
+`/goal` is also the right tool for **exploratory** work that has no pre-written specs
+(iterate-until-a-metric, prompt optimization) — there, you write the objective yourself
+rather than generating it from a contract.
 
 ## Manual Cross-Session Execution
 
