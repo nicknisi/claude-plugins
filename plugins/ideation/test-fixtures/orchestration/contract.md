@@ -33,7 +33,7 @@ dispatch, failure gating, skip propagation, and resume in a single run.
 
 ### Out of Scope
 
-- Any real production code — fixtures write only to `/tmp/wfbe-fixture/`.
+- Any real production code — fixtures write only trivial marker files under `out/`, and the live run executes in a throwaway worktree.
 
 ### Future Considerations
 

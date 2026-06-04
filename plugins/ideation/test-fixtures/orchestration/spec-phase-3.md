@@ -9,16 +9,16 @@
 
 ## Technical Approach
 
-Write a sentinel, then run a validation command that deterministically exits non-zero,
-so `execute-spec` reports this phase as failed after its review/validation cycle.
+Write a marker file, then run a validation command that deterministically exits non-zero,
+so `execute-spec` fails validation and reports this phase as FAIL **without committing**.
 
 ## File Changes
 
 ### New Files
 
-| File Path                       | Purpose                                        |
-| ------------------------------- | ---------------------------------------------- |
-| `/tmp/wfbe-fixture/phase3.done` | Sentinel (written, but validation still fails) |
+| File Path                                                     | Purpose                                      |
+| ------------------------------------------------------------- | -------------------------------------------- |
+| `plugins/ideation/test-fixtures/orchestration/out/phase3.txt` | Marker (written, but validation still fails) |
 
 ## Implementation Details
 
@@ -26,17 +26,18 @@ so `execute-spec` reports this phase as failed after its review/validation cycle
 
 **Implementation steps**:
 
-1. `echo phase3 > /tmp/wfbe-fixture/phase3.done`
-2. Run the failing validation below — it MUST exit 1.
+1. `echo phase3 > plugins/ideation/test-fixtures/orchestration/out/phase3.txt`
+2. Run the failing validation below — it MUST exit 1, so the phase never commits.
 
 ## Validation Commands
 
 ```bash
-echo phase3 > /tmp/wfbe-fixture/phase3.done
+mkdir -p plugins/ideation/test-fixtures/orchestration/out
+echo phase3 > plugins/ideation/test-fixtures/orchestration/out/phase3.txt
 echo "Deliberate fixture failure — Phase 3 is rigged to fail." >&2
 exit 1
 ```
 
 ---
 
-_Trivial fixture spec. The validation exits 1 on purpose; the engine should mark this phase FAIL and skip Phase 4._
+_Trivial fixture spec. The validation exits 1 on purpose; the engine should mark this phase FAIL (no commit) and skip Phase 4._

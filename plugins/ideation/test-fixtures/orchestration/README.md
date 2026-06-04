@@ -36,27 +36,34 @@ This reads the same `contract-data.json` the rebuilt autopilot consumes and asse
 planner's waves + skip propagation + resume. It is the CI-friendly proof of the
 fixture's contract.
 
+> A zero-cost runtime probe also confirms the engine loads + returns in the real Workflow
+> runtime: invoke the engine with `args: { phases: [] }` — it hits the early-return branch
+> and dispatches no agents. (Confirmed: returns `{completed:[],failed:[],skipped:[],results:[]}`.)
+
 ## Live end-to-end run (manual, you-triggered)
 
-This exercises the **real** Workflow runtime, `scriptPath` loading, and `agent()`
-dispatching `/ideation:execute-spec` — the integration unknowns the deterministic check
-can't cover. It dispatches real subagents and makes commits, so run it deliberately, in
-an isolated working area, and **opt into Workflow** (the engine is a dynamic Workflow):
+This exercises the part the deterministic check can't: `agent()` actually dispatching
+`/ideation:execute-spec`, which builds and **commits** a real repo change.
 
-1. **Clean slate** — ensure no fixture phases are already committed and clear sentinels:
+> **Why real repo files, not `/tmp`:** `execute-spec` commits _repo_ changes. If a phase
+> only wrote to `/tmp`, its `git diff` would be empty and it would never commit — so the
+> fixture specs create real files under `out/`. That means a live run **makes real
+> commits**, so it MUST run in a throwaway worktree.
+
+1. **Isolate** — run in a scratch worktree so fixture commits never touch your branch:
    ```bash
-   rm -rf /tmp/wfbe-fixture
-   git log --oneline --grep="spec-phase" | grep orchestration   # expect: empty
+   git worktree add /tmp/wfbe-scratch HEAD
+   cd /tmp/wfbe-scratch
+   git log --oneline --grep="orchestration/spec-phase"   # expect: empty (clean slate)
    ```
-   Prefer a scratch worktree or clone so fixture commits don't pollute real history
-   (see "Reset" below).
-2. **Run autopilot** against the fixture contract:
+2. **Opt into Workflow** (the engine is a dynamic Workflow) and **run autopilot** against the fixture:
    ```
    /ideation:autopilot plugins/ideation/test-fixtures/orchestration/contract.md
    ```
 3. **Observe** in `/workflows`: Wave 1 = P1; Wave 2 = P2 + P3 **concurrently**; P4 never dispatched.
 4. **Assert** the final summary buckets match the table above, and the failure gate prompts.
-5. **Resume check** — re-run the same command; P1/P2 should be skipped via the git pre-pass.
+5. **Resume check** — re-run the same command; P1/P2 should be skipped via the git pre-pass
+   (it matches the slug-qualified `orchestration/spec-phase-N.md` in the commit messages).
 6. **Record** pass/fail of each assertion below.
 
 ### Assertions to record
@@ -64,16 +71,16 @@ an isolated working area, and **opt into Workflow** (the engine is a dynamic Wor
 - [ ] Wave 1 = [Phase 1]; Wave 2 dispatches Phase 2 + Phase 3 concurrently; Phase 4 never dispatched.
 - [ ] Summary: completed [P1, P2], failed [P3], skipped [P4].
 - [ ] Failure gate prompts after the wave resolves.
-- [ ] `/tmp/wfbe-fixture/phase4.done` does NOT exist (skip propagation held).
+- [ ] `out/phase4.txt` does NOT exist (skip propagation held).
 - [ ] Re-run skips already-committed P1/P2.
 
 ## Reset
 
 ```bash
-rm -rf /tmp/wfbe-fixture
-# If you ran it in the main tree and it made commits, drop them:
-#   git rebase -i <before-fixture-commits>   (or reset --hard if safe)
+# From the main tree, tear down the scratch worktree (discards all fixture commits):
+git worktree remove --force /tmp/wfbe-scratch
 ```
 
-> Tip: run the live exercise in a throwaway `git worktree add ../wfbe-scratch` so
-> fixture commits never touch your real branch.
+> Running in the worktree keeps fixture commits off your real branch entirely — removing
+> the worktree discards them. Never run the live exercise directly on a branch you intend
+> to keep.
