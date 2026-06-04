@@ -185,21 +185,39 @@ function summarize(results) {
 // Main
 // ---------------------------------------------------------------------------
 
-const phases = args?.phases ?? [];
+// Defensive: some Workflow runtimes deliver `args` as a JSON string rather than
+// a parsed object. Normalize so `a.phases` resolves either way.
+const a =
+  typeof args === 'string'
+    ? (() => {
+        try {
+          return JSON.parse(args);
+        } catch {
+          return {};
+        }
+      })()
+    : (args ?? {});
+log(
+  `args received as ${typeof args}; phases=${
+    Array.isArray(a?.phases) ? a.phases.length : 'none'
+  }`,
+);
+
+const phases = a?.phases ?? [];
 if (phases.length === 0) {
   log('No phases supplied in args — nothing to execute.');
   return summarize([]);
 }
 
 const byTitle = new Map(phases.map(p => [p.title, p]));
-const waves = computeWaves(phases, args.completedPhases ?? []);
+const waves = computeWaves(phases, a.completedPhases ?? []);
 log(
-  `Planned ${waves.length} wave(s) for ${args.projectName}: ${waves
+  `Planned ${waves.length} wave(s) for ${a.projectName}: ${waves
     .map((w, i) => `W${i + 1}[${w.join(', ')}]`)
     .join(' → ')}`,
 );
-if ((args.completedPhases ?? []).length > 0) {
-  log(`Skipping already-committed: ${args.completedPhases.join(', ')}`);
+if ((a.completedPhases ?? []).length > 0) {
+  log(`Skipping already-committed: ${a.completedPhases.join(', ')}`);
 }
 
 const failedOrSkipped = new Set();
@@ -231,7 +249,7 @@ for (const wave of waves) {
   const waveResults = await parallel(
     toRun.map(title => () => {
       const p = byTitle.get(title);
-      return agent(buildPhasePrompt(p, args), {
+      return agent(buildPhasePrompt(p, a), {
         label: `phase:${title}`,
         phase: phaseLabel,
         agentType: 'general-purpose',
