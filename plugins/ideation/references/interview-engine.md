@@ -22,6 +22,10 @@ While the sweep runs, acknowledge the brain dump and state what looks strong and
 
 **Cap at 3 sweep agents.** Scope each agent's prompt to the brain dump's stated area; beyond 3 agents, latency and token cost outrun the value for an interview opener. Sweep findings stay in conversation context — the "do not write exploration findings to files" rule below applies to the sweep too.
 
+### Read accumulated learnings
+
+If `docs/ideation/learnings.md` exists, read it. It holds generalizable spec-gap and interview patterns mined from past projects by `/ideation:retro`. Where a recorded pattern is relevant to this project's scope, apply it — ask the question it implies, or carry its spec implication into artifact generation. Learnings inform questions; they never replace the evidence a gate requires, and entries are dated because codebases drift.
+
 ## Phase 2: Interview Loop
 
 Interview the user relentlessly about every aspect of this plan until reaching shared understanding. Walk down each branch of the decision tree, resolving dependencies between decisions one by one.

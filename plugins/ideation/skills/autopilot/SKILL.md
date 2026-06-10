@@ -155,7 +155,12 @@ If all phases completed:
 
 ```
 All {N} phases complete. Run `git log --oneline -{N}` to see the commits.
+
+Next: run /ideation:retro {projectDir} to mine implementation notes for lessons.
 ```
+
+(autopilot does not run retro itself — pointing to it keeps the engine/skill
+division clean and the report fast.)
 
 ## Key Principles
 
