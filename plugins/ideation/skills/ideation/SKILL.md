@@ -7,7 +7,7 @@ description: "You MUST use this before building any new feature, planning a migr
 
 # Ideation
 
-Transform unstructured brain dumps into implementation artifacts through a conversational interview that builds shared understanding before writing anything. HTML is used for interactive decision-making (visualizations, comparisons, Mission Brief contract); Markdown is used for reference documents (specs, PRDs).
+Transform unstructured brain dumps into implementation artifacts through a conversational interview that builds shared understanding before writing anything. HTML is for interactive decision-making (visualizations, comparisons, the Mission Brief contract); Markdown is for reference documents (specs, PRDs).
 
 ## Workflow
 
@@ -23,18 +23,15 @@ INTAKE → INTERVIEW LOOP → CONTRACT.HTML → PHASING → SPEC.MD GENERATION �
 
 ## Phases 1-2: Interview
 
-Read and follow `${CLAUDE_PLUGIN_ROOT}/references/interview-engine.md` for the complete intake and interview loop process. Execute all phases described there before proceeding to Phase 3.
-
-Read `${CLAUDE_PLUGIN_ROOT}/references/confidence-rubric.md` for the detailed evidence-gate criteria.
+Read and follow `${CLAUDE_PLUGIN_ROOT}/references/interview-engine.md` for the full intake and interview loop; complete every phase there before Phase 3. Read `${CLAUDE_PLUGIN_ROOT}/references/confidence-rubric.md` for the evidence-gate criteria.
 
 ## Phase 3: Contract (HTML)
 
-When all 5 evidence gates are `ready`, generate the Mission Brief contract as an HTML document. **Not before.**
+When all 5 evidence gates are `ready` — **not before** — generate the Mission Brief contract:
 
-1. Use `AskUserQuestion` to confirm project name if not obvious from context
-2. Convert to kebab-case for directory name (this becomes the `slug`)
-3. Create output directory `./docs/ideation/{slug}/`
-4. **Write `contract-data.json`** in the output directory. This is a JSON file conforming to the `ContractData` schema — the CLI generates the HTML from it. The JSON captures all interview findings:
+1. `AskUserQuestion` to confirm the project name if not obvious; kebab-case it into the `slug`.
+2. Create `./docs/ideation/{slug}/`.
+3. **Write `contract-data.json`** there, conforming to the `ContractData` schema (the CLI renders HTML from it). It captures all interview findings:
 
    ```json
    {
@@ -105,28 +102,15 @@ When all 5 evidence gates are `ready`, generate the Mission Brief contract as an
    }
    ```
 
-   **Gate dimensions:** Each dimension has a `status` (`ready` / `not-ready`) and a one-sentence `evidence` citation — the concrete artifact that makes it ready, or the gap that keeps it not-ready. `passed` is the count of ready gates and `total` is always 5; the hero displays `{passed}/{total} gates` with a ✓/✗ checklist. Normally proceed only when all 5 are ready; record not-ready gates only when the user ends the interview early.
+   Field semantics live in the `contract-gen.ts` types. Key contracts: each gate `dimension` has a `status` (`ready`/`not-ready`) and one-sentence `evidence` (the artifact making it ready, or the gap keeping it not-ready); `passed` counts ready gates, `total` is always 5. Proceed only when all 5 are ready — record not-ready gates only when the user ends the interview early. Phase fields: `risk` (high/medium/low), `blocking`, `specPath`, `notes`; optional `kind` ("gate" for human checkpoints) and `prereqs` (array of phase titles).
 
-   **Phase fields:** `risk` (high/medium/low), `blocking` (boolean), `specPath` (path to spec), `notes` (brief description). Optional: `kind` ("gate" for human checkpoints), `prereqs` (array of phase titles this depends on).
+4. **Fan out the plan critics** (before rendering — fixing a blocker is a one-line JSON edit at this stage, not a regenerate loop). Issue all three `Agent` calls in one message so they run concurrently: `subagent_type: ideation:plan-critic`, prompt = per-invocation inputs only (`contract-data.json` path, project directory, and the **lens** — one of `scope-creep`, `hidden-dependency`, `success-criteria`); workflow/format/read-only `tools` come from the registered definition and are platform-enforced.
 
-5. **Fan out the plan critics** (before rendering the contract). Adversarially review the plan while a blocker is still a one-line JSON edit, not a regenerate-review-regenerate loop. Run **once** per contract.
+   Act on findings: each `blocker` → revise `contract-data.json` to resolve it (re-tier a scope item, add a phase prereq, rewrite a criterion); if a blocker exposes a genuine unknown rather than a fixable defect, return to the interview loop for that gate. Each `notable` → fold in if clearly right, else carry to the digest with a one-line dismissal. `nit` → digest mention only.
 
-   **Dispatch three critics in parallel** — issue all three `Agent` calls in a single message so they run concurrently. Use the registered `ideation:plan-critic` agent type, one call per lens:
-   - **subagent_type**: `ideation:plan-critic`
-   - **prompt**: The per-invocation inputs only — the critic's workflow, output format, and read-only `tools` restriction come from its registered definition; do not paste them into the prompt. Pass: the `contract-data.json` path, the project directory, and the **lens** (one of `scope-creep`, `hidden-dependency`, `success-criteria`).
+   **Failure tolerance:** a failed critic or an unregistered `ideation:plan-critic` (older Claude Code) → warn, proceed without that lens, note the gap in the digest. Critics amplify quality; never block the contract on a critic failure. **Run-once rule:** critics run exactly once per contract — re-run only if a revision changes goals or scope _fundamentally_, not for wording. The "Needs changes" approval loop does **not** re-trigger them.
 
-   The critic's `tools` frontmatter (`Read`, `Glob`, `Grep`) is enforced mechanically by the platform — critics verify claims against the codebase but never edit it.
-
-   **Collect findings and act:**
-   - For each `blocker`: revise `contract-data.json` to resolve it (move a scope item's tier, add a phase prereq, rewrite a success criterion). If a blocker exposes a genuine unknown rather than a fixable defect, return to the interview loop for that gate.
-   - For each `notable`: fold it into `contract-data.json` if it is clearly right; otherwise carry it to the digest with a one-line dismissal reason.
-   - `nit` findings are mentioned in the digest only — no action.
-
-   **Failure tolerance:** if a critic invocation fails or the `ideation:plan-critic` agent type is unregistered (older Claude Code), log a warning, proceed without that lens, and note the gap in the digest. Critics are a quality amplifier, not a hard gate — never block the contract on a critic failure.
-
-   **Run-once rule:** critics run exactly once per contract. Re-run them only if a revision changes the contract _fundamentally_ (different goals or scope, not wording). The "Needs changes" revision loop at the approval gate does **not** re-trigger critics.
-
-6. **Run the contract generator**:
+5. **Run the generator** (it handles lineage — an existing `contract.html` is renamed to `contract-{date}.html` with the supersedes link set):
 
    ```bash
    npx tsx ${CLAUDE_PLUGIN_ROOT}/scripts/contract-gen.ts \
@@ -134,26 +118,20 @@ When all 5 evidence gates are `ready`, generate the Mission Brief contract as an
      --output ./docs/ideation/{slug}/contract.html
    ```
 
-   The CLI handles lineage automatically — if `contract.html` already exists, it renames it to `contract-{date}.html` and sets the supersedes link.
+6. Open it: `open ./docs/ideation/{slug}/contract.html` (macOS) or `xdg-open` (Linux).
+7. **Present the Critic digest**, then ask for approval. The digest is one line per lens: `found N (B blockers folded in, M notables, dismissed X — reasons)`; note any skipped lens; if all three returned SOUND, say so. Then `AskUserQuestion`:
 
-7. Open in browser: run `open ./docs/ideation/{slug}/contract.html` (macOS) or `xdg-open` (Linux)
-8. Use `AskUserQuestion` to get approval — include the scope tier question. **Before the question, present a Critic digest** in the conversational summary so the user can see the plan was stress-tested. Per lens, one line: `found N (B blockers folded in, M notables, dismissed X — reasons)`. Note any lens that was skipped due to a critic failure. If all three critics returned SOUND, say so in one line ("All three plan critics returned SOUND — no blockers"). Then ask:
+   ```
+   Question: "Does this contract capture your intent? Which scope tier should we target?"
+   Options:
+   - "Approved — Full scope (Recommended)" - Build MVP + Full tiers
+   - "Approved — MVP scope" - Ship the minimum viable version first
+   - "Approved — Stretch scope" - Include MVP + Full + Stretch tiers
+   - "Needs changes" - Some parts need revision before approving
+   - "Start over" - Fundamentally off track, re-interview
+   ```
 
-```
-Question: "Does this contract capture your intent? Which scope tier should we target?"
-Options:
-- "Approved — Full scope (Recommended)" - Build MVP + Full tiers
-- "Approved — MVP scope" - Ship the minimum viable version first
-- "Approved — Stretch scope" - Include MVP + Full + Stretch tiers
-- "Needs changes" - Some parts need revision before approving
-- "Start over" - Fundamentally off track, re-interview
-```
-
-The approved scope tier determines what goes into specs. Items outside the chosen tier move to "Future Considerations."
-
-**If not approved:** Revise based on feedback. If feedback reveals a fundamental misunderstanding, return to the interview loop. Otherwise re-write the HTML file and re-open in browser. Iterate until approved.
-
-**Do not proceed until contract is explicitly approved.**
+   The approved tier determines what goes into specs; items outside it move to "Future Considerations". **If not approved:** revise (fundamental misunderstanding → back to the interview loop; otherwise re-write the HTML and re-open), iterating until approved. **Do not proceed until explicitly approved.**
 
 </what-to-do>
 
@@ -161,11 +139,11 @@ The approved scope tier determines what goes into specs. Items outside the chose
 
 ## Phase 4: Phasing & Specification
 
-After contract is approved, determine phases and generate Markdown specs. PRDs are optional.
+After approval, determine phases and generate Markdown specs. PRDs are optional.
 
 ### 4.1 Choose Workflow
 
-Use `AskUserQuestion` to ask:
+`AskUserQuestion`:
 
 ```
 Question: "How should we proceed from the contract?"
@@ -176,39 +154,17 @@ Options:
 
 ### 4.2 Determine Phases
 
-Analyze the contract and break scope into logical implementation phases.
+Break scope into logical implementation phases.
 
-**Small-project shortcut:** If the scope is small enough to implement in a single phase (1-3 components, touches fewer than ~10 files), skip phasing entirely. Generate a single `spec.md` (no phase number needed) and proceed directly to handoff. Don't force structure where simplicity suffices.
+**Small-project shortcut:** if the scope fits one phase (1-3 components, fewer than ~10 files), skip phasing — generate a single `spec.md` (no phase number) and go straight to handoff.
 
-**Phasing criteria** (for multi-phase projects):
+**Phasing criteria** (multi-phase): dependencies (build-order), risk (high-risk early), value delivery (benefit after each phase), complexity (balanced effort). Typical: Phase 1 core/infrastructure, Phase 2+ features/integrations, Phase N future considerations.
 
-- Dependencies (what must be built first?)
-- Risk (tackle high-risk items early)
-- Value delivery (can users benefit after each phase?)
-- Complexity (balance phases for consistent effort)
+**Detect repeatable patterns:** 3+ phases with the same structure but different inputs (e.g., "add SDK support for {language}") change how specs are generated (see 4.4).
 
-Typical phasing:
+### 4.3 Generate PRDs (only if "PRDs then specs")
 
-- Phase 1: Core functionality / infrastructure
-- Phase 2+: Features, enhancements, additional integrations
-- Phase N: Future considerations
-
-**Detect repeatable patterns:** If 3+ phases follow the same structure with different inputs (e.g., "add SDK support for {language}"), note this — it affects how specs are generated (see 4.4).
-
-### 4.3 Generate PRDs (only if user chose "PRDs then specs")
-
-For each phase, use the `Read` tool to read `references/prd-template.md`, then generate `prd-phase-{n}.md`.
-
-Include:
-
-- Phase overview and rationale
-- User stories for this phase
-- Functional requirements (grouped)
-- Non-functional requirements
-- Dependencies (prerequisites and outputs)
-- Acceptance criteria
-
-Present all PRDs for review via `AskUserQuestion`:
+Read `references/prd-template.md`, then generate `prd-phase-{n}.md` per phase: overview/rationale, user stories, functional requirements (grouped), non-functional requirements, dependencies (prerequisites and outputs), acceptance criteria. Review via `AskUserQuestion`, iterating until approved:
 
 ```
 Question: "Do these PRD phases look correct?"
@@ -219,55 +175,21 @@ Options:
 - "Start over" - Need to revisit the contract
 ```
 
-Iterate until user explicitly approves.
-
 ### 4.4 Generate Implementation Specs
 
-Use the `Read` tool to read `references/spec-template.md`, then generate `spec-phase-{n}.md`. Create spec files lazily — only when a phase's details are resolved.
+Read `references/spec-template.md`, then generate specs **lazily** — only when a phase's details are resolved.
 
-#### Standard phases (each is unique)
+**Standard phases** (each unique): a full `spec-phase-{n}.md` with technical approach, feedback strategy (inner-loop command, playground, rationale), file changes (table with new/modified/deleted), implementation details (per-component, each with a playground → experiment → check-command loop), testing requirements (table), failure modes (table: component, failure, trigger, impact, mitigation), validation commands.
 
-For each phase, generate a full `spec-phase-{n}.md` with:
+- **Reference existing code:** where the interview found relevant patterns, add "Pattern to follow: `path/to/file.ts`" to implementation details.
+- **Feedback loops:** match the mechanism to the component — data layers use tests, UI uses a dev server, APIs use curl scripts, config/types skip loops. See `${CLAUDE_PLUGIN_ROOT}/references/feedback-loop-guide.md` for the full mapping.
+- **Failure modes:** for each non-trivial component, name how it fails — data shadows (nil/empty/stale), edge cases (concurrency, oversized input, missing permissions). Trivial components (config, types, constants) skip this.
 
-- **Technical approach** — high-level strategy
-- **Feedback strategy** — inner-loop command, playground, rationale
-- **File changes** — table with new/modified/deleted indicators
-- **Implementation details** — per-component sections, each with a feedback loop (playground → experiment → check command)
-- **Testing requirements** — table of test files and coverage
-- **Failure modes** — table with component, failure, trigger, impact, mitigation columns
-- **Validation commands** — code blocks
-
-**Reference existing code:** When the interview's codebase exploration identified relevant patterns, include "Pattern to follow: `path/to/similar/file.ts`" in the spec's implementation details.
-
-**Designing feedback loops:** For each iterative component, define a playground (environment to interact with), experiment (parameterized check), and check command (fastest single validation). Match the feedback mechanism to the component type — data layers use tests, UI uses dev server, APIs use curl scripts, config/types skip loops entirely. See `${CLAUDE_PLUGIN_ROOT}/references/feedback-loop-guide.md` for the full component-type mapping and design criteria.
-
-**Naming failure modes:** For each non-trivial component, ask: "How would this fail?" Fill in the spec's Failure Modes table with named failures, data shadow paths (nil, empty, stale data), and edge cases (concurrent access, oversized input, missing permissions). Trivial components (config, types, constants) skip failure mode enumeration.
-
-#### Repeatable phases (3+ phases follow the same pattern)
-
-When multiple phases share the same structure (e.g., "add support for {SDK}"), avoid generating N nearly-identical full specs. Instead:
-
-1. **Generate one full template spec** — `spec-template-{pattern-name}.md` — with detailed implementation steps, using placeholders for the variable parts.
-
-2. **Generate lightweight per-phase delta files** — `spec-phase-{n}.md` — containing only:
-   - Phase-specific inputs (e.g., language name, package manager, framework)
-   - Deviations from the template (what's different about this phase)
-   - Any phase-specific concerns or edge cases
-   - Reference to the template: "Follow `spec-template-{pattern-name}.md` with the inputs below"
+**Repeatable phases** (3+ share a structure): don't generate N near-identical specs. Generate one full template — `spec-template-{pattern-name}.md` with placeholders for the variable parts — plus lightweight `spec-phase-{n}.md` deltas containing only the phase-specific inputs, deviations from the template, phase-specific concerns, and a reference: "Follow `spec-template-{pattern-name}.md` with the inputs below".
 
 ### 4.5 Present Specs for Review
 
-Present the phase breakdown and specs for user approval before proceeding to handoff.
-
-**Before presenting specs, evaluate feedback loop quality** using the Spec Feedback Quality checklist from `${CLAUDE_PLUGIN_ROOT}/references/confidence-rubric.md`. Self-review each spec:
-
-- **Strong**: All iterative components have feedback loops, inner-loop command defined, trivial components correctly skipped → present spec as-is
-- **Adequate**: Most components have loops but some gaps → present spec with a note about what's missing
-- **Weak**: No Feedback Strategy section, or complex components missing loops entirely → revise spec before presenting
-
-If Weak, fix the gaps first. Don't present a spec without feedback loops for its iterative components.
-
-Use `AskUserQuestion`:
+**First, self-review feedback-loop quality** against the Spec Feedback Quality checklist in `${CLAUDE_PLUGIN_ROOT}/references/confidence-rubric.md`: **Strong** (all iterative components have loops, inner-loop command defined, trivial ones skipped) → present as-is; **Adequate** (minor gaps) → present with a note; **Weak** (no Feedback Strategy, or complex components missing loops) → fix the gaps before presenting. Then `AskUserQuestion`, iterating until approved:
 
 ```
 Question: "Do these specs look correct? (Review them in your browser)"
@@ -278,26 +200,13 @@ Options:
 - "Revisit phases" - Phase breakdown needs restructuring
 ```
 
-If not approved, revise the relevant specs based on feedback and re-present. Iterate until approved.
-
 ## Phase 5: Execution Handoff
 
-After specs are approved, update the contract HTML with the execution plan and auto-generate Markdown specs for `/ideation:execute-spec`.
+After specs are approved, update the contract with the execution plan and emit Markdown for `/ideation:execute-spec`.
 
 ### 5.1 Analyze Orchestration Strategy
 
-Do not create tasks during ideation handoff — they are ephemeral and will be lost when the user starts a fresh session. Each `/ideation:execute-spec` session creates its own granular implementation tasks.
-
-Analyze the phase dependency graph to determine the best execution strategy.
-
-**Detect parallelizable phases:**
-
-- Examine which phases are blocked by what
-- If 2+ phases share the same single blocker (e.g., all blocked only by Phase 1), they are **parallelizable**
-- If phases form a linear chain (Phase 2 → Phase 3 → Phase 4), they are **sequential**
-- Mixed graphs have both parallel and sequential segments
-
-**Determine recommended strategy:**
+Do **not** create tasks here — they are ephemeral and lost on a fresh session; each `/ideation:execute-spec` creates its own. Analyze the phase dependency graph: 2+ phases sharing a single blocker (e.g., all blocked only by Phase 1) are **parallelizable**; a linear chain is **sequential**; mixed graphs have both.
 
 | Pattern                       | Recommendation                                                                |
 | ----------------------------- | ----------------------------------------------------------------------------- |
@@ -307,50 +216,33 @@ Analyze the phase dependency graph to determine the best execution strategy.
 
 ### 5.2 Update Contract Data with Execution Plan
 
-Update `contract-data.json` with the final execution plan, then re-run `contract-gen.ts`. This makes the contract fully self-contained — someone can pick it up cold and know exactly how to execute.
+Update `contract-data.json` with the final plan and re-run `contract-gen.ts` so the contract is self-contained:
 
-1. **Phase Track** — populate `execution.phases` with phase titles, risk, blockers, spec paths, notes, and human gates. The CLI renders the horizontal phase track with risk coloring.
+- **Phase Track** — populate `execution.phases` (titles, risk, blockers, spec paths, notes, human gates); the CLI renders the risk-colored track.
+- **Execution Commands** — the CLI renders copy buttons for `/ideation:autopilot` and each `/ideation:execute-spec`.
+- **Agent Team Prompt** — set `execution.agentTeamPrompt` only if 2+ phases are parallelizable (CLI renders it in a collapsible section); **omit entirely** for sequential projects.
 
-2. **Execution Commands** — the CLI renders copy buttons for `/ideation:autopilot` and each `/ideation:execute-spec` command.
-
-3. **Agent Team Prompt** — only if 2+ phases are parallelizable. Set `execution.agentTeamPrompt` so the CLI renders it in a collapsible section with a copy button. **Omit this field entirely** for fully sequential projects.
-
-**Shared file detection:** Before writing the agent team prompt, scan spec files' "Modified Files" sections. If multiple specs modify the same files, include a coordination note:
-
-```
-Coordinate on shared files ({list}) to avoid merge conflicts —
-only one teammate should modify a shared file at a time.
-```
-
-**Batching:** If more than 5 parallelizable phases, note in the execution steps to start with the highest-priority batch first.
-
-Re-open the regenerated contract in the browser after updating.
+**Shared file detection:** before writing the agent team prompt, scan specs' "Modified Files". If multiple specs touch the same files, add a coordination note: "Coordinate on shared files ({list}) — only one teammate should modify a shared file at a time." **Batching:** more than 5 parallelizable phases → note starting with the highest-priority batch first. Re-open the regenerated contract.
 
 ### 5.3 Generate Contract Markdown
 
-Generate `contract.md` from `references/contract-template.md` with the same content as `contract.html` — needed for execute-spec lineage detection. Include the Execution Plan section.
-
-Specs and PRDs are already Markdown from Phase 4 — no conversion needed.
+Generate `contract.md` from `references/contract-template.md` mirroring `contract.html` (including the Execution Plan) — needed for execute-spec lineage detection. Specs and PRDs are already Markdown.
 
 ### 5.4 Present Handoff Summary
 
-After updating the contract and generating MD specs, present a brief conversational summary, then **recommend one execution entry point** — do not hand the user an undifferentiated menu. You just designed this project; you know its shape. Decide for them.
-
-**Always include the artifacts line:**
+Present a brief summary, then **recommend one entry point** — don't hand over an undifferentiated menu. Always include:
 
 ```
 Ideation complete. Artifacts written to `./docs/ideation/{project-name}/`.
 Open contract.html to review the full plan — phase track, scope, and the Mission Brief.
 ```
 
-**Then apply the decision rule** to recommend the next step:
+Then apply the decision rule:
 
-- **Single phase** (no phasing happened): recommend running the one spec directly. No question needed.
-
+- **Single phase:** recommend the one spec directly, no question:
   > Your next step: `/ideation:execute-spec docs/ideation/{project-name}/spec.md`
   > _(One phase — orchestration adds nothing.)_
-
-- **Multi-phase**: ask exactly one question via `AskUserQuestion` — the only thing you can't infer (whether they'll watch the run or walk away):
+- **Multi-phase:** ask exactly one question — whether they'll watch or walk away:
 
   ```
   Question: "How do you want to run this?"
@@ -360,18 +252,18 @@ Open contract.html to review the full plan — phase track, scope, and the Missi
   - "I'll run phases myself" — run each /ideation:execute-spec manually.
   ```
 
-  Then echo back the **exact command** for their choice as "Your next step:":
+  Then echo the exact command for their choice:
   - Watch now → `/ideation:autopilot docs/ideation/{project-name}/contract.md`
   - Walk away → `run /ideation:get-goal-prompt docs/ideation/{project-name}/contract.md, then paste the /goal it copies`
   - Manually → the per-phase `/ideation:execute-spec` commands in dependency order
 
-**The layered model underneath** (state once if helpful, don't belabor): `/ideation:autopilot` is the deterministic Workflow **engine**; the `/goal` is a durability **wrapper** that drives it unattended; `/ideation:execute-spec` is the per-phase **unit** all of them call. The graph shape (parallel vs. sequential) does not change _which_ entry point to recommend — the engine handles parallelism internally — so route only on phase count and attended-vs-unattended.
+**The layered model** (state once if helpful): `/ideation:autopilot` is the deterministic Workflow **engine**; the `/goal` is a durability **wrapper** that drives it unattended; `/ideation:execute-spec` is the per-phase **unit** all of them call. Graph shape doesn't change which entry point to recommend — the engine handles parallelism internally — so route only on phase count and attended-vs-unattended.
 
 </supporting-info>
 
 ## Output Artifacts
 
-All artifacts written to `./docs/ideation/{project-name}/`:
+All written to `./docs/ideation/{project-name}/`:
 
 ```
 _comparison.html                   # Ephemeral decision aid (deleted after choice is made)
@@ -387,89 +279,36 @@ spec-phase-{n}.md                  # Per-phase delta or full spec
 
 ## Bundled Resources
 
-### Shared References (plugin root)
+**Shared references** (plugin root):
 
-- `${CLAUDE_PLUGIN_ROOT}/references/interview-engine.md` - Interview engine (Phases 1-2)
-- `${CLAUDE_PLUGIN_ROOT}/references/confidence-rubric.md` - Evidence-gate criteria for readiness assessment and spec feedback quality
-- `${CLAUDE_PLUGIN_ROOT}/references/feedback-loop-guide.md` - Component-type mapping and design criteria for spec feedback loops
-- `${CLAUDE_PLUGIN_ROOT}/references/workflow-example.md` - End-to-end workflow walkthrough
+- `interview-engine.md` — interview engine (Phases 1-2)
+- `confidence-rubric.md` — evidence-gate criteria for readiness and spec feedback quality
+- `feedback-loop-guide.md` — component-type mapping and design criteria for spec feedback loops
+- `workflow-example.md` — end-to-end walkthrough
 
-### Skill References
+**Skill references** — HTML (interactive): `references/html-guide.md` (component library, design tokens, constraints), `references/contract-template.html`. Markdown: `references/contract-template.md`, `references/prd-template.md`, `references/spec-template.md`.
 
-HTML (interactive artifacts — contract, exploration, interview visualizations):
-
-- `references/html-guide.md` - HTML component library, design tokens, and constraints
-- `references/contract-template.html` - Interactive HTML contract template
-
-Markdown (specs, PRDs, contract copy for execute-spec):
-
-- `references/contract-template.md` - Plain contract template
-- `references/prd-template.md` - Plain PRD template
-- `references/spec-template.md` - Plain spec template
-
-### Examples
-
-Completed artifact examples for reference when generating output:
-
-- `examples/contract-example.md` - A filled-in MD contract for a bookmark feature
-- `examples/prd-example.md` - A filled-in MD PRD for the same feature (Phase 1)
-- `examples/spec-example.md` - A filled-in MD spec for the same feature
-
-When generating artifacts, reference these examples for tone, structure, and level of detail.
+**Examples** (filled-in artifacts for a bookmark feature — reference for tone, structure, detail): `examples/contract-example.md`, `examples/prd-example.md`, `examples/spec-example.md`.
 
 ## Decision Aids: Previews First, HTML When Visual
 
-During the interview and phasing stages, comparisons help the user decide. **Default to `AskUserQuestion` previews; escalate to ephemeral HTML only when the decision hinges on something a monospace preview can't show.**
+During the interview and phasing, comparisons help the user decide. **Default to `AskUserQuestion` previews; escalate to ephemeral HTML only when the decision hinges on something a monospace preview can't show.**
 
-### Default: `AskUserQuestion` previews
+`AskUserQuestion`'s per-option `preview` field renders side-by-side in a monospace box (markdown) — the default routing, since it keeps the decision inline with no file to write or clean up. Use it for ASCII layout mockups, code snippets (signature/config/schema per option), dependency-flow or phasing sketches, and compact pros/cons blocks. By stage: interview examples → ASCII mockups; architecture comparisons → structure + trade-offs per approach; phasing strategies → core-first vs. risk-first vs. value-first as dependency-flow sketches; orchestration strategy → sequential vs. parallel vs. hybrid as ASCII timelines.
 
-`AskUserQuestion` supports a per-option `preview` field, rendered side-by-side in a monospace box (markdown). For a 2–4 option comparison, give each option a `preview` — this is the default routing because it keeps the decision inline, with no file to write, open, or clean up. Previews are well-suited to:
+**Constraints:** previews are **single-select only** — never combine with `multiSelect` (drop previews and rely on labels + descriptions, or escalate to HTML). Keep them **comparative** — a preview earns its place only when seeing options side-by-side changes the choice; otherwise skip it.
 
-- ASCII layout mockups (box-drawing sketches of a UI or page structure)
-- Code snippets (a function signature, config block, or schema shape per option)
-- Dependency-flow or phasing sketches (arrows, ordered steps)
-- Trade-off summaries (a compact pros/cons block per option)
+**Escalate to ephemeral HTML** only when a monospace box can't render the deciding factor: real visual design (color, typography, spacing), interactive behavior (sliders, toggles, hover), or side-by-side rendered (not sketched) artifacts. Workflow: write `_comparison.html` (prefix `_` marks it ephemeral) using `references/html-guide.md` components, show each option as a card/column (name, description, trade-offs, visual where apt), `open` it, ask via `AskUserQuestion` referencing the browser view, then delete it after the choice. The contract HTML and genuine visual mockups still use this path — the change is routing (preview by default), not removal.
 
-**When previews fit each of the comparison stages:**
-
-- **Interview examples** — preview-first: ASCII mockups of the layout/component options. HTML only when real rendering matters (see below).
-- **Architecture comparisons** — preview-first: each approach's structure and trade-offs in a code/ASCII block.
-- **Phasing strategies** — preview-first: "core-first vs. risk-first vs. value-first" as dependency-flow sketches.
-- **Orchestration strategy** — preview-first: sequential vs. parallel vs. hybrid as ASCII timelines.
-
-**Constraints:**
-
-- **Previews are single-select only.** Do not combine `preview` with `multiSelect` — the tool will reject or ignore the previews. If the decision is genuinely multi-select, drop previews and rely on labels + descriptions (or escalate to HTML).
-- **Keep previews comparative.** A preview earns its place only when seeing the options side-by-side changes the choice. When labels + descriptions already make the answer clear, skip the preview — see "When NOT to use a decision aid" below.
-
-### Escalate to ephemeral HTML only when previews can't render it
-
-Reserve `_comparison.html` for decisions that hinge on what a monospace box cannot show:
-
-- **Real visual design** — color, typography, spacing, where the look itself is the decision
-- **Interactive behavior** — widgets the user needs to manipulate (sliders, toggles, hover states)
-- **Side-by-side rendered artifacts** — actual layouts/components rendered, not sketched
-
-The ephemeral-file workflow is unchanged for this case:
-
-1. Write `_comparison.html` (or `_examples.html`, `_mockup.html` — prefix with `_` to mark as ephemeral) to the project's ideation directory using `references/html-guide.md` components
-2. Show each option as a card or column with: name, description, trade-offs, and a visual where appropriate
-3. Open in browser: `open ./docs/ideation/{project-name}/_comparison.html`
-4. Ask via `AskUserQuestion`: reference the browser view in the question text
-5. After the user chooses, delete the ephemeral file — it served its purpose
-
-The contract HTML and genuine visual mockups still need this path — the change is routing (preview by default), not removal.
-
-**When NOT to use a decision aid (preview or HTML):** Simple yes/no decisions, choices where the recommended option is clearly best, or any decision that's faster to explain in text. Don't slow down the flow with unnecessary previews or visual aids.
+**When NOT to use a decision aid:** simple yes/no, choices where the recommended option is clearly best, or anything faster to explain in text.
 
 ## Important Notes
 
-- **HTML is for interactive artifacts only** — contract and ephemeral decision visualizations. Specs and PRDs are Markdown.
-- **Use the `Read` tool to load templates before writing.** You MUST read `references/html-guide.md` before Phase 3 and read `references/contract-template.html` before generating the contract. Read `references/spec-template.md` before generating specs.
-- **Use `AskUserQuestion` for all questions and approvals.** One question at a time, with your recommended answer.
-- **Judge gates conservatively.** When unsure whether the evidence is sufficient, the gate is not-ready. No fixed question limit.
-- **Open HTML artifacts in the browser** after writing. Use `open` (macOS) or `xdg-open` (Linux).
-- **Create files lazily.** Only when decisions are locked, not speculatively.
-- **Reference existing code patterns** in specs — "Pattern to follow" with real file paths.
-- **Small projects don't need phases.** 1-3 components → single spec. Use template + delta for repeatable phases.
-- **Specs must stand alone** — detailed enough to implement without re-reading PRDs or the contract.
+- **HTML is for interactive artifacts only** (contract, ephemeral visualizations); specs and PRDs are Markdown.
+- **Read templates before writing:** `references/html-guide.md` before Phase 3, `references/contract-template.html` before the contract, `references/spec-template.md` before specs.
+- **Use `AskUserQuestion` for all questions and approvals** — one at a time, with your recommended answer.
+- **Judge gates conservatively** — when unsure the evidence is sufficient, the gate is not-ready. No fixed question limit.
+- **Open HTML artifacts** after writing (`open` / `xdg-open`).
+- **Create files lazily** — only when decisions are locked.
+- **Small projects don't need phases** — 1-3 components → single spec. Template + delta for repeatable phases.
+- **Specs must stand alone** — implementable without re-reading PRDs or the contract.

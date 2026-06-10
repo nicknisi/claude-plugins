@@ -118,7 +118,7 @@
       "name": "ideation",
       "source": "./plugins/ideation",
       "description": "Transform brain dumps into implementation specs through conversational interviews. Interactive HTML contract for planning decisions, Markdown specs for execution. /ideation:autopilot orchestrates full project execution — dispatches subagents per phase, parallel when possible, gates on failures.",
-      "version": "0.13.0",
+      "version": "0.14.0",
       "author": {
         "name": "Nick Nisi",
         "email": "nick@nisi.org"
@@ -184,11 +184,7 @@
         "name": "Nick Nisi",
         "email": "nick@nisi.org"
       },
-      "keywords": [
-        "experimental",
-        "cunningham",
-        "output-styles"
-      ]
+      "keywords": ["experimental", "cunningham", "output-styles"]
     },
     {
       "name": "sidequest",

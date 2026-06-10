@@ -1,12 +1,33 @@
 # Ideation Plugin
 
-Transform brain dumps into structured implementation artifacts through a conversational interview. HTML is used for interactive decision-making (contract with confidence scoring, visual comparisons during the interview). Markdown is used for reference documents (specs, PRDs) consumed directly by `/ideation:execute-spec`. Includes execution workflow for implementing specs in fresh sessions with per-component feedback loops.
+Transform brain dumps into structured implementation artifacts through a conversational interview. HTML is used for interactive decision-making (the Mission Brief contract with evidence-gate readiness, visual comparisons during the interview). Markdown is used for reference documents (specs, PRDs) consumed directly by `/ideation:execute-spec`. Includes an execution workflow for implementing specs in fresh sessions with per-component feedback loops, adversarial plan critics, a Scout/Reviewer agent pipeline, and a retro loop that feeds learnings back into future runs.
+
+## What's New (0.14.0)
+
+This release ships the full Fable 5 upgrade. Six behavior changes, plus one breaking schema change:
+
+- **Evidence gates replace numeric confidence scoring.** Readiness is no longer a 0–100 score. Each of 5 dimensions is a gate that is `ready` or `not-ready`, justified by a concrete artifact. The contract proceeds only when all 5 are ready (or the user ends the interview early). See [Evidence Gates](#evidence-gates).
+- **Registered agent types.** Scout, Reviewer, and the plan critics are registered agents (`ideation:scout`, `ideation:reviewer`, `ideation:plan-critic`) invoked with per-invocation inputs only — their workflow, output format, and read-only tool restrictions live in the agent definitions and are enforced by the platform.
+- **Reviewer escape hatch.** During the review cycle the builder may _refute_ a finding the code demonstrably contradicts, citing file:line evidence. A refutation is logged and carried back to the reviewer, which either withdraws it or maintains it; a maintained finding becomes blocking and may not be refuted twice.
+- **Adversarial plan critics.** Before the contract renders, three critics (`scope-creep`, `hidden-dependency`, `success-criteria`) review the plan in parallel while a blocker is still a one-line JSON edit. A Critic digest is shown at the approval gate. See [Plan Critics](#plan-critics).
+- **Intake exploration sweep.** When the work touches an existing codebase, the interview fires 2–3 parallel `Explore` agents at intake so the first question is already informed. Skipped for greenfield work.
+- **Previews-first decision aids.** Comparisons default to inline `AskUserQuestion` previews (monospace, side-by-side) and escalate to ephemeral HTML only when the decision hinges on real visual rendering.
+- **Overlap-serialized parallel waves.** `/ideation:autopilot` and `--parallel` execution plan waves with a tested CLI that serializes any phases declaring overlapping `files`, so two phases never race the same file. See [Orchestration](#ideationautopilot).
+- **Retro loop.** `/ideation:retro` mines a completed project's implementation notes for generalizable spec-gap patterns and appends them to a repo-level `docs/ideation/learnings.md` that future interviews read. See [Retro](#retro).
+
+> **Breaking change — `contract-data.json` schema.** The contract now uses a `gates` object instead of the old `confidence` object. Regenerating an old contract fails fast:
+>
+> ```
+> contract-data.json uses the pre-gate `confidence` schema; regenerate via ideation to produce the `gates` schema.
+> ```
+>
+> Re-run ideation on the project to produce a `gates`-shaped `contract-data.json`. Specs also gained an optional per-phase `files` manifest field (the paths a phase touches), used by the autopilot/parallel engine to serialize file-overlapping phases.
 
 ## Skills
 
 ### ideation
 
-Transforms raw, unstructured brain dumps (dictated freestyle) into actionable implementation artifacts through a confidence-gated workflow.
+Transforms raw, unstructured brain dumps (dictated freestyle) into actionable implementation artifacts through an evidence-gated workflow.
 
 Use this before building any new feature, planning a migration, designing a system, or turning scattered ideas into a plan. Covers small single-spec projects through multi-phase initiatives.
 
@@ -30,10 +51,10 @@ I want to build something. Here's what I'm thinking...
 
 **The workflow:**
 
-1. **Intake** - Accept your messy, unstructured input without judgment. Take a position upfront — what's strong, what's weak.
-2. **Interview loop** - One question at a time, each with a recommended answer. Explores the codebase inline — if it can look something up instead of asking, it does. Challenges vague demand, undefined terms, and hypothetical users. Loops until confidence >= 95%.
-3. **Contract** - When >= 95% confident, generate `contract.html` via the contract-gen CLI. "Mission Brief" poster layout with confidence scoring, nested scope tiers (MVP / Full / Stretch), and copyable execution commands. Pick your scope tier in the terminal. Includes revision lineage tracking via `Supersedes` link.
-4. **HTML visualizations** - During interview and phasing, generates ephemeral HTML pages for decisions: side-by-side comparisons, UI mockups, architecture options. Deleted after you choose.
+1. **Intake** - Accept your messy, unstructured input without judgment. Take a position upfront — what's strong, what's weak. On an existing codebase, fire a parallel exploration sweep so the first question is already informed.
+2. **Interview loop** - One question at a time, each with a recommended answer. Explores the codebase inline — if it can look something up instead of asking, it does. Challenges vague demand, undefined terms, and hypothetical users. Loops until all 5 evidence gates are `ready`.
+3. **Contract** - When all 5 gates are `ready`, three plan critics stress-test the plan in parallel; then generate `contract.html` via the contract-gen CLI. "Mission Brief" poster layout with the gate readiness checklist, nested scope tiers (MVP / Full / Stretch), and copyable execution commands. Pick your scope tier in the terminal. Includes revision lineage tracking via `Supersedes` link.
+4. **HTML visualizations** - During interview and phasing, decisions default to inline `AskUserQuestion` previews; ephemeral HTML pages (comparisons, mockups, architecture options) are reserved for decisions that need real visual rendering. Deleted after you choose.
 5. **Phasing & specs** - Determine phases, generate Markdown specs with feedback loops and failure mode catalogs
 6. **Feedback quality check** - Self-review specs for feedback loop coverage before presenting
 7. **Execution handoff** - Phase track in contract, copy-to-clipboard ideation commands
@@ -56,9 +77,9 @@ implementation-notes-phase-1.html  # Decisions made during execution (per-phase)
 HTML artifacts (contract, implementation notes, ephemeral visualizations) are self-contained single files with all CSS/JS inlined — no external dependencies. They open in your browser automatically. Features include:
 
 - **Tabs** for section navigation (CSS-only, no JS framework)
-- **Confidence meter** showing scoring across 5 dimensions
+- **Readiness gate checklist** showing `{passed}/{total} gates` with a ✓/✗ per dimension
 - **Nested scope tiers** showing MVP / Full / Stretch commitment levels
-- **Per-dimension confidence scores** with reasons in the hero
+- **Per-gate evidence** — a one-sentence citation per dimension in the hero
 - **Horizontal phase track** with risk coloring and gate support
 - **Copy-to-clipboard buttons** on `/ideation:autopilot` and per-phase commands
 - **Dark mode** automatic via `prefers-color-scheme`
@@ -69,8 +90,8 @@ Specs and PRDs are Markdown — readable as-is and consumed directly by `/ideati
 
 Shared (plugin root):
 
-- `interview-engine.md` - Shared interview engine (Phases 1-2)
-- `confidence-rubric.md` - Scoring criteria for confidence assessment and spec feedback quality
+- `interview-engine.md` - Shared interview engine (Phases 1-2), including the intake exploration sweep
+- `confidence-rubric.md` - Evidence-gate criteria for readiness assessment and spec feedback quality
 - `feedback-loop-guide.md` - Component-type mapping and design criteria for feedback loops
 
 Skill-specific:
@@ -114,21 +135,39 @@ One file per phase. Opens in your browser automatically after execution. If the 
 
 Contracts track revision history via a `Supersedes` link. When re-running ideation on the same project, the prior `contract.html` is renamed to `contract-{date}.html` (and the sibling `contract.md` to `contract-{date}.md`) and the new contract references it, creating a traceable revision chain.
 
-## Confidence Scoring
+## Evidence Gates
 
-The skill scores your brain dump across 5 dimensions (20 points each):
+Readiness is no longer a number. The skill judges your brain dump across 5 **gates**, each either `ready` or `not-ready`. A gate is `ready` only when a concrete artifact exists — a goal written as a pass/fail statement, an explicit scope boundary — not when a score is asserted.
 
-| Dimension        | Question                                    |
-| ---------------- | ------------------------------------------- |
-| Problem Clarity  | Do I understand what problem we're solving? |
-| Goal Definition  | Are the goals specific and measurable?      |
-| Success Criteria | Can I write tests for "done"?               |
-| Scope Boundaries | Do I know what's in and out of scope?       |
-| Consistency      | Are there contradictions to resolve?        |
+| Gate             | Gate question                                                    |
+| ---------------- | ---------------------------------------------------------------- |
+| Problem Clarity  | Do I understand what problem we're solving, who has it, and why? |
+| Goal Definition  | Are the goals specific and measurable?                           |
+| Success Criteria | Can every stated goal be checked pass/fail today?                |
+| Scope Boundaries | Do I know what's in and out of scope?                            |
+| Consistency      | Are there contradictions I need resolved?                        |
 
-**Threshold:** ≥ 95 to generate contract. Below that, keep interviewing one question at a time.
+**Proceed-to-contract rule:** all 5 gates `ready`, _or_ the user explicitly ends the interview ("stop" / "wrap up") — in which case the `not-ready` gates are recorded as such in the contract. Each gate carries a one-sentence `evidence` citation: the artifact that makes it ready, or the gap that keeps it not-ready.
 
-Scoring is deliberately conservative — when uncertain between two levels, score lower. One extra question costs seconds; a bad contract costs hours.
+Judgment is deliberately conservative — when unsure whether the evidence is sufficient, the gate is `not-ready`. One extra question costs seconds; a bad contract costs hours.
+
+The contract HTML renders these as a `{passed}/{total} gates` checklist in the hero. The full criteria live in `confidence-rubric.md`.
+
+## Plan Critics
+
+Before the contract renders, three adversarial critics review the plan in parallel — while a blocker is still a one-line `contract-data.json` edit rather than a regenerate-review-regenerate loop:
+
+| Lens                | Looks for                                                   |
+| ------------------- | ----------------------------------------------------------- |
+| `scope-creep`       | Scope items that should be a tier lower (or out of scope)   |
+| `hidden-dependency` | Phases that depend on work an earlier phase doesn't deliver |
+| `success-criteria`  | Goals that can't actually be checked pass/fail              |
+
+Each critic returns `blocker` / `notable` / `nit` findings. Blockers are folded into the contract before it renders; notables are folded in if clearly right, otherwise dismissed with a reason; nits are mentioned only. A **Critic digest** appears at the approval gate so you can see the plan was stress-tested. Critics run **once** per contract and never block it — a failed or unregistered critic logs a warning and proceeds without that lens.
+
+## Retro
+
+`/ideation:retro [project-dir]` closes the learning loop. It mines a completed project's `implementation-notes-phase-*.html` for generalizable spec-gap patterns — gaps that would change how future specs or interviews are written — and appends them to a repo-level `docs/ideation/learnings.md` that future interviews read. It dedupes against existing entries; a phase that followed its spec cleanly produces zero learnings, and that is correct.
 
 ## Feedback Loops
 
@@ -170,8 +209,8 @@ search too...
 2. Interviews one question at a time with recommendations: "I'd scope this to articles — your app already has an Article model. Does that match?"
 3. Explores codebase inline — finds existing tag system, recommends reusing it instead of asking
 4. Challenges assumptions: "Have users complained about folders, or is this your gut?"
-5. Confidence rises to 96/100 after ~5 questions
-6. Generates `contract.html` via contract-gen CLI — Mission Brief layout with confidence scoring, nested scope tiers, and copyable execution commands. Pick your scope in the terminal.
+5. All 5 evidence gates reach `ready` after ~5 questions
+6. Three plan critics stress-test the plan; then generates `contract.html` via contract-gen CLI — Mission Brief layout with the gate readiness checklist, nested scope tiers, and copyable execution commands. Pick your scope in the terminal.
 7. After approval, asks: "Straight to specs or PRDs first?"
 8. At decision points (phasing, orchestration), opens side-by-side visual comparisons in browser
 9. Generates Markdown specs with feedback loops and failure modes
@@ -184,11 +223,12 @@ search too...
 flowchart TD
     subgraph IDEATION["<b>Ideation Skill</b> — Planning"]
         A["🧠 Brain Dump<br/><i>messy thoughts, dictation,<br/>scattered ideas</i>"] --> B["Take Position<br/><i>what's strong, what's weak</i>"]
-        B --> C{"Confidence<br/>Score"}
-        C -->|"< 95"| D["Interview Loop<br/><i>one question at a time,<br/>recommended answer,<br/>explore codebase inline</i>"]
+        B --> C{"5 Evidence<br/>Gates Ready?"}
+        C -->|"Not yet"| D["Interview Loop<br/><i>one question at a time,<br/>recommended answer,<br/>explore codebase inline</i>"]
         D --> C
-        C -->|"≥ 95"| E["Generate Contract<br/><i>Mission Brief: confidence hero,<br/>nested scope tiers, phase track</i>"]
-        E --> F{"User<br/>Approval<br/>(pick scope tier)"}
+        C -->|"All ready"| CR["Plan Critics<br/><i>scope-creep, hidden-dependency,<br/>success-criteria — parallel</i>"]
+        CR --> E["Generate Contract<br/><i>Mission Brief: gate checklist,<br/>nested scope tiers, phase track</i>"]
+        E --> F{"User<br/>Approval<br/>(pick scope tier,<br/>see critic digest)"}
         F -->|"Needs changes"| E
         F -->|"Approved"| G{"PRDs or<br/>straight to specs?"}
         G -->|"PRDs first"| H["Generate PRDs"] --> I
@@ -207,10 +247,10 @@ flowchart TD
         subgraph SCOUT["Scout — Codebase Learning"]
             N --> N1["Read spec + pattern files"]
             N1 --> N2["Explore: dependencies,<br/>conventions, test infra"]
-            N2 --> N3{"Confidence<br/>≥ 70?"}
-            N3 -->|"< 70, round 1"| N2
-            N3 -->|"< 70, round 2"| N4["HOLD — escalate<br/>to user"]
-            N3 -->|"≥ 70"| N5["GO — return<br/>context map"]
+            N2 --> N3{"Scope ready<br/>AND ≥ 4/5<br/>gates ready?"}
+            N3 -->|"Below bar, round 1"| N2
+            N3 -->|"Below bar, round 2"| N4["HOLD — escalate<br/>to user"]
+            N3 -->|"GO"| N5["GO — return<br/>context map"]
         end
 
         N4 --> N6{"User<br/>choice"}
@@ -273,7 +313,7 @@ flowchart TD
 
 ### Reading the Diagram
 
-**Ideation (left/top)** — brain dump → confidence-gated questioning → Mission Brief contract → specs → execution plan. Human approves at each gate.
+**Ideation (left/top)** — brain dump → evidence-gated questioning → plan critics → Mission Brief contract → specs → execution plan. Human approves at each gate.
 
 **Execute-Spec (right/bottom)** — three phases per spec:
 
@@ -438,4 +478,4 @@ For manual control, run specs individually:
 
 ## Version
 
-0.12.0
+0.14.0
