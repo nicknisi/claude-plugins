@@ -61,14 +61,13 @@ If multiple found, use `AskUserQuestion` to select one. **Headless mode:** pick 
 
 **Determine the project directory** from the spec file path. If the spec is at `docs/ideation/my-project/spec-phase-1.md`, the project directory is `docs/ideation/my-project/`.
 
-**Invoke the Scout** using the `Agent` tool:
+**Invoke the Scout** using the `Agent` tool with the registered `ideation:scout` agent type:
 
-1. Read `${CLAUDE_PLUGIN_ROOT}/agents/scout.md` to get the scout's full workflow and output format
-2. Use the `Agent` tool with:
-   - **subagent_type**: `general-purpose`
-   - **prompt**: Include the full content of `scout.md` as the agent's instructions, followed by the specific inputs: spec file path, project directory, phase number, and whether a prior `context-map.md` exists
+1. Use the `Agent` tool with:
+   - **subagent_type**: `ideation:scout`
+   - **prompt**: The per-invocation inputs only — spec file path, project directory, phase number, and whether a prior `context-map.md` exists. The scout's workflow, output format, and read-only `tools` restriction come from its registered definition; do not paste them into the prompt.
 
-**Note on tool restrictions**: The scout's frontmatter declares `tools: ["Read", "Glob", "Grep"]`, but when invoked as a `general-purpose` subagent, these restrictions are policy-based (enforced by the prompt), not mechanism-based. The scout prompt instructs read-only behavior.
+The scout's `tools` frontmatter (`Read`, `Glob`, `Grep`) is enforced mechanically by the platform — the scout cannot edit files regardless of what the prompt says.
 
 The scout may perform up to 2 internal exploration rounds before reaching a verdict. Execute-spec waits for the final output — it does not re-invoke the scout.
 
@@ -97,7 +96,7 @@ Options:
 
 **If the user chose "Proceed anyway" after HOLD**: The context map (if produced) may have gaps. During build, treat missing context map sections as unavailable and read files directly for those areas. Pay extra attention to the Risks section of a partial context map.
 
-**If no scout agent is available** (agent file missing or invocation fails): Fall back to inline exploration and log a warning. The inline fallback is:
+**If the `ideation:scout` agent type is not registered** (older Claude Code, or the plugin is not installed so the type is unknown and invocation fails): Fall back to inline exploration and log a warning. The inline fallback is:
 
 1. Read all "Pattern to follow" file paths from the spec
 2. Read all files in the spec's "Modified Files" section
@@ -274,22 +273,32 @@ If validation fails:
 
 **Default (no flag):** Sequential execution — work through unblocked tasks one at a time.
 
-**With `--parallel` flag:** Spawn subagents for independent components:
+**With `--parallel` flag:** Dispatch subagents wave by wave, with waves planned by the tested wave-planner CLI rather than ad-hoc prose rules.
 
-1. Check `TaskList` for all tasks with `status: pending` and empty `blockedBy`
-2. If only one unblocked task exists, execute it directly (no parallelism needed)
-3. If multiple unblocked tasks exist:
-   - Keep one task for the current session
-   - For each additional unblocked task, spawn a subagent using the Agent tool with:
-     - **prompt**: Include the task ID, the spec file path, and a summary of the technical approach so the subagent has full context
-     - **subagent_type**: `general-purpose`
-     - **mode**: `default`
-   - Each subagent should: claim its task via TaskUpdate, read the spec file, implement the component following the same execution flow above, and mark the task completed
-4. **Coordination**: Subagents share the TaskList. When a subagent completes its task, newly unblocked tasks become available. The parent session monitors TaskList for completion.
-5. **Error handling**: If a subagent fails or a task stays `in_progress` for too long, the parent session should check TaskList, read the task description for context, and either retry or ask the user.
-6. **File conflicts**: If two unblocked components modify the same file, do NOT parallelize them — execute sequentially to avoid merge conflicts. Check the spec's "File Changes" sections for overlap before spawning.
+**Pattern to follow**: `plugins/ideation/skills/autopilot/SKILL.md` Step 3 — same manifest shape (`{ title, prereqs, files }`) and the same "skill prepares the manifest, tested code plans the waves" division.
 
-**Review cycle in parallel mode**: Subagents only build — they do not run their own review cycles. After all subagents complete their components, the **main session** runs a single verify-review-fix loop on the combined diff (`git diff HEAD` covers all changes from all sessions). This avoids the problem of interleaved diffs from multiple sessions writing to the same working tree.
+1. **Build a component manifest** from the spec's Implementation Details and File Changes. One entry per component:
+   - `title` — the component name (matches its task subject)
+   - `prereqs` — the titles of the components this one is blocked by (from the task `blockedBy` relationships)
+   - `files` — every path this component touches (from its File Changes rows). **If a component's files can't be attributed** from the spec, give it ALL of the spec's declared files — a conservative default that serializes it against everything.
+2. **Plan the waves** by running the planner CLI via Bash:
+
+   ```bash
+   node ${CLAUDE_PLUGIN_ROOT}/workflows/wave-planner.mjs plan '<manifest-json>'
+   ```
+
+   The payload is `{ "phases": [ ...the manifest entries... ] }`. The CLI prints a JSON array of waves (`string[][]`) on stdout — prereq-ordered, with any wave whose components share a file already split into sequential sub-waves. These waves are authoritative; there is no separate file-conflict rule to apply.
+
+3. **Dispatch each wave's components** as subagents, one wave at a time. For each component in the current wave, spawn a subagent using the Agent tool with:
+   - **prompt**: Include the task ID, the spec file path, and a summary of the technical approach so the subagent has full context
+   - **subagent_type**: `general-purpose`
+   - **mode**: `default`
+
+   Each subagent claims its task via TaskUpdate, reads the spec file, implements the component following the same execution flow above, and marks the task completed. **Wait for every component in a wave to finish before dispatching the next wave** (wave barrier). If a subagent fails or stalls, check TaskList, read the task description for context, and either retry or ask the user.
+
+4. **If the CLI fails** (node missing, malformed manifest, dependency cycle): fall back to fully **sequential** execution and log a warning. Never fall back to unchecked parallelism — an unplanned parallel run could race two components on the same file.
+
+**Review cycle in parallel mode**: Subagents only build — they do not run their own review cycles. After all subagents complete their components, the **main session** runs a single verify-review-fix loop on the combined diff (`git diff HEAD` covers all changes from all sessions). This change affects who may run _concurrently_, not the review model.
 
 ## Post-Execution: Verify-Review-Fix Loop
 
@@ -312,18 +321,17 @@ If any validation command fails, fix the issue before proceeding to review. Do n
 
 **If git diff is empty** (no changes to review): Skip the review cycle entirely. Report that all components were no-ops and proceed to the completion report.
 
-**Invoke the Reviewer agent** using the `Agent` tool:
+**Invoke the Reviewer agent** using the `Agent` tool with the registered `ideation:reviewer` agent type:
 
-1. Read `${CLAUDE_PLUGIN_ROOT}/agents/reviewer.md` to get the reviewer's full workflow and output format
-2. Use the `Agent` tool with:
-   - **subagent_type**: `general-purpose`
-   - **prompt**: Include the full content of `reviewer.md` as the agent's instructions, followed by:
+1. Use the `Agent` tool with:
+   - **subagent_type**: `ideation:reviewer`
+   - **prompt**: The per-invocation inputs only — the reviewer's workflow, output format, and `tools` restriction come from its registered definition; do not paste them into the prompt. Pass:
      - The spec file path
      - The pattern file list (collected during spec parsing in Section 3)
      - The cycle number (1, 2, or 3)
-     - If cycle > 1: the prior cycle's findings so the reviewer can track what was fixed
+     - If cycle > 1: the prior cycle's findings so the reviewer can track what was fixed, **including any findings the builder refuted** (marked `[REFUTED: evidence]` — see "On FAIL" below) so the reviewer can re-examine and either withdraw or maintain them
 
-**Note on tool restrictions**: The reviewer's frontmatter declares `tools: ["Read", "Grep", "Bash"]`, but when invoked as a `general-purpose` subagent, these restrictions are policy-based. The reviewer prompt instructs it to only use Bash for `git diff HEAD` commands and to never edit files.
+The reviewer's `tools` frontmatter (`Read`, `Grep`, `Bash`) is enforced mechanically by the platform — it cannot edit files. Its behavioral rules (Bash for `git diff HEAD`/`git log` only, never edit) come from the registered definition.
 
 **Cycle counter rule**: The cycle number increments only when the reviewer is invoked. Verify failures and their fix iterations do not count as review cycles. Cycle N means the reviewer has been invoked N times.
 
@@ -345,10 +353,17 @@ Report medium and low findings to the user for awareness, but they do not block 
 ### On FAIL (Cycle < 3)
 
 1. Read each `critical` and `high` finding from the reviewer's output
-2. For each finding, apply the suggested fix (the `→ action` part of each finding)
-3. After all fixes applied, re-run **Verify** (all validation commands)
-4. If verify passes, invoke **Review** again (increment cycle number)
+2. For each finding, **verify before acting** — read the finding's target code, then:
+   - **If the finding is correct** (the default path — most findings are): apply the suggested fix (the `→ action` part of the finding).
+   - **If the code demonstrably contradicts the finding**: you may **refute** it instead of fixing. A refutation requires file:line evidence proving the finding is factually wrong. When refuting:
+     1. Log an implementation-notes entry — Context = the finding verbatim, Decision = the refutation plus its file:line evidence, Alternative = the fix you did not apply.
+     2. Carry the finding into the next cycle marked `[REFUTED: evidence]` so the reviewer re-examines it (the reviewer must either withdraw it or restate it as "Maintained despite refutation").
+   - **Refute at most once per finding.** If a finding you refuted is maintained by the reviewer in the next cycle, treat it as real: fix it (or, at cycle 3, escalate to the user). Never refute the same finding twice.
+3. After all fixes applied (and any refutations logged), re-run **Verify** (all validation commands)
+4. If verify passes, invoke **Review** again (increment cycle number), passing refuted findings as `[REFUTED: evidence]` in the prior-findings input
 5. If verify fails after fixes, fix the validation errors first, then re-review
+
+**Headless mode**: a finding that was refuted and then maintained by the reviewer counts as unresolved. The existing cycle-3 FAIL semantics apply unchanged — report FAIL with the maintained findings and stop without committing.
 
 ### On FAIL (Cycle = 3, final)
 
@@ -431,5 +446,5 @@ After presenting the completion report, if implementation notes exist, open them
 6. **Human in loop** - Pause when uncertain, don't guess
 7. **One phase at a time** - Complete this phase fully before moving on
 8. **Review before commit** - Code is not committed until the reviewer passes or the user explicitly accepts
-9. **Fix, don't argue** - When the reviewer flags an issue, fix it. Don't rationalize why the deviation is acceptable.
+9. **Fix by default; refute only with evidence** - When the reviewer flags an issue, fix it. The one exception: a finding may be refuted if the code demonstrably contradicts it — a refutation must cite file:line proof, gets logged in implementation notes, and is never repeated for the same finding.
 10. **Escalate, don't loop forever** - 3 cycles max. If the same findings persist, the spec or approach needs human input.

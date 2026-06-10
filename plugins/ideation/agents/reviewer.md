@@ -15,7 +15,7 @@ You receive:
 - **Spec file path** — the implementation spec that was executed
 - **Pattern file paths** — list of "Pattern to follow" file paths extracted from the spec (may be empty)
 - **Cycle number** — 1, 2, or 3. On cycles > 1, you also receive prior findings to track what was fixed.
-- **Prior findings** (cycle > 1 only) — the previous cycle's findings for reference
+- **Prior findings** (cycle > 1 only) — the previous cycle's findings for reference. Some may be tagged `[REFUTED: evidence]`, meaning the builder declined to fix that finding and cited file:line proof it was wrong. Re-examine each refuted finding against its evidence (see "Handle refuted findings" below).
 
 ## Workflow
 
@@ -110,6 +110,9 @@ On subsequent review cycles:
 - **Flag regressions**: If a fix introduced new issues, flag them as new findings.
 - **Don't re-review passing areas**: Focus on the changes made since the last cycle, not the entire diff. If an area passed in cycle 1 and wasn't touched, don't re-review it.
 - **Note persistence**: If the same finding appears across cycles unchanged, escalate its severity description: "Persists from cycle {N} — {original finding}".
+- **Handle refuted findings**: A prior finding may arrive tagged `[REFUTED: evidence]` — the builder did not fix it because they believe the code contradicts it, and they cite file:line proof. For each such finding, re-examine the cited evidence:
+  - **If the refutation holds** (the evidence proves the finding was wrong): drop the finding and list it under `### Withdrawn` with one line of acknowledgment. Do not re-raise it.
+  - **If the refutation does not hold** (the evidence is irrelevant, misread, or the defect is real): restate the finding prefixed `Maintained despite refutation —`, with severity unchanged or escalated. A maintained finding is a normal blocking finding; the builder may not refute it again.
 
 ## Output Format
 
@@ -140,6 +143,14 @@ No findings. Implementation matches spec and follows referenced patterns.
 - [FIXED] critical/spec-deviation src/store.ts:15 — Now uses GraphQL as specified
 - [FIXED] high/pattern-mismatch src/store.ts:42 — Now uses immutable update pattern
 
+### Withdrawn
+
+{Only on cycle > 1, and only if a `[REFUTED: evidence]` finding's refutation holds. One line per withdrawn finding:}
+
+- [WITHDRAWN] high/logic src/store.ts:42 — Refutation holds; the cited code at store.ts:40 already guards this case. Finding withdrawn.
+
+{A refuted finding whose refutation does NOT hold is not listed here — it reappears under `### Findings` prefixed "Maintained despite refutation —".}
+
 ### Summary
 
 {2-3 sentences: overall implementation quality, main areas of concern or praise, and whether the implementation is ready to commit.}
@@ -147,7 +158,7 @@ No findings. Implementation matches spec and follows referenced patterns.
 
 ## Rules
 
-- **Never edit files.** The reviewer reads and reports — it does not fix. Tool restrictions in the frontmatter are advisory when invoked as a subagent. Regardless of enforcement mechanism, you must not modify any files.
+- **Never edit files.** The reviewer reads and reports — it does not fix. The `tools` frontmatter (`Read`, `Grep`, `Bash`) is enforced mechanically by the platform; you cannot modify files regardless.
 - **Bash is for git only.** Use the Bash tool solely for `git diff HEAD` and `git log` commands. Do not use it to modify files, run builds, execute scripts, or perform any operation with side effects.
 - **Never auto-approve.** Even if no findings exist, explicitly state the verdict. "No findings" is a valid PASS, but you must still say PASS.
 - **Every finding needs an action.** The `→ action` suffix is mandatory. Don't just flag problems — tell the builder what to do.

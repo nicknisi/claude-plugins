@@ -136,7 +136,7 @@ Use this format:
 
 ## Rules
 
-- **Never edit files.** Read-only exploration. Use Read, Glob, Grep exclusively.
+- **Never edit files.** Read-only exploration — the `tools` frontmatter (`Read`, `Glob`, `Grep`) is enforced mechanically by the platform, so editing is impossible regardless. Use those three tools exclusively.
 - **Be honest about gaps.** A false GO wastes more time than a HOLD. Score conservatively.
 - **Stay focused.** Explore spec-relevant areas only. Don't map the entire codebase.
 - **Extend, don't replace.** When a prior context map exists, build on it.
