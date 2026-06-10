@@ -16,8 +16,8 @@ INTAKE → INTERVIEW LOOP → CONTRACT.HTML → PHASING → SPEC.MD GENERATION �
               ↓                  ↓             ↓             ↓                ↓
          Accept the mess    One question    Mission       Repeatable?      Phase track
                             at a time,      Brief with      ↓              + copy buttons
-                            explore code    confidence   Template +        in contract
-                            + show HTML     + scope      per-phase
+                            explore code    gates +      Template +        in contract
+                            + show HTML     scope        per-phase
                             examples        tiers        deltas
 ```
 
@@ -25,11 +25,11 @@ INTAKE → INTERVIEW LOOP → CONTRACT.HTML → PHASING → SPEC.MD GENERATION �
 
 Read and follow `${CLAUDE_PLUGIN_ROOT}/references/interview-engine.md` for the complete intake and interview loop process. Execute all phases described there before proceeding to Phase 3.
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/confidence-rubric.md` for the detailed scoring criteria.
+Read `${CLAUDE_PLUGIN_ROOT}/references/confidence-rubric.md` for the detailed evidence-gate criteria.
 
 ## Phase 3: Contract (HTML)
 
-When confidence ≥ 95%, generate the Mission Brief contract as an HTML document. **Not before.**
+When all 5 evidence gates are `ready`, generate the Mission Brief contract as an HTML document. **Not before.**
 
 1. Use `AskUserQuestion` to confirm project name if not obvious from context
 2. Convert to kebab-case for directory name (this becomes the `slug`)
@@ -43,38 +43,39 @@ When confidence ≥ 95%, generate the Mission Brief contract as an HTML document
      "date": "YYYY-MM-DD",
      "status": "Draft",
      "supersedes": null,
-     "confidence": {
-       "score": 96,
+     "gates": {
+       "passed": 4,
+       "total": 5,
        "dimensions": [
          {
            "key": "scope",
-           "score": 100,
            "label": "Scope",
-           "reason": "One sentence explaining the score"
+           "status": "ready",
+           "evidence": "One sentence citing the artifact that makes this gate ready"
          },
          {
            "key": "risk",
-           "score": 92,
            "label": "Risk",
-           "reason": "One sentence"
+           "status": "ready",
+           "evidence": "One sentence"
          },
          {
            "key": "effort",
-           "score": 95,
            "label": "Effort",
-           "reason": "One sentence"
+           "status": "ready",
+           "evidence": "One sentence"
          },
          {
            "key": "clarity",
-           "score": 98,
            "label": "Clarity",
-           "reason": "One sentence"
+           "status": "ready",
+           "evidence": "One sentence"
          },
          {
            "key": "tests",
-           "score": 95,
            "label": "Tests",
-           "reason": "One sentence"
+           "status": "not-ready",
+           "evidence": "One sentence naming the gap that keeps this gate not-ready"
          }
        ]
      },
@@ -104,7 +105,7 @@ When confidence ≥ 95%, generate the Mission Brief contract as an HTML document
    }
    ```
 
-   **Confidence dimensions:** Each dimension gets a numeric score (0-100) and a one-sentence reason. The overall `score` is what the hero displays; dimensions show the breakdown.
+   **Gate dimensions:** Each dimension has a `status` (`ready` / `not-ready`) and a one-sentence `evidence` citation — the concrete artifact that makes it ready, or the gap that keeps it not-ready. `passed` is the count of ready gates and `total` is always 5; the hero displays `{passed}/{total} gates` with a ✓/✗ checklist. Normally proceed only when all 5 are ready; record not-ready gates only when the user ends the interview early.
 
    **Phase fields:** `risk` (high/medium/low), `blocking` (boolean), `specPath` (path to spec), `notes` (brief description). Optional: `kind` ("gate" for human checkpoints), `prereqs` (array of phase titles this depends on).
 
@@ -372,7 +373,7 @@ spec-phase-{n}.md                  # Per-phase delta or full spec
 ### Shared References (plugin root)
 
 - `${CLAUDE_PLUGIN_ROOT}/references/interview-engine.md` - Interview engine (Phases 1-2)
-- `${CLAUDE_PLUGIN_ROOT}/references/confidence-rubric.md` - Scoring criteria for confidence assessment and spec feedback quality
+- `${CLAUDE_PLUGIN_ROOT}/references/confidence-rubric.md` - Evidence-gate criteria for readiness assessment and spec feedback quality
 - `${CLAUDE_PLUGIN_ROOT}/references/feedback-loop-guide.md` - Component-type mapping and design criteria for spec feedback loops
 - `${CLAUDE_PLUGIN_ROOT}/references/workflow-example.md` - End-to-end workflow walkthrough
 
@@ -426,7 +427,7 @@ During the interview and phasing stages, generate ephemeral HTML pages when visu
 - **HTML is for interactive artifacts only** — contract and ephemeral decision visualizations. Specs and PRDs are Markdown.
 - **Use the `Read` tool to load templates before writing.** You MUST read `references/html-guide.md` before Phase 3 and read `references/contract-template.html` before generating the contract. Read `references/spec-template.md` before generating specs.
 - **Use `AskUserQuestion` for all questions and approvals.** One question at a time, with your recommended answer.
-- **Score confidence conservatively.** When uncertain, score lower. No fixed question limit.
+- **Judge gates conservatively.** When unsure whether the evidence is sufficient, the gate is not-ready. No fixed question limit.
 - **Open HTML artifacts in the browser** after writing. Use `open` (macOS) or `xdg-open` (Linux).
 - **Create files lazily.** Only when decisions are locked, not speculatively.
 - **Reference existing code patterns** in specs — "Pattern to follow" with real file paths.

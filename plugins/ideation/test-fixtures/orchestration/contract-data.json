@@ -4,14 +4,39 @@
   "date": "2026-06-01",
   "status": "Approved",
   "supersedes": null,
-  "confidence": {
-    "score": 100,
+  "gates": {
+    "passed": 5,
+    "total": 5,
     "dimensions": [
       {
         "key": "scope",
-        "score": 100,
         "label": "Scope",
-        "reason": "Trivial fixture — exercises the orchestrator, not real code."
+        "status": "ready",
+        "evidence": "Four trivial phases and their dependency wiring are fully enumerated."
+      },
+      {
+        "key": "risk",
+        "label": "Risk",
+        "status": "ready",
+        "evidence": "Only risk is the rigged P3 failure, which is intentional and contained."
+      },
+      {
+        "key": "effort",
+        "label": "Effort",
+        "status": "ready",
+        "evidence": "Each phase writes a single sentinel file — effort is trivial."
+      },
+      {
+        "key": "clarity",
+        "label": "Clarity",
+        "status": "ready",
+        "evidence": "Goals and the expected completed/failed/skipped summary are stated explicitly."
+      },
+      {
+        "key": "tests",
+        "label": "Tests",
+        "status": "ready",
+        "evidence": "Success criteria are pass/fail: completed=[P1,P2], failed=[P3], skipped=[P4]."
       }
     ]
   },

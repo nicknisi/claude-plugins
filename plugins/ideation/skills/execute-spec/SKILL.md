@@ -57,7 +57,7 @@ If multiple found, use `AskUserQuestion` to select one. **Headless mode:** pick 
 
 ### 2. Scout Codebase
 
-**Invoke the Scout agent** to explore the codebase and produce a structured context map. The scout replaces manual codebase exploration — it runs as a read-only subagent, scores implementation readiness, and persists its findings.
+**Invoke the Scout agent** to explore the codebase and produce a structured context map. The scout replaces manual codebase exploration — it runs as a read-only subagent, evaluates implementation readiness across 5 evidence gates, and persists its findings.
 
 **Determine the project directory** from the spec file path. If the spec is at `docs/ideation/my-project/spec-phase-1.md`, the project directory is `docs/ideation/my-project/`.
 
@@ -73,7 +73,7 @@ The scout may perform up to 2 internal exploration rounds before reaching a verd
 
 **After the scout completes**, parse the scout's text response for the context map and verdict. Write the context map to `{project-directory}/context-map.md` using the `Write` tool (the scout cannot write files itself — it returns the map as text).
 
-**If scout returns GO** (confidence >= 70):
+**If scout returns GO** (Scope clarity ready and ≥ 4/5 gates ready):
 
 - The context map is ready. Use its sections during implementation:
   - **Key Patterns**: Already-identified patterns to follow (avoid redundant file reads)
@@ -82,12 +82,12 @@ The scout may perform up to 2 internal exploration rounds before reaching a verd
   - **Risks**: Watch for these during build
 - Proceed to spec parsing
 
-**If scout returns HOLD** (confidence < 70):
+**If scout returns HOLD** (Scope clarity not-ready, or fewer than 4/5 gates ready):
 
 - The scout couldn't confidently map the codebase. Present the gap analysis to the user via `AskUserQuestion` (**headless mode:** auto-select "Proceed anyway"):
 
 ```
-Question: "Scout confidence is {score}/100 (below 70 threshold). Gaps: {summary of lowest dimensions}. How to proceed?"
+Question: "Scout reports {n}/5 readiness gates passed ({list of not-ready gates}). How to proceed?"
 Options:
 - "Proceed anyway" — Build with known gaps. May require more iteration.
 - "Update spec" — The spec may be underspecified. Pause to revise.

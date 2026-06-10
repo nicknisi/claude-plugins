@@ -1,13 +1,13 @@
 # Contract Template
 
-Use this template when generating `contract.md` after reaching ≥95% confidence.
+Use this template when generating `contract.md` after all 5 evidence gates are ready.
 
 ---
 
 # {Project Name} Contract
 
 **Created**: {date}
-**Confidence Score**: {score}/100
+**Readiness Gates**: {passed}/5 ready
 **Status**: Draft | Approved
 **Supersedes**: {path to prior contract, or "None"}
 

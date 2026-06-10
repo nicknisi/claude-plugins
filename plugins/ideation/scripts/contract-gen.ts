@@ -1,10 +1,16 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { parseArgs } from "node:util";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from 'node:fs';
+import { basename, dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const CSS = readFileSync(join(__dirname, "contract-gen.css"), "utf8");
+const CSS = readFileSync(join(__dirname, 'contract-gen.css'), 'utf8');
 
 // --- Types ---
 
@@ -13,18 +19,18 @@ interface ScopeItem {
   reason?: string;
 }
 
-interface ConfidenceDimension {
+interface GateDimension {
   key: string;
-  score: number;
   label: string;
-  reason: string;
+  status: 'ready' | 'not-ready';
+  evidence: string;
 }
 
 interface Phase {
   title: string;
-  risk?: "high" | "medium" | "low";
+  risk?: 'high' | 'medium' | 'low';
   blocking?: boolean;
-  kind?: "gate" | "phase";
+  kind?: 'gate' | 'phase';
   prereqs?: string[];
   specPath?: string;
   notes?: string;
@@ -34,11 +40,12 @@ interface ContractData {
   projectName: string;
   slug: string;
   date: string;
-  status: "Draft" | "Approved";
+  status: 'Draft' | 'Approved';
   supersedes: string | null;
-  confidence: {
-    score: number;
-    dimensions: ConfidenceDimension[];
+  gates: {
+    passed: number;
+    total: number;
+    dimensions: GateDimension[];
   };
   problem: string[];
   goals: string[];
@@ -61,35 +68,38 @@ interface ContractData {
 
 function esc(s: string): string {
   return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 function pad2(n: number): string {
-  return String(n).padStart(2, "0");
+  return String(n).padStart(2, '0');
 }
 
-function confidenceColor(score: number): string {
-  if (score < 60) return "var(--red-9)";
-  if (score < 75) return "var(--yellow-11)";
-  return "var(--green-9)";
+function gatesColor(allReady: boolean): string {
+  return allReady ? 'var(--green-9)' : 'var(--yellow-11)';
+}
+
+function gateStatusColor(status: 'ready' | 'not-ready'): string {
+  return status === 'ready' ? 'var(--green-9)' : 'var(--yellow-11)';
 }
 
 function riskMeta(risk: string): { color: string; label: string } {
   switch (risk) {
-    case "high":
-      return { color: "var(--red-9)", label: "high" };
-    case "medium":
-      return { color: "var(--yellow-11)", label: "med" };
+    case 'high':
+      return { color: 'var(--red-9)', label: 'high' };
+    case 'medium':
+      return { color: 'var(--yellow-11)', label: 'med' };
     default:
-      return { color: "var(--green-11)", label: "low" };
+      return { color: 'var(--green-11)', label: 'low' };
   }
 }
 
 function phaseCommand(phase: Phase, slug: string, index: number): string {
-  if (phase.kind === "gate") return `# Review: ${phase.specPath ?? phase.title}`;
+  if (phase.kind === 'gate')
+    return `# Review: ${phase.specPath ?? phase.title}`;
   if (phase.specPath) return `/ideation:execute-spec ${phase.specPath}`;
   return `/ideation:execute-spec docs/ideation/${slug}/spec-phase-${index + 1}.md`;
 }
@@ -97,7 +107,8 @@ function phaseCommand(phase: Phase, slug: string, index: number): string {
 // --- Section Builders ---
 
 function buildHero(d: ContractData): string {
-  const c = d.confidence;
+  const g = d.gates;
+  const allReady = g.passed >= g.total;
   return `
     <header class="hero">
       <div class="hero-grid" aria-hidden="true"></div>
@@ -113,35 +124,32 @@ function buildHero(d: ContractData): string {
           <div class="hero-meta">
             <div class="hero-status">${esc(d.status)}</div>
             <div>${esc(d.date)}</div>
-            ${d.supersedes ? `<div class="hero-supersedes">supersedes ${esc(d.supersedes)}</div>` : ""}
+            ${d.supersedes ? `<div class="hero-supersedes">supersedes ${esc(d.supersedes)}</div>` : ''}
           </div>
         </div>
 
         <div class="hero-score-row">
           <div class="hero-score-block">
-            <div class="kicker">Plan confidence</div>
+            <div class="kicker">Readiness gates</div>
             <div class="score-display">
-              <span class="score-num" style="color: ${confidenceColor(c.score)}">${c.score}</span>
-              <span class="score-denom">/100</span>
-            </div>
-            <div class="score-bar-track">
-              <div class="score-bar-fill" style="width: ${c.score}%; background: ${confidenceColor(c.score)}"></div>
+              <span class="score-num" style="color: ${gatesColor(allReady)}">${g.passed}</span>
+              <span class="score-denom">/${g.total} gates</span>
             </div>
           </div>
           <div class="hero-dims">
             <div class="kicker">By dimension</div>
             <div class="dim-grid">
-${c.dimensions
+${g.dimensions
   .map(
-    (dim) => `              <div class="dim-row">
-                <span class="dim-score" style="color: ${confidenceColor(dim.score)}">${dim.score}</span>
+    dim => `              <div class="dim-row">
+                <span class="dim-score" style="color: ${gateStatusColor(dim.status)}">${dim.status === 'ready' ? '✓' : '✗'}</span>
                 <div class="dim-detail">
                   <div class="dim-label">${esc(dim.label.toLowerCase())}</div>
-                  <div class="dim-reason">${esc(dim.reason)}</div>
+                  <div class="dim-reason">${esc(dim.evidence)}</div>
                 </div>
               </div>`,
   )
-  .join("\n")}
+  .join('\n')}
             </div>
           </div>
         </div>
@@ -151,7 +159,7 @@ ${c.dimensions
 
 function buildFirstMove(d: ContractData): string {
   const phase = d.execution.phases[0];
-  if (!phase) return "";
+  if (!phase) return '';
   const cmd = phaseCommand(phase, d.slug, 0);
   return `
     <section class="first-move">
@@ -180,9 +188,10 @@ function buildProblemGoals(d: ContractData): string {
         <div class="stack-14">
 ${d.problem
   .map(
-    (p, i) => `          <p class="body-text"><span class="line-num">${pad2(i + 1)}</span>${esc(p)}</p>`,
+    (p, i) =>
+      `          <p class="body-text"><span class="line-num">${pad2(i + 1)}</span>${esc(p)}</p>`,
   )
-  .join("\n")}
+  .join('\n')}
         </div>
       </section>
       <section>
@@ -198,7 +207,7 @@ ${d.goals
             <span class="goal-text">${esc(g)}</span>
           </div>`,
   )
-  .join("\n")}
+  .join('\n')}
         </div>
       </section>
     </div>`;
@@ -222,14 +231,14 @@ ${d.successCriteria
           <span>${esc(c)}</span>
         </li>`,
   )
-  .join("\n")}
+  .join('\n')}
       </ul>
     </section>`;
 }
 
 function buildScope(d: ContractData): string {
   const tierList = (title: string, tone: string, items: ScopeItem[]) => {
-    if (!items.length) return "";
+    if (!items.length) return '';
     return `
           <div class="tier-group">
             <div class="tier-header">
@@ -241,10 +250,10 @@ function buildScope(d: ContractData): string {
             <ul class="tier-items">
 ${items
   .map(
-    (it) =>
-      `              <li><strong>${esc(it.item)}</strong>${it.reason ? `<span class="tier-reason">— ${esc(it.reason)}</span>` : ""}</li>`,
+    it =>
+      `              <li><strong>${esc(it.item)}</strong>${it.reason ? `<span class="tier-reason">— ${esc(it.reason)}</span>` : ''}</li>`,
   )
-  .join("\n")}
+  .join('\n')}
             </ul>
           </div>`;
   };
@@ -266,9 +275,9 @@ ${items
           <div class="tier-box tier-mvp"><span class="tier-box-label">MVP <span class="tier-box-count">×${d.scope.mvp.length}</span></span></div>
         </div>
         <div class="tier-lists">
-${tierList("MVP — must ship", "solid", d.scope.mvp)}
-${tierList("Full — target outcome", "soft", d.scope.full)}
-${tierList("Stretch — if time permits", "ghost", d.scope.stretch)}
+${tierList('MVP — must ship', 'solid', d.scope.mvp)}
+${tierList('Full — target outcome', 'soft', d.scope.full)}
+${tierList('Stretch — if time permits', 'ghost', d.scope.stretch)}
         </div>
       </div>
 
@@ -278,16 +287,16 @@ ${tierList("Stretch — if time permits", "ghost", d.scope.stretch)}
           <ul class="scope-out-list">
 ${d.scope.outOfScope
   .map(
-    (it) =>
-      `            <li><span class="scope-out-item">${esc(it.item)}</span>${it.reason ? ` <span class="scope-out-reason">— ${esc(it.reason)}</span>` : ""}</li>`,
+    it =>
+      `            <li><span class="scope-out-item">${esc(it.item)}</span>${it.reason ? ` <span class="scope-out-reason">— ${esc(it.reason)}</span>` : ''}</li>`,
   )
-  .join("\n")}
+  .join('\n')}
           </ul>
         </div>
         <div class="scope-future-panel">
           <div class="kicker kicker-muted">Future — someday, maybe</div>
           <ul class="scope-future-list">
-${d.scope.future.map((f) => `            <li>${esc(f)}</li>`).join("\n")}
+${d.scope.future.map(f => `            <li>${esc(f)}</li>`).join('\n')}
           </ul>
         </div>
       </div>
@@ -309,20 +318,20 @@ function buildExecution(d: ContractData): string {
       <div class="phase-track" style="grid-template-columns: repeat(${phases.length}, 1fr)">
 ${phases
   .map((p, i) => {
-    const rm = riskMeta(p.risk ?? "low");
-    const isGate = p.kind === "gate";
-    return `        <div class="phase-card${isGate ? " phase-gate" : ""}" style="border-top-color: ${rm.color}">
-          ${i < phases.length - 1 ? '<div class="phase-arrow" aria-hidden="true"></div>' : ""}
+    const rm = riskMeta(p.risk ?? 'low');
+    const isGate = p.kind === 'gate';
+    return `        <div class="phase-card${isGate ? ' phase-gate' : ''}" style="border-top-color: ${rm.color}">
+          ${i < phases.length - 1 ? '<div class="phase-arrow" aria-hidden="true"></div>' : ''}
           <div class="phase-head">
             <span class="phase-num">${pad2(i + 1)}</span>
             <span class="phase-risk" style="color: ${rm.color}">${rm.label}</span>
           </div>
           <div class="phase-title">${esc(p.title)}</div>
-          <div class="phase-kind">${isGate ? "gate" : "phase"}${p.blocking ? " · blocking" : ""}</div>
-          ${p.notes ? `<div class="phase-notes">${esc(p.notes)}</div>` : ""}
+          <div class="phase-kind">${isGate ? 'gate' : 'phase'}${p.blocking ? ' · blocking' : ''}</div>
+          ${p.notes ? `<div class="phase-notes">${esc(p.notes)}</div>` : ''}
         </div>`;
   })
-  .join("\n")}
+  .join('\n')}
       </div>
 
       <div class="autopilot-bar">
@@ -351,7 +360,7 @@ ${phases
           </div>
         </div>`;
   })
-  .join("\n")}
+  .join('\n')}
       </div>
 ${
   d.execution.agentTeamPrompt
@@ -365,7 +374,7 @@ ${
           </div>
         </div>
       </details>`
-    : ""
+    : ''
 }
     </section>`;
 }
@@ -414,18 +423,29 @@ ${buildExecution(d)}
 
 const { values } = parseArgs({
   options: {
-    input: { type: "string", short: "i" },
-    output: { type: "string", short: "o" },
+    input: { type: 'string', short: 'i' },
+    output: { type: 'string', short: 'o' },
   },
 });
 
 if (!values.input) {
-  console.error("Usage: contract-gen.ts --input <data.json> --output <contract.html>");
+  console.error(
+    'Usage: contract-gen.ts --input <data.json> --output <contract.html>',
+  );
   process.exit(1);
 }
 
-const raw = readFileSync(values.input, "utf8");
-const data: ContractData = JSON.parse(raw);
+const raw = readFileSync(values.input, 'utf8');
+const parsed = JSON.parse(raw) as Record<string, unknown>;
+
+if (!('gates' in parsed) && 'confidence' in parsed) {
+  console.error(
+    'contract-data.json uses the pre-gate `confidence` schema; regenerate via ideation to produce the `gates` schema.',
+  );
+  process.exit(1);
+}
+
+const data = parsed as unknown as ContractData;
 
 const outputPath = values.output ?? `contract.html`;
 const outputDir = dirname(outputPath);
@@ -435,16 +455,19 @@ if (outputDir && !existsSync(outputDir)) {
 }
 
 if (existsSync(outputPath)) {
-  const existing = readFileSync(outputPath, "utf8");
+  const existing = readFileSync(outputPath, 'utf8');
   const dateMatch = existing.match(/(\d{4}-\d{2}-\d{2})/);
-  const existingDate = dateMatch?.[1] ?? "unknown";
-  const renamedBase = basename(outputPath, ".html") + `-${existingDate}.html`;
+  const existingDate = dateMatch?.[1] ?? 'unknown';
+  const renamedBase = basename(outputPath, '.html') + `-${existingDate}.html`;
   const renamedPath = join(outputDir, renamedBase);
   renameSync(outputPath, renamedPath);
 
-  const mdPath = outputPath.replace(/\.html$/, ".md");
+  const mdPath = outputPath.replace(/\.html$/, '.md');
   if (existsSync(mdPath)) {
-    const renamedMd = join(outputDir, basename(mdPath, ".md") + `-${existingDate}.md`);
+    const renamedMd = join(
+      outputDir,
+      basename(mdPath, '.md') + `-${existingDate}.md`,
+    );
     renameSync(mdPath, renamedMd);
   }
 
@@ -456,5 +479,5 @@ if (existsSync(outputPath)) {
 }
 
 const html = generate(data);
-writeFileSync(outputPath, html, "utf8");
+writeFileSync(outputPath, html, 'utf8');
 console.log(`Generated ${outputPath} (${html.length} bytes)`);
