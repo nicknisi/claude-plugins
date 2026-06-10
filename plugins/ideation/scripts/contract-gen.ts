@@ -3,6 +3,7 @@ import {
   mkdirSync,
   readFileSync,
   renameSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
@@ -454,21 +455,45 @@ if (outputDir && !existsSync(outputDir)) {
   mkdirSync(outputDir, { recursive: true });
 }
 
+/** First free lineage path: base-{date}.ext, then base-{date}-2.ext, -3, ... */
+function nextLineagePath(
+  dir: string,
+  base: string,
+  date: string,
+  ext: string,
+): string {
+  for (let n = 1; ; n++) {
+    const candidate = join(
+      dir,
+      `${base}-${date}${n === 1 ? '' : `-${n}`}${ext}`,
+    );
+    if (!existsSync(candidate)) return candidate;
+  }
+}
+
 if (existsSync(outputPath)) {
   const existing = readFileSync(outputPath, 'utf8');
   const dateMatch = existing.match(/(\d{4}-\d{2}-\d{2})/);
   const existingDate = dateMatch?.[1] ?? 'unknown';
-  const renamedBase = basename(outputPath, '.html') + `-${existingDate}.html`;
-  const renamedPath = join(outputDir, renamedBase);
+  const htmlMtime = statSync(outputPath).mtimeMs;
+  const renamedPath = nextLineagePath(
+    outputDir,
+    basename(outputPath, '.html'),
+    existingDate,
+    '.html',
+  );
+  const renamedBase = basename(renamedPath);
   renameSync(outputPath, renamedPath);
 
+  // Archive the sibling .md only if it belongs to the superseded revision —
+  // an .md newer than the .html being archived was written for the NEW
+  // revision and must stay in place.
   const mdPath = outputPath.replace(/\.html$/, '.md');
-  if (existsSync(mdPath)) {
-    const renamedMd = join(
-      outputDir,
-      basename(mdPath, '.md') + `-${existingDate}.md`,
+  if (existsSync(mdPath) && statSync(mdPath).mtimeMs <= htmlMtime) {
+    renameSync(
+      mdPath,
+      nextLineagePath(outputDir, basename(mdPath, '.md'), existingDate, '.md'),
     );
-    renameSync(mdPath, renamedMd);
   }
 
   if (!data.supersedes) {
