@@ -400,19 +400,40 @@ Completed artifact examples for reference when generating output:
 
 When generating artifacts, reference these examples for tone, structure, and level of detail.
 
-## HTML Visualizations for Decisions
+## Decision Aids: Previews First, HTML When Visual
 
-During the interview and phasing stages, generate ephemeral HTML pages when visual context helps the user make better decisions. These are disposable aids — created, reviewed, then deleted.
+During the interview and phasing stages, comparisons help the user decide. **Default to `AskUserQuestion` previews; escalate to ephemeral HTML only when the decision hinges on something a monospace preview can't show.**
 
-**When to use this:**
+### Default: `AskUserQuestion` previews
 
-- **Interview examples** — show UI mockups, layout options, or component structures the user is choosing between
-- **Architecture comparisons** — 2-3 valid approaches with meaningfully different trade-offs shown side-by-side
-- **Phasing strategies** — "core-first vs. risk-first vs. value-first" with visual dependency flows
-- **Orchestration strategy** — sequential vs. parallel vs. hybrid with timeline visuals
-- Any decision where visual layout would clarify trade-offs better than text
+`AskUserQuestion` supports a per-option `preview` field, rendered side-by-side in a monospace box (markdown). For a 2–4 option comparison, give each option a `preview` — this is the default routing because it keeps the decision inline, with no file to write, open, or clean up. Previews are well-suited to:
 
-**How it works:**
+- ASCII layout mockups (box-drawing sketches of a UI or page structure)
+- Code snippets (a function signature, config block, or schema shape per option)
+- Dependency-flow or phasing sketches (arrows, ordered steps)
+- Trade-off summaries (a compact pros/cons block per option)
+
+**When previews fit each of the comparison stages:**
+
+- **Interview examples** — preview-first: ASCII mockups of the layout/component options. HTML only when real rendering matters (see below).
+- **Architecture comparisons** — preview-first: each approach's structure and trade-offs in a code/ASCII block.
+- **Phasing strategies** — preview-first: "core-first vs. risk-first vs. value-first" as dependency-flow sketches.
+- **Orchestration strategy** — preview-first: sequential vs. parallel vs. hybrid as ASCII timelines.
+
+**Constraints:**
+
+- **Previews are single-select only.** Do not combine `preview` with `multiSelect` — the tool will reject or ignore the previews. If the decision is genuinely multi-select, drop previews and rely on labels + descriptions (or escalate to HTML).
+- **Keep previews comparative.** A preview earns its place only when seeing the options side-by-side changes the choice. When labels + descriptions already make the answer clear, skip the preview — see "When NOT to use a decision aid" below.
+
+### Escalate to ephemeral HTML only when previews can't render it
+
+Reserve `_comparison.html` for decisions that hinge on what a monospace box cannot show:
+
+- **Real visual design** — color, typography, spacing, where the look itself is the decision
+- **Interactive behavior** — widgets the user needs to manipulate (sliders, toggles, hover states)
+- **Side-by-side rendered artifacts** — actual layouts/components rendered, not sketched
+
+The ephemeral-file workflow is unchanged for this case:
 
 1. Write `_comparison.html` (or `_examples.html`, `_mockup.html` — prefix with `_` to mark as ephemeral) to the project's ideation directory using `references/html-guide.md` components
 2. Show each option as a card or column with: name, description, trade-offs, and a visual where appropriate
@@ -420,7 +441,9 @@ During the interview and phasing stages, generate ephemeral HTML pages when visu
 4. Ask via `AskUserQuestion`: reference the browser view in the question text
 5. After the user chooses, delete the ephemeral file — it served its purpose
 
-**When NOT to use this:** Simple yes/no decisions, choices where the recommended option is clearly best, or any decision that's faster to explain in text. Don't slow down the flow with unnecessary visual aids.
+The contract HTML and genuine visual mockups still need this path — the change is routing (preview by default), not removal.
+
+**When NOT to use a decision aid (preview or HTML):** Simple yes/no decisions, choices where the recommended option is clearly best, or any decision that's faster to explain in text. Don't slow down the flow with unnecessary previews or visual aids.
 
 ## Important Notes
 

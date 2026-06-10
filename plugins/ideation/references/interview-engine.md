@@ -8,6 +8,20 @@ Accept whatever the user provides — scattered thoughts, voice transcripts, bul
 
 Acknowledge receipt. State what looks strong and what looks weak. Take a position. Then begin the interview.
 
+### Intake sweep
+
+**If the work touches an existing codebase**, fire a parallel exploration sweep at intake so your first question is already informed. Dispatch 2–3 `Agent` calls with `subagent_type: "Explore"` **in a single message** (so they run in parallel), covering:
+
+1. **Project structure** — frameworks, languages, conventions in use.
+2. **Adjacent code** — features similar to the brain dump's scope, abstractions you could extend, prior art to reuse.
+3. **Test + feedback infrastructure** — test runners, dev servers, storybook, script harnesses. This feeds the infrastructure-to-playground mapping in `${CLAUDE_PLUGIN_ROOT}/references/feedback-loop-guide.md`.
+
+While the sweep runs, acknowledge the brain dump and state what looks strong and weak — don't block on the agents. Weave their findings in as they return.
+
+**Skip the sweep when greenfield** — there's no repo, or the brain dump is unrelated to the existing code. Exploring an unrelated codebase wastes tokens and slows the opener.
+
+**Cap at 3 sweep agents.** Scope each agent's prompt to the brain dump's stated area; beyond 3 agents, latency and token cost outrun the value for an interview opener. Sweep findings stay in conversation context — the "do not write exploration findings to files" rule below applies to the sweep too.
+
 ## Phase 2: Interview Loop
 
 Interview the user relentlessly about every aspect of this plan until reaching shared understanding. Walk down each branch of the decision tree, resolving dependencies between decisions one by one.
@@ -16,7 +30,7 @@ Interview the user relentlessly about every aspect of this plan until reaching s
 
 1. **One focused question per turn by default.** Wait for the answer before asking the next question. Batch up to 4 questions in a single `AskUserQuestion` call **only when the questions are independent** — i.e., they target different gates and none depends on the answer to another. (`AskUserQuestion` supports 1–4 questions.) Never batch questions that chain logically; ask those one at a time so each answer informs the next.
 2. **For each question, provide your recommended answer.** Frame it as: "Here's what I'd recommend — [position]. Do you agree, or would you change it?" This accelerates convergence and forces you to take positions.
-3. **If a question can be answered by exploring the codebase, explore the codebase instead.** Don't ask the user what you can look up. Use `Agent` with `subagent_type: "Explore"` or direct `Glob`/`Grep`/`Read` to find the answer, then state what you found and move on.
+3. **If a question can be answered by exploring the codebase, explore the codebase instead.** Don't ask the user what you can look up. First check the intake sweep findings (Phase 1) — they likely already hold the answer; don't re-explore what the sweep covered. If they don't, use `Agent` with `subagent_type: "Explore"` or direct `Glob`/`Grep`/`Read` to find the answer, then state what you found and move on.
 4. **Use `AskUserQuestion` tool for every question.** Provide 2-4 options including your recommendation. Mark the recommended option with "(Recommended)".
 
 ### What to explore
