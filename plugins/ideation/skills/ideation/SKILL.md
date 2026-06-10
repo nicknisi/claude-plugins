@@ -109,7 +109,24 @@ When all 5 evidence gates are `ready`, generate the Mission Brief contract as an
 
    **Phase fields:** `risk` (high/medium/low), `blocking` (boolean), `specPath` (path to spec), `notes` (brief description). Optional: `kind` ("gate" for human checkpoints), `prereqs` (array of phase titles this depends on).
 
-5. **Run the contract generator**:
+5. **Fan out the plan critics** (before rendering the contract). Adversarially review the plan while a blocker is still a one-line JSON edit, not a regenerate-review-regenerate loop. Run **once** per contract.
+
+   **Dispatch three critics in parallel** — issue all three `Agent` calls in a single message so they run concurrently. Use the registered `ideation:plan-critic` agent type, one call per lens:
+   - **subagent_type**: `ideation:plan-critic`
+   - **prompt**: The per-invocation inputs only — the critic's workflow, output format, and read-only `tools` restriction come from its registered definition; do not paste them into the prompt. Pass: the `contract-data.json` path, the project directory, and the **lens** (one of `scope-creep`, `hidden-dependency`, `success-criteria`).
+
+   The critic's `tools` frontmatter (`Read`, `Glob`, `Grep`) is enforced mechanically by the platform — critics verify claims against the codebase but never edit it.
+
+   **Collect findings and act:**
+   - For each `blocker`: revise `contract-data.json` to resolve it (move a scope item's tier, add a phase prereq, rewrite a success criterion). If a blocker exposes a genuine unknown rather than a fixable defect, return to the interview loop for that gate.
+   - For each `notable`: fold it into `contract-data.json` if it is clearly right; otherwise carry it to the digest with a one-line dismissal reason.
+   - `nit` findings are mentioned in the digest only — no action.
+
+   **Failure tolerance:** if a critic invocation fails or the `ideation:plan-critic` agent type is unregistered (older Claude Code), log a warning, proceed without that lens, and note the gap in the digest. Critics are a quality amplifier, not a hard gate — never block the contract on a critic failure.
+
+   **Run-once rule:** critics run exactly once per contract. Re-run them only if a revision changes the contract _fundamentally_ (different goals or scope, not wording). The "Needs changes" revision loop at the approval gate does **not** re-trigger critics.
+
+6. **Run the contract generator**:
 
    ```bash
    npx tsx ${CLAUDE_PLUGIN_ROOT}/scripts/contract-gen.ts \
@@ -119,8 +136,8 @@ When all 5 evidence gates are `ready`, generate the Mission Brief contract as an
 
    The CLI handles lineage automatically — if `contract.html` already exists, it renames it to `contract-{date}.html` and sets the supersedes link.
 
-6. Open in browser: run `open ./docs/ideation/{slug}/contract.html` (macOS) or `xdg-open` (Linux)
-7. Use `AskUserQuestion` to get approval — include the scope tier question:
+7. Open in browser: run `open ./docs/ideation/{slug}/contract.html` (macOS) or `xdg-open` (Linux)
+8. Use `AskUserQuestion` to get approval — include the scope tier question. **Before the question, present a Critic digest** in the conversational summary so the user can see the plan was stress-tested. Per lens, one line: `found N (B blockers folded in, M notables, dismissed X — reasons)`. Note any lens that was skipped due to a critic failure. If all three critics returned SOUND, say so in one line ("All three plan critics returned SOUND — no blockers"). Then ask:
 
 ```
 Question: "Does this contract capture your intent? Which scope tier should we target?"
