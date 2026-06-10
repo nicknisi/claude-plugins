@@ -46,6 +46,7 @@ stringified one):
       "specPath": "docs/ideation/<slug>/spec-phase-1.md",
       "prereqs": ["Other phase title", "..."], // titles that must finish first
       "risk": "low", // optional, display only
+      "files": ["path/a.ts", "path/b.ts"], // optional; paths this phase touches
     },
   ],
   "completedPhases": ["Phase title", "..."], // already committed; excluded from dispatch
@@ -54,6 +55,37 @@ stringified one):
 
 - **Edges are phase titles**, matching `contract-data.json`'s `execution.phases[].prereqs`.
 - `completedPhases` seeds the planner's satisfied set so a resumed run only executes what remains.
+- **`files`** is optional. The `/ideation:autopilot` skill populates it by parsing
+  each spec's **File Changes** tables. It declares the paths a phase touches so the
+  engine can serialize file-conflicting phases (see below). Omitting it (or `[]`)
+  reproduces the pre-`files` behavior exactly.
+
+### Wave overlap serialization
+
+After prereq-ordered wave planning, the engine runs a post-pass
+(`splitWavesByFileOverlap`) that splits any wave whose phases declare an
+**overlapping `files` entry** into sequential sub-waves. Two phases that would
+otherwise run concurrently in the same wave but touch the same file are forced to
+run one-after-another — otherwise they would contaminate each other's
+`git diff HEAD` review and race on the git index at commit time.
+
+- **Greedy first-fit, deterministic.** Phases are assigned to the first sub-wave
+  with no file conflict, in input order. Wave sizes are tiny, so determinism
+  matters more than optimal packing.
+- **Phases without `files` are parallel-safe** — they conflict with nothing. The
+  engine logs a `WARN` when a multi-phase wave contains a file-less phase, so the
+  silent risk of an undeclared file overlap there is at least visible.
+- **Over-serialization is accepted as the safe failure mode.** If many phases all
+  touch one shared file (e.g. a README), they fully serialize — correctness over
+  speed.
+- **Undeclared-file races** (lockfiles, generated files a spec didn't list) are
+  invisible to the planner; the per-phase agent prompt carries a commit-retry
+  instruction (retry on `index.lock` errors) as a backstop.
+
+The pure planner exposes `planExecutionWaves(phases, completed)` (=
+`splitWavesByFileOverlap(computeWaves(...), phases)`) and a CLI
+(`node wave-planner.mjs plan '<json>'`) for non-JS consumers; the engine keeps its
+inlined mirror of both functions.
 
 ## Return value
 

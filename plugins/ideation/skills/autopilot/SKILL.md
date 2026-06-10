@@ -63,6 +63,7 @@ Assemble the manifest exactly per `${CLAUDE_PLUGIN_ROOT}/workflows/README.md`:
       "specPath": "...",
       "prereqs": ["<other titles>"],
       "risk": "low",
+      "files": ["path/a.ts", "path/b.ts"], // every path this phase declares it touches
     },
   ],
   "completedPhases": ["<titles from Step 2>"],
@@ -71,6 +72,24 @@ Assemble the manifest exactly per `${CLAUDE_PLUGIN_ROOT}/workflows/README.md`:
 
 - `prereqs` are **phase titles** — pass `contract-data.json`'s values straight through; do not remap to indices.
 - Before invoking, sanity-check that every `prereqs` entry matches some phase `title` (or a `completedPhases` entry). If a title doesn't resolve, it's a manifest bug — report it rather than dispatching a broken graph (the engine will otherwise throw "Unknown prereq").
+
+### Populate `files` from each spec's File Changes table
+
+The engine uses `files` to **serialize phases that would otherwise run in the same
+wave but touch the same file** — without it, two same-wave phases can contaminate
+each other's `git diff HEAD` review and race on the git index at commit time. So
+for **each** phase, read its `specPath` and extract every path listed in the
+spec's **File Changes** tables — New Files, Modified Files, and Deleted Files —
+into that phase's `files` array. Pass the paths through verbatim (the specs in one
+repo use consistent relative paths; no resolution or normalization).
+
+- **Missing or unparseable File Changes section:** set `files: []` and **tell the
+  user** that phase is being treated as parallel-safe (it will never be serialized
+  against another phase, so an undeclared file overlap there could slip through).
+  The engine also logs a warning when a multi-phase wave contains a file-less
+  phase.
+- `files` is **optional** for the engine — omitting it (or `[]`) is identical to
+  the old behavior. Old manifests keep working unchanged.
 
 ## Step 4: Invoke the Engine
 

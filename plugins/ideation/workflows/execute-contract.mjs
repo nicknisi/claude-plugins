@@ -134,6 +134,40 @@ function propagateSkips(phases, failedOrSkipped) {
   return skip;
 }
 
+function splitWavesByFileOverlap(waves, phases) {
+  const filesOf = new Map(phases.map(p => [p.title, p.files ?? []]));
+  const result = [];
+  for (const wave of waves) {
+    if (wave.length <= 1) {
+      result.push(wave);
+      continue;
+    }
+    const subWaves = [];
+    for (const title of wave) {
+      const files = filesOf.get(title) ?? [];
+      let placed = false;
+      for (const sub of subWaves) {
+        const conflict = files.some(f => sub.files.has(f));
+        if (!conflict) {
+          sub.titles.push(title);
+          for (const f of files) sub.files.add(f);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        subWaves.push({ titles: [title], files: new Set(files) });
+      }
+    }
+    for (const sub of subWaves) result.push(sub.titles);
+  }
+  return result;
+}
+
+function planExecutionWaves(phases, completed = []) {
+  return splitWavesByFileOverlap(computeWaves(phases, completed), phases);
+}
+
 // ---------------------------------------------------------------------------
 // Phase dispatch
 // ---------------------------------------------------------------------------
@@ -169,6 +203,9 @@ When finished, return a JSON object (the StructuredOutput tool will be provided)
   - commitHash: the commit SHA if you committed, else null
   - summary:    one or two sentences on what was implemented or why it failed
   - findings:   array of any unresolved review findings (empty array if none)
+
+If \`git commit\` or \`git add\` fails with an index.lock error, wait briefly and
+retry up to 3 times before reporting failure.
 
 Do NOT ask the user anything — the orchestrator handles failure gates. If the
 review cycle fails after 3 cycles, return result "FAIL" with the findings.`;
@@ -210,7 +247,55 @@ if (phases.length === 0) {
 }
 
 const byTitle = new Map(phases.map(p => [p.title, p]));
-const waves = computeWaves(phases, a.completedPhases ?? []);
+const filesOf = new Map(phases.map(p => [p.title, p.files ?? []]));
+
+// Prereq-ordered waves first, then split any wave whose phases share a declared
+// file so they never run concurrently (avoids contaminated diffs / index races).
+const prereqWaves = computeWaves(phases, a.completedPhases ?? []);
+
+// Warn once if any multi-phase prereq wave contains a phase that declares no
+// files — it is treated as parallel-safe, so an undeclared file race is invisible
+// to the planner. (The commit-retry backstop in buildPhasePrompt covers the rest.)
+const fileless = new Set();
+for (const wave of prereqWaves) {
+  if (wave.length <= 1) continue;
+  for (const t of wave) {
+    if ((filesOf.get(t) ?? []).length === 0) fileless.add(t);
+  }
+}
+if (fileless.size > 0) {
+  log(
+    `WARN: phase(s) without declared files in a parallel wave — treated as parallel-safe: ${[
+      ...fileless,
+    ].join(', ')}`,
+  );
+}
+
+const waves = splitWavesByFileOverlap(prereqWaves, phases);
+
+// Log each serialization the split introduced. A phase pushed into a later
+// sub-wave (idx > 0) of its prereq wave was held back by a shared file with an
+// earlier phase; name that blocker and the files they share.
+for (const prereqWave of prereqWaves) {
+  const subs = splitWavesByFileOverlap([prereqWave], phases);
+  if (subs.length <= 1) continue;
+  const subIndexOf = new Map();
+  subs.forEach((sw, i) => sw.forEach(t => subIndexOf.set(t, i)));
+  for (const t of prereqWave) {
+    if (subIndexOf.get(t) === 0) continue;
+    const myFiles = new Set(filesOf.get(t) ?? []);
+    const blocker = prereqWave.find(
+      o =>
+        subIndexOf.get(o) < subIndexOf.get(t) &&
+        (filesOf.get(o) ?? []).some(f => myFiles.has(f)),
+    );
+    const shared = (filesOf.get(blocker) ?? []).filter(f => myFiles.has(f));
+    log(
+      `Serialized "${t}" after "${blocker}" — shared files: ${shared.join(', ')}`,
+    );
+  }
+}
+
 log(
   `Planned ${waves.length} wave(s) for ${a.projectName}: ${waves
     .map((w, i) => `W${i + 1}[${w.join(', ')}]`)

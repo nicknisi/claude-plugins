@@ -139,6 +139,72 @@ describe('execute-contract script body', () => {
     assert.equal(summary.completed.length, 0);
   });
 
+  it('serializes two same-wave phases that share a declared file', async () => {
+    // P2 and P3 are both ready after P1 (same prereq wave) and both touch foo.ts.
+    // The overlap split must dispatch them in separate waves, not together.
+    const args = {
+      projectName: 'Overlap',
+      slug: 'overlap',
+      projectDir: 'd/',
+      completedPhases: [],
+      phases: [
+        { title: 'P1', specPath: 'p1.md', prereqs: [], files: ['p1.ts'] },
+        {
+          title: 'P2',
+          specPath: 'p2.md',
+          prereqs: ['P1'],
+          files: ['foo.ts'],
+        },
+        {
+          title: 'P3',
+          specPath: 'p3.md',
+          prereqs: ['P1'],
+          files: ['foo.ts'],
+        },
+      ],
+    };
+    const { summary, waveSizes } = await run(args);
+    assert.deepEqual(new Set(summary.completed), new Set(['P1', 'P2', 'P3']));
+    // No parallel wave of size > 1 — every wave is a single phase.
+    assert.ok(
+      waveSizes.every(n => n === 1),
+      `expected all single-phase waves, saw ${waveSizes}`,
+    );
+  });
+
+  it('does NOT serialize same-wave phases with disjoint files', async () => {
+    // Same shape as above, but P2/P3 touch different files → stay parallel.
+    const args = {
+      projectName: 'Disjoint',
+      slug: 'disjoint',
+      projectDir: 'd/',
+      completedPhases: [],
+      phases: [
+        { title: 'P1', specPath: 'p1.md', prereqs: [], files: ['p1.ts'] },
+        { title: 'P2', specPath: 'p2.md', prereqs: ['P1'], files: ['a.ts'] },
+        { title: 'P3', specPath: 'p3.md', prereqs: ['P1'], files: ['b.ts'] },
+      ],
+    };
+    const { waveSizes } = await run(args);
+    assert.ok(
+      waveSizes.includes(2),
+      `expected P2+P3 to share a wave of size 2, saw ${waveSizes}`,
+    );
+  });
+
+  it('manifests without files behave identically to before (regression guard)', async () => {
+    // The canonical diamond has no `files` → the overlap split is identity.
+    const { summary, waveSizes } = await run(diamondArgs());
+    assert.deepEqual(
+      new Set(summary.completed),
+      new Set(['P1', 'P2', 'P3', 'P4']),
+    );
+    assert.ok(
+      waveSizes.includes(2),
+      `expected the file-less diamond to keep its size-2 wave, saw ${waveSizes}`,
+    );
+  });
+
   it('empty phases → empty summary, no dispatch', async () => {
     const run_ = loadScript();
     let called = false;

@@ -9,8 +9,11 @@
  *
  * KEEP IN SYNC: if you change a function here, mirror it in execute-contract.mjs.
  *
- * @typedef {{ title: string, prereqs?: string[] }} PlannerPhase
+ * @typedef {{ title: string, prereqs?: string[], files?: string[] }} PlannerPhase
  */
+
+import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 
 /**
  * Detect a cycle in the prereq graph.
@@ -138,4 +141,117 @@ export function propagateSkips(phases, failedOrSkipped) {
     }
   }
   return skip;
+}
+
+/**
+ * Split each wave into sequential sub-waves so that no two phases sharing a
+ * declared file run concurrently. Phases with no `files` are parallel-safe by
+ * default (they conflict with nothing). Greedy first-fit assignment in input
+ * order keeps the result deterministic; wave sizes are tiny so optimality does
+ * not matter. Each input wave is split independently and wave order is
+ * preserved.
+ *
+ * @param {string[][]} waves - output of computeWaves
+ * @param {Array<{title: string, files?: string[]}>} phases
+ * @returns {string[][]} possibly-longer list of waves
+ */
+export function splitWavesByFileOverlap(waves, phases) {
+  const filesOf = new Map(phases.map(p => [p.title, p.files ?? []]));
+  const result = [];
+
+  for (const wave of waves) {
+    if (wave.length <= 1) {
+      result.push(wave);
+      continue;
+    }
+
+    // subWaves[i].files is the union of files claimed by phases already in
+    // sub-wave i; used for O(1)-ish intersection checks during assignment.
+    const subWaves = [];
+
+    for (const title of wave) {
+      const files = filesOf.get(title) ?? [];
+      let placed = false;
+
+      for (const sub of subWaves) {
+        const conflict = files.some(f => sub.files.has(f));
+        if (!conflict) {
+          sub.titles.push(title);
+          for (const f of files) sub.files.add(f);
+          placed = true;
+          break;
+        }
+      }
+
+      if (!placed) {
+        subWaves.push({ titles: [title], files: new Set(files) });
+      }
+    }
+
+    for (const sub of subWaves) result.push(sub.titles);
+  }
+
+  return result;
+}
+
+/**
+ * computeWaves + splitWavesByFileOverlap in one call. Plans prereq-ordered
+ * waves, then serializes any wave whose phases share a declared file.
+ *
+ * @param {PlannerPhase[]} phases
+ * @param {string[]} [completed]
+ * @returns {string[][]} execution waves
+ */
+export function planExecutionWaves(phases, completed = []) {
+  return splitWavesByFileOverlap(computeWaves(phases, completed), phases);
+}
+
+// ---------------------------------------------------------------------------
+// CLI guard — only runs when this module is executed directly, never on import.
+// Importing for tests or the engine mirror stays side-effect free.
+//
+//   node wave-planner.mjs plan '<json>'
+//     input:  { "phases": [{ "title", "prereqs": [], "files": [] }], "completed": [] }
+//     output: JSON array of waves (string[][]) on stdout
+//     errors: cycle / unknown prereq / malformed JSON → non-zero exit,
+//             message on stderr
+// ---------------------------------------------------------------------------
+
+function runCli(argv) {
+  const [subcommand, payload] = argv;
+  if (subcommand !== 'plan') {
+    process.stderr.write(
+      `Unknown subcommand "${subcommand ?? ''}". Usage: wave-planner.mjs plan '<json>'\n`,
+    );
+    process.exit(2);
+  }
+  if (typeof payload !== 'string') {
+    process.stderr.write(
+      `Missing JSON payload. Usage: wave-planner.mjs plan '<json>'\n`,
+    );
+    process.exit(2);
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(payload);
+  } catch (err) {
+    process.stderr.write(`Malformed JSON: ${err.message}\n`);
+    process.exit(1);
+  }
+
+  try {
+    const waves = planExecutionWaves(
+      parsed.phases ?? [],
+      parsed.completed ?? [],
+    );
+    process.stdout.write(`${JSON.stringify(waves)}\n`);
+  } catch (err) {
+    process.stderr.write(`${err.message}\n`);
+    process.exit(1);
+  }
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  runCli(process.argv.slice(2));
 }

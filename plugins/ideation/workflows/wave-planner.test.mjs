@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { computeWaves, detectCycle, propagateSkips } from './wave-planner.mjs';
+import {
+  computeWaves,
+  detectCycle,
+  planExecutionWaves,
+  propagateSkips,
+  splitWavesByFileOverlap,
+} from './wave-planner.mjs';
 
 /**
  * Helper: build a phase list from a {title: [prereqs]} map.
@@ -9,6 +15,18 @@ import { computeWaves, detectCycle, propagateSkips } from './wave-planner.mjs';
  */
 function graph(map) {
   return Object.entries(map).map(([title, prereqs]) => ({ title, prereqs }));
+}
+
+/**
+ * Helper: build a phase list from a {title: [files]} map. Used for overlap
+ * tests where prereqs are irrelevant (the phases already share one wave).
+ */
+function filed(map) {
+  return Object.entries(map).map(([title, files]) => ({
+    title,
+    prereqs: [],
+    files,
+  }));
 }
 
 describe('computeWaves', () => {
@@ -99,5 +117,132 @@ describe('detectCycle', () => {
       Array.isArray(cycle) && cycle.length > 0,
       'returns the offending path',
     );
+  });
+});
+
+describe('splitWavesByFileOverlap', () => {
+  it('leaves single-phase waves untouched', () => {
+    const phases = filed({ A: ['x'] });
+    assert.deepEqual(splitWavesByFileOverlap([['A']], phases), [['A']]);
+  });
+
+  it('is identity when every phase has disjoint files', () => {
+    const phases = filed({ A: ['a'], B: ['b'], C: ['c'] });
+    assert.deepEqual(splitWavesByFileOverlap([['A', 'B', 'C']], phases), [
+      ['A', 'B', 'C'],
+    ]);
+  });
+
+  it('splits two phases that share a file into two sub-waves', () => {
+    const phases = filed({ A: ['x'], B: ['x'] });
+    assert.deepEqual(splitWavesByFileOverlap([['A', 'B']], phases), [
+      ['A'],
+      ['B'],
+    ]);
+  });
+
+  it('greedy first-fit: A and C share a file, B is disjoint → [A, B], [C]', () => {
+    const phases = filed({ A: ['x'], B: ['y'], C: ['x'] });
+    assert.deepEqual(splitWavesByFileOverlap([['A', 'B', 'C']], phases), [
+      ['A', 'B'],
+      ['C'],
+    ]);
+  });
+
+  it('fully serializes a wave where every phase shares one file', () => {
+    const phases = filed({ A: ['x'], B: ['x'], C: ['x'] });
+    assert.deepEqual(splitWavesByFileOverlap([['A', 'B', 'C']], phases), [
+      ['A'],
+      ['B'],
+      ['C'],
+    ]);
+  });
+
+  it('never serializes phases without files (parallel-safe by default)', () => {
+    const phases = [
+      { title: 'A', prereqs: [], files: [] },
+      { title: 'B', prereqs: [] }, // absent files
+      { title: 'C', prereqs: [], files: [] },
+    ];
+    assert.deepEqual(splitWavesByFileOverlap([['A', 'B', 'C']], phases), [
+      ['A', 'B', 'C'],
+    ]);
+  });
+
+  it('a file-less phase does not conflict with a file-bearing one', () => {
+    const phases = [
+      { title: 'A', prereqs: [], files: ['x'] },
+      { title: 'B', prereqs: [] }, // no files → conflicts with nothing
+    ];
+    assert.deepEqual(splitWavesByFileOverlap([['A', 'B']], phases), [
+      ['A', 'B'],
+    ]);
+  });
+
+  it('splits each wave independently and preserves wave order', () => {
+    const phases = filed({
+      A: ['shared'],
+      B: ['shared'],
+      C: ['other'],
+      D: ['other'],
+    });
+    // Two prereq waves: [A, B] and [C, D]. Each contains an overlapping pair.
+    const waves = splitWavesByFileOverlap(
+      [
+        ['A', 'B'],
+        ['C', 'D'],
+      ],
+      phases,
+    );
+    assert.deepEqual(waves, [['A'], ['B'], ['C'], ['D']]);
+  });
+
+  it('is deterministic — same input yields the same sub-wave order', () => {
+    const phases = filed({ A: ['x'], B: ['y'], C: ['x'], D: ['y'] });
+    const first = splitWavesByFileOverlap([['A', 'B', 'C', 'D']], phases);
+    const second = splitWavesByFileOverlap([['A', 'B', 'C', 'D']], phases);
+    assert.deepEqual(first, second);
+    // A,C share x; B,D share y. First-fit: [A,B], [C,D].
+    assert.deepEqual(first, [
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
+  });
+});
+
+describe('planExecutionWaves', () => {
+  it('equals splitWavesByFileOverlap(computeWaves(p, c), p) — diamond', () => {
+    const phases = [
+      { title: 'A', prereqs: [], files: ['a'] },
+      { title: 'B', prereqs: ['A'], files: ['shared'] },
+      { title: 'C', prereqs: ['A'], files: ['shared'] },
+      { title: 'D', prereqs: ['B', 'C'], files: ['d'] },
+    ];
+    const composed = planExecutionWaves(phases);
+    const manual = splitWavesByFileOverlap(computeWaves(phases), phases);
+    assert.deepEqual(composed, manual);
+    // B and C are in the same prereq wave but share a file → serialized.
+    assert.deepEqual(composed, [['A'], ['B'], ['C'], ['D']]);
+  });
+
+  it('honors completed phases the same way computeWaves does', () => {
+    const phases = [
+      { title: 'A', prereqs: [], files: ['a'] },
+      { title: 'B', prereqs: ['A'], files: ['x'] },
+      { title: 'C', prereqs: ['A'], files: ['y'] },
+    ];
+    const composed = planExecutionWaves(phases, ['A']);
+    const manual = splitWavesByFileOverlap(computeWaves(phases, ['A']), phases);
+    assert.deepEqual(composed, manual);
+    // B and C have disjoint files → stay in one wave.
+    assert.deepEqual(composed, [['B', 'C']]);
+  });
+
+  it('propagates planner errors (cycle)', () => {
+    const phases = [
+      { title: 'A', prereqs: ['B'] },
+      { title: 'B', prereqs: ['A'] },
+    ];
+    assert.throws(() => planExecutionWaves(phases), /cycle/i);
   });
 });
