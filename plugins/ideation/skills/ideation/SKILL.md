@@ -41,8 +41,6 @@ When all 5 evidence gates are `ready` — **not before** — generate the Missio
      "status": "Draft",
      "supersedes": null,
      "gates": {
-       "passed": 4,
-       "total": 5,
        "dimensions": [
          {
            "key": "scope",
@@ -78,7 +76,13 @@ When all 5 evidence gates are `ready` — **not before** — generate the Missio
      },
      "problem": ["paragraph 1", "paragraph 2"],
      "goals": ["Measurable goal 1", "Measurable goal 2"],
-     "successCriteria": ["Pass/fail criterion 1", "Pass/fail criterion 2"],
+     "successCriteria": [
+       {
+         "criterion": "Pass/fail criterion",
+         "check": "command that verifies it — expected outcome"
+       },
+       { "criterion": "Judgment-only criterion (no mechanical check exists)" }
+     ],
      "scope": {
        "mvp": [{ "item": "Core feature", "reason": "Why it's MVP" }],
        "full": [{ "item": "Full feature", "reason": "Optional rationale" }],
@@ -102,7 +106,7 @@ When all 5 evidence gates are `ready` — **not before** — generate the Missio
    }
    ```
 
-   Field semantics live in the `contract-gen.ts` types. Key contracts: each gate `dimension` has a `status` (`ready`/`not-ready`) and one-sentence `evidence` (the artifact making it ready, or the gap keeping it not-ready); `passed` counts ready gates, `total` is always 5. Proceed only when all 5 are ready — record not-ready gates only when the user ends the interview early. Phase fields: `risk` (high/medium/low), `blocking`, `specPath`, `notes`; optional `kind` ("gate" for human checkpoints) and `prereqs` (array of phase titles).
+   Field semantics live in the `contract-gen.ts` types. Key contracts: each gate `dimension` has a `status` (`ready`/`not-ready`) and one-sentence `evidence` (the artifact making it ready, or the gap keeping it not-ready) — readiness is derived from the dimensions, no counts. Proceed only when all 5 are ready — record not-ready gates only when the user ends the interview early. **Success criteria carry their own verification**: give every criterion a `check` — a runnable command plus its expected outcome (`"npx vitest run src/auth — exits 0"`, `"curl -s localhost:3000/health — returns 200"`) — whenever it can be verified mechanically. Omit `check` only when verification is genuinely human judgment; the contract renders those with a visible "judgment call" tag, and the success-criteria critic challenges any omission where a command is plausible. Phase fields: `risk` (high/medium/low), `blocking`, `specPath`, `notes`; optional `kind` ("gate" for human checkpoints) and `prereqs` (array of phase titles). `status` stays `"Draft"` here — a Draft contract renders the phase track as a plan preview with no run commands; commands appear when Phase 5 flips it to `"Approved"`.
 
 4. **Fan out the plan critics** (before rendering — fixing a blocker is a one-line JSON edit at this stage, not a regenerate loop). Issue all three `Agent` calls in one message so they run concurrently: `subagent_type: ideation:plan-critic`, prompt = per-invocation inputs only (`contract-data.json` path, project directory, and the **lens** — one of `scope-creep`, `hidden-dependency`, `success-criteria`); workflow/format/read-only `tools` come from the registered definition and are platform-enforced.
 
@@ -218,6 +222,7 @@ Do **not** create tasks here — they are ephemeral and lost on a fresh session;
 
 Update `contract-data.json` with the final plan and re-run `contract-gen.ts` so the contract is self-contained:
 
+- **Status** — set `"status": "Approved"`. This is what unlocks the run UI: Draft contracts render the phase track as a plan preview with an "awaiting approval" note; Approved contracts render First Move, the autopilot bar, and per-phase copy commands.
 - **Phase Track** — populate `execution.phases` (titles, risk, blockers, spec paths, notes, human gates); the CLI renders the risk-colored track.
 - **Execution Commands** — the CLI renders copy buttons for `/ideation:autopilot` and each `/ideation:execute-spec`.
 - **Agent Team Prompt** — set `execution.agentTeamPrompt` only if 2+ phases are parallelizable (CLI renders it in a collapsible section); **omit entirely** for sequential projects.
@@ -252,12 +257,14 @@ Then apply the decision rule:
   - "I'll run phases myself" — run each /ideation:execute-spec manually.
   ```
 
+  **Recommend by verifiability:** the unattended path can only trust what it can check. If most `successCriteria` carry a `check` command, keep "Watch it run now" or "Start it and walk away" as viable recommendations. If most criteria are judgment calls, do **not** recommend the walk-away option — say why in one line: a `/goal` run would complete phases nothing mechanical verified.
+
   Then echo the exact command for their choice:
   - Watch now → `/ideation:autopilot docs/ideation/{project-name}/contract.md`
   - Walk away → `run /ideation:get-goal-prompt docs/ideation/{project-name}/contract.md, then paste the /goal it copies`
   - Manually → the per-phase `/ideation:execute-spec` commands in dependency order
 
-**The layered model** (state once if helpful): `/ideation:autopilot` is the deterministic Workflow **engine**; the `/goal` is a durability **wrapper** that drives it unattended; `/ideation:execute-spec` is the per-phase **unit** all of them call. Graph shape doesn't change which entry point to recommend — the engine handles parallelism internally — so route only on phase count and attended-vs-unattended.
+**The layered model** (state once if helpful): `/ideation:autopilot` is the deterministic Workflow **engine**; the `/goal` is a durability **wrapper** that drives it unattended; `/ideation:execute-spec` is the per-phase **unit** all of them call. Graph shape doesn't change which entry point to recommend — the engine handles parallelism internally — so route on phase count, attended-vs-unattended, and whether the contract's checks make unattended verification trustworthy.
 
 </supporting-info>
 

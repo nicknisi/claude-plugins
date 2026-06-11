@@ -77,11 +77,12 @@ implementation-notes-phase-1.html  # Decisions made during execution (per-phase)
 HTML artifacts (contract, implementation notes, ephemeral visualizations) are self-contained single files with all CSS/JS inlined — no external dependencies. They open in your browser automatically. Features include:
 
 - **Tabs** for section navigation (CSS-only, no JS framework)
-- **Readiness gate checklist** showing `{passed}/{total} gates` with a ✓/✗ per dimension
+- **Readiness gate checklist** — a ✓/✗ per dimension with its one-sentence evidence citation in the hero (no score; readiness is binary)
+- **Success criteria with checks** — each criterion renders its verifying command; criteria with no mechanical check carry a visible "judgment call" tag
 - **Nested scope tiers** showing MVP / Full / Stretch commitment levels
-- **Per-gate evidence** — a one-sentence citation per dimension in the hero
 - **Horizontal phase track** with risk coloring and gate support
-- **Copy-to-clipboard buttons** on `/ideation:autopilot` and per-phase commands
+- **Draft/Approved lifecycle** — a Draft contract shows the phase track as a plan preview with an "awaiting approval" note; run commands appear only once the contract is Approved (Phase 5)
+- **Copy-to-clipboard buttons** on `/ideation:autopilot` and per-phase commands (Approved contracts)
 - **Dark mode** automatic via `prefers-color-scheme`
 
 Specs and PRDs are Markdown — readable as-is and consumed directly by `/ideation:execute-spec`.
@@ -151,7 +152,7 @@ Readiness is no longer a number. The skill judges your brain dump across 5 **gat
 
 Judgment is deliberately conservative — when unsure whether the evidence is sufficient, the gate is `not-ready`. One extra question costs seconds; a bad contract costs hours.
 
-The contract HTML renders these as a `{passed}/{total} gates` checklist in the hero. The full criteria live in `confidence-rubric.md`.
+The contract HTML renders these as a per-gate ✓/✗ evidence checklist in the hero — there is no aggregate score, because a contract normally only exists when every gate is ready. The full criteria live in `confidence-rubric.md`.
 
 ## Plan Critics
 

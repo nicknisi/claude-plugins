@@ -60,12 +60,13 @@ What unstated assumption, file, system, or sequencing does the plan depend on? S
 
 #### Lens: success-criteria
 
-Would these criteria actually detect failure? Are they pass/fail checkable as written? Specifically:
+Would these criteria actually detect failure? Are they pass/fail checkable as written? Each entry in `successCriteria` is `{ criterion, check? }` (legacy contracts may use plain strings) — `check` is the runnable command plus expected outcome that verifies the criterion. Specifically:
 
 - Criteria that are vague or subjective ("works well", "is fast") — not mechanically checkable.
 - Criteria that would pass even if the feature were broken (false-negative blind spots).
 - Goals with no corresponding criterion — unverifiable promises.
-- Criteria that name a command, file, or count — confirm the wording is concrete enough to run.
+- **Criteria missing a `check` where one is plausible** — if a test command, grep, curl, or build step could verify it, the omission is a finding; propose the exact command as the suggested change. A criterion verifiable only by human judgment is acceptable, but verify that's genuinely the case rather than a dodge.
+- Criteria whose `check` names a command, file, or count — confirm the wording is concrete enough to run, and that the command can actually exist in this repo (e.g., the named test runner or script is real).
 
 ### 4. Produce Findings
 

@@ -7,7 +7,7 @@ Use this template when generating `contract.md` after all 5 evidence gates are r
 # {Project Name} Contract
 
 **Created**: {date}
-**Readiness Gates**: {passed}/5 ready
+**Readiness**: {“All 5 gates ready” | “{N} gates open: {labels} — interview ended early”}
 **Status**: Draft | Approved
 **Supersedes**: {path to prior contract, or "None"}
 
@@ -30,12 +30,11 @@ Use this template when generating `contract.md` after all 5 evidence gates are r
 
 ## Success Criteria
 
-{Bulleted checklist of testable acceptance criteria. These should be verifiable.}
+{Bulleted checklist of testable acceptance criteria. Each carries its check — the runnable command (plus expected outcome) that verifies it. Mark criteria with no possible command explicitly as judgment calls.}
 
-- [ ] {Criterion 1 - specific and testable}
-- [ ] {Criterion 2 - specific and testable}
-- [ ] {Criterion 3 - specific and testable}
-- [ ] {Criterion 4 - specific and testable}
+- [ ] {Criterion 1} — check: `{command — expected outcome}`
+- [ ] {Criterion 2} — check: `{command — expected outcome}`
+- [ ] {Criterion 3} — judgment call: {what a human looks at}
 
 ## Scope Boundaries
 
@@ -123,7 +122,7 @@ When filling this template:
 
 2. **Goals**: Use measurable language. Instead of "improve performance," say "reduce p95 latency from 2s to 500ms."
 
-3. **Success Criteria**: Write as if you're writing test cases. Each criterion should be pass/fail verifiable.
+3. **Success Criteria**: Write as if you're writing test cases. Each criterion should be pass/fail verifiable, and each should name its check — the command that proves it. A criterion only a human can verify must say so explicitly ("judgment call"), and those should be the rare exception.
 
 4. **Scope Boundaries**: When in doubt, list it as out of scope. It's easier to add later than to remove.
 

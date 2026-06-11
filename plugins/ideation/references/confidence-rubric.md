@@ -57,11 +57,12 @@ One focused question per turn by default. Batch up to 4 questions in a single `A
 ### Gate: Success Criteria
 
 **Gate question**: Can every stated goal be checked pass/fail today?
-**Evidence required**: Each criterion written as a testable statement (command, observable behavior, or measurable threshold).
-**Ready when**: Every goal has at least one such criterion; none are subjective ("looks good", "feels fast").
+**Evidence required**: Each criterion written as a testable statement **paired with how it will be checked** — a runnable command plus its expected outcome (preferred), or an explicitly named observation when no command can verify it.
+**Ready when**: Every goal has at least one such criterion; none are subjective ("looks good", "feels fast"); criteria a command could verify name that command. A criterion checkable only by judgment is allowed but must say so explicitly — an unstated check is a gap, not a default.
 **Not ready — ask**:
 
 - "How will you know when this is done?"
+- "What command would prove this criterion — a test, a grep, a curl, a build?"
 - "What tests would prove this feature works correctly?"
 - "What would a QA person check before signing off?"
 - "What would you demo to stakeholders to prove success?"
@@ -70,8 +71,8 @@ One focused question per turn by default. Batch up to 4 questions in a single `A
 
 - Not ready: (none stated)
 - Not ready: "It should work well"
-- Closer: "Page loads in under 1 second" (good but incomplete — doesn't cover all goals)
-- Ready: "Checkout page loads in <500ms p95, all payment methods work, order confirmation email sends within 30s, no 500 errors for 24 hours post-deploy"
+- Closer: "Page loads in under 1 second" (good but incomplete — doesn't cover all goals, and doesn't say how it's measured)
+- Ready: "Checkout p95 <500ms (`k6 run checkout.js` — p95 threshold passes), all payment methods work (`npx playwright test payments` — exits 0), confirmation email within 30s (staging smoke script), no 500s for 24h post-deploy (judgment call: dashboard review)"
 
 ---
 

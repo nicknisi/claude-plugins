@@ -267,7 +267,7 @@ When filling this template:
 
 1. **Technical Approach**: Start with the big picture. Don't dive into code yet.
 
-2. **File Changes**: Be exhaustive. Missing a file here means surprise work later.
+2. **File Changes**: Be exhaustive for what the approved scope requires — missing a file here means surprise work later — but every file must trace to an approved scope item. No speculative abstractions or unrequested features.
 
 3. **Implementation Details**:
    - Reference existing code patterns when possible ("follow the pattern in X")

@@ -5,8 +5,6 @@
   "status": "Approved",
   "supersedes": null,
   "gates": {
-    "passed": 5,
-    "total": 5,
     "dimensions": [
       {
         "key": "scope",
@@ -46,7 +44,12 @@
   "goals": [
     "Prove the engine behaves correctly on a diamond graph with one rigged failure."
   ],
-  "successCriteria": ["completed = [P1, P2]; failed = [P3]; skipped = [P4]."],
+  "successCriteria": [
+    {
+      "criterion": "completed = [P1, P2]; failed = [P3]; skipped = [P4].",
+      "check": "node --test plugins/ideation/test-fixtures/orchestration/graph.test.mjs — all tests pass"
+    }
+  ],
   "scope": {
     "mvp": [{ "item": "Four trivial phases" }],
     "full": [],

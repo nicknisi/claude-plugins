@@ -37,20 +37,31 @@ interface Phase {
   notes?: string;
 }
 
+interface SuccessCriterion {
+  criterion: string;
+  /** Runnable command + expected outcome that verifies the criterion; absent = human judgment */
+  check?: string;
+}
+
 interface ContractData {
   projectName: string;
   slug: string;
   date: string;
   status: 'Draft' | 'Approved';
+  /** When the contract was approved (distinct from creation date) */
+  approvedOn?: string;
+  /** Who approved it */
+  approvedBy?: string;
   supersedes: string | null;
   gates: {
-    passed: number;
-    total: number;
+    /** Legacy fields, ignored — readiness is derived from dimensions */
+    passed?: number;
+    total?: number;
     dimensions: GateDimension[];
   };
   problem: string[];
   goals: string[];
-  successCriteria: string[];
+  successCriteria: Array<string | SuccessCriterion>;
   scope: {
     mvp: ScopeItem[];
     full: ScopeItem[];
@@ -79,22 +90,23 @@ function pad2(n: number): string {
   return String(n).padStart(2, '0');
 }
 
-function gatesColor(allReady: boolean): string {
-  return allReady ? 'var(--green-9)' : 'var(--yellow-11)';
+function gateStatusColor(status: 'ready' | 'not-ready'): string {
+  // Hero-scoped tokens: these sit on the inverted hero surface
+  return status === 'ready' ? 'var(--hero-go)' : 'var(--hero-caution)';
 }
 
-function gateStatusColor(status: 'ready' | 'not-ready'): string {
-  return status === 'ready' ? 'var(--green-9)' : 'var(--yellow-11)';
+function asCriterion(c: string | SuccessCriterion): SuccessCriterion {
+  return typeof c === 'string' ? { criterion: c } : c;
 }
 
 function riskMeta(risk: string): { color: string; label: string } {
   switch (risk) {
     case 'high':
-      return { color: 'var(--red-9)', label: 'high' };
+      return { color: 'var(--status-danger)', label: 'high' };
     case 'medium':
-      return { color: 'var(--yellow-11)', label: 'med' };
+      return { color: 'var(--status-caution)', label: 'med' };
     default:
-      return { color: 'var(--green-11)', label: 'low' };
+      return { color: 'var(--status-go)', label: 'low' };
   }
 }
 
@@ -108,8 +120,14 @@ function phaseCommand(phase: Phase, slug: string, index: number): string {
 // --- Section Builders ---
 
 function buildHero(d: ContractData): string {
-  const g = d.gates;
-  const allReady = g.passed >= g.total;
+  const dims = d.gates.dimensions;
+  const open = dims.filter(dim => dim.status !== 'ready');
+  const readiness =
+    open.length === 0
+      ? 'All gates ready'
+      : `${open.length} gate${open.length === 1 ? '' : 's'} open — interview ended early`;
+  const readinessColor =
+    open.length === 0 ? 'var(--hero-go)' : 'var(--hero-caution)';
   return `
     <header class="hero">
       <div class="hero-grid" aria-hidden="true"></div>
@@ -124,34 +142,29 @@ function buildHero(d: ContractData): string {
           </div>
           <div class="hero-meta">
             <div class="hero-status">${esc(d.status)}</div>
-            <div>${esc(d.date)}</div>
+            <div>created ${esc(d.date)}</div>
+            ${d.approvedOn ? `<div>approved ${esc(d.approvedOn)}${d.approvedBy ? ` · ${esc(d.approvedBy)}` : ''}</div>` : ''}
             ${d.supersedes ? `<div class="hero-supersedes">supersedes ${esc(d.supersedes)}</div>` : ''}
           </div>
         </div>
 
-        <div class="hero-score-row">
-          <div class="hero-score-block">
-            <div class="kicker">Readiness gates</div>
-            <div class="score-display">
-              <span class="score-num" style="color: ${gatesColor(allReady)}">${g.passed}</span>
-              <span class="score-denom">/${g.total} gates</span>
-            </div>
+        <div class="hero-gates">
+          <div class="gates-line">
+            <span class="kicker">Readiness gates</span>
+            <span class="gates-verdict" style="color: ${readinessColor}">${esc(readiness)}</span>
           </div>
-          <div class="hero-dims">
-            <div class="kicker">By dimension</div>
-            <div class="dim-grid">
-${g.dimensions
+          <div class="dim-grid">
+${dims
   .map(
-    dim => `              <div class="dim-row">
-                <span class="dim-score" style="color: ${gateStatusColor(dim.status)}">${dim.status === 'ready' ? '✓' : '✗'}</span>
-                <div class="dim-detail">
-                  <div class="dim-label">${esc(dim.label.toLowerCase())}</div>
-                  <div class="dim-reason">${esc(dim.evidence)}</div>
-                </div>
-              </div>`,
+    dim => `            <div class="dim-row">
+              <span class="dim-score" style="color: ${gateStatusColor(dim.status)}">${dim.status === 'ready' ? '✓' : '✗'}</span>
+              <div class="dim-detail">
+                <div class="dim-label">${esc(dim.label.toLowerCase())}</div>
+                <div class="dim-reason">${esc(dim.evidence)}</div>
+              </div>
+            </div>`,
   )
   .join('\n')}
-            </div>
           </div>
         </div>
       </div>
@@ -160,7 +173,7 @@ ${g.dimensions
 
 function buildFirstMove(d: ContractData): string {
   const phase = d.execution.phases[0];
-  if (!phase) return '';
+  if (!phase || d.status === 'Draft') return '';
   const cmd = phaseCommand(phase, d.slug, 0);
   return `
     <section class="first-move">
@@ -168,7 +181,7 @@ function buildFirstMove(d: ContractData): string {
         <div>
           <div class="kicker kicker-accent">First move</div>
           <div class="first-move-headline">Run this.</div>
-          <div class="first-move-phase">Phase 01 — <strong>${esc(phase.title)}</strong></div>
+          <div class="first-move-phase">Phase 01 of ${pad2(d.execution.phases.length)} — <strong>${esc(phase.title)}</strong></div>
         </div>
         <div class="copy-cmd">
           <span class="copy-cmd-text" id="cmd-first">${esc(cmd)}</span>
@@ -183,7 +196,7 @@ function buildProblemGoals(d: ContractData): string {
     <div class="two-col">
       <section>
         <div class="section-hdr">
-          <div class="kicker">Context · 01</div>
+          <div class="kicker">Context</div>
           <h2 class="section-title">The problem</h2>
         </div>
         <div class="stack-14">
@@ -197,7 +210,7 @@ ${d.problem
       </section>
       <section>
         <div class="section-hdr">
-          <div class="kicker">Commit · 02</div>
+          <div class="kicker">Commit</div>
           <h2 class="section-title">Goals</h2>
         </div>
         <div class="stack-14">
@@ -215,21 +228,34 @@ ${d.goals
 }
 
 function buildSuccess(d: ContractData): string {
+  const criteria = d.successCriteria.map(asCriterion);
+  const checked = criteria.filter(c => c.check).length;
+  const countLabel =
+    checked === criteria.length
+      ? `${criteria.length} signals · all mechanically checked`
+      : `${criteria.length} signals · ${checked} mechanically checked`;
   return `
     <section class="section-block">
       <div class="section-hdr">
-        <div class="kicker">Signal · 03</div>
+        <div class="kicker">Signal</div>
         <div class="section-title-row">
           <h2 class="section-title">Done when…</h2>
-          <span class="section-count">${d.successCriteria.length} signals</span>
+          <span class="section-count">${countLabel}</span>
         </div>
       </div>
       <ul class="criteria-grid">
-${d.successCriteria
+${criteria
   .map(
     (c, i) => `        <li class="criteria-item">
           <span class="line-num">${pad2(i + 1)}</span>
-          <span>${esc(c)}</span>
+          <div class="criteria-body">
+            <span>${esc(c.criterion)}</span>
+            ${
+              c.check
+                ? `<code class="criteria-check">${esc(c.check)}</code>`
+                : `<span class="criteria-judgment">judgment call — no mechanical check</span>`
+            }
+          </div>
         </li>`,
   )
   .join('\n')}
@@ -262,7 +288,7 @@ ${items
   return `
     <section class="section-block">
       <div class="section-hdr">
-        <div class="kicker">Boundary · 04</div>
+        <div class="kicker">Boundary</div>
         <div class="section-title-row">
           <h2 class="section-title">Scope</h2>
           <span class="section-count">MVP nests inside Full nests inside Stretch</span>
@@ -306,34 +332,63 @@ ${d.scope.future.map(f => `            <li>${esc(f)}</li>`).join('\n')}
 
 function buildExecution(d: ContractData): string {
   const phases = d.execution.phases;
-  return `
-    <section class="section-block">
-      <div class="section-hdr">
-        <div class="kicker">Run · 05</div>
-        <div class="section-title-row">
-          <h2 class="section-title">Execution</h2>
-          <span class="section-count">${esc(d.execution.strategy)}</span>
-        </div>
-      </div>
-
+  const isDraft = d.status === 'Draft';
+  const phaseTrack = phases.length
+    ? `
       <div class="phase-track" style="grid-template-columns: repeat(${phases.length}, 1fr)">
 ${phases
   .map((p, i) => {
     const rm = riskMeta(p.risk ?? 'low');
     const isGate = p.kind === 'gate';
-    return `        <div class="phase-card${isGate ? ' phase-gate' : ''}" style="border-top-color: ${rm.color}">
-          ${i < phases.length - 1 ? '<div class="phase-arrow" aria-hidden="true"></div>' : ''}
+    const arrow =
+      i < phases.length - 1
+        ? '\n          <div class="phase-arrow" aria-hidden="true"></div>'
+        : '';
+    return `        <div class="phase-card${isGate ? ' phase-gate' : ''}" style="border-top-color: ${rm.color}">${arrow}
           <div class="phase-head">
             <span class="phase-num">${pad2(i + 1)}</span>
             <span class="phase-risk" style="color: ${rm.color}">${rm.label}</span>
           </div>
           <div class="phase-title">${esc(p.title)}</div>
-          <div class="phase-kind">${isGate ? 'gate' : 'phase'}${p.blocking ? ' · blocking' : ''}</div>
-          ${p.notes ? `<div class="phase-notes">${esc(p.notes)}</div>` : ''}
+          <div class="phase-kind">${isGate ? 'gate' : 'phase'}${p.blocking ? ' · blocking' : ''}</div>${p.notes ? `\n          <div class="phase-notes">${esc(p.notes)}</div>` : ''}
         </div>`;
   })
   .join('\n')}
+      </div>`
+    : `
+      <p class="body-text plan-placeholder">Phases are decided after approval.</p>`;
+
+  if (isDraft) {
+    return `
+    <section class="section-block">
+      <div class="section-hdr">
+        <div class="kicker">Plan</div>
+        <div class="section-title-row">
+          <h2 class="section-title">The plan</h2>
+          <span class="section-count">${esc(d.execution.strategy)}</span>
+        </div>
       </div>
+${phaseTrack}
+
+      <div class="approval-bar">
+        <div>
+          <div class="kicker kicker-accent">Awaiting approval</div>
+          <div class="approval-desc">Approve this contract in the session. Specs are then generated per phase, and this brief regenerates with its run commands.</div>
+        </div>
+      </div>
+    </section>`;
+  }
+
+  return `
+    <section class="section-block">
+      <div class="section-hdr">
+        <div class="kicker">Run</div>
+        <div class="section-title-row">
+          <h2 class="section-title">Execution</h2>
+          <span class="section-count">${esc(d.execution.strategy)}</span>
+        </div>
+      </div>
+${phaseTrack}
 
       <div class="autopilot-bar">
         <div class="autopilot-left">
@@ -346,29 +401,33 @@ ${phases
         </div>
       </div>
 
-      <div class="cmd-list-header kicker">Or run individual phases</div>
-      <div class="cmd-list">
+      <details class="disclosure">
+        <summary>Run phases individually (${phases.length})</summary>
+        <div class="disclosure-body">
+          <div class="cmd-list">
 ${phases
   .map((p, i) => {
     const cmd = phaseCommand(p, d.slug, i);
     const cmdId = `cmd-${i + 1}`;
-    return `        <div class="cmd-row">
-          <span class="cmd-num">${pad2(i + 1)}</span>
-          <span class="cmd-title">${esc(p.title)}</span>
-          <div class="copy-cmd">
-            <span class="copy-cmd-text" id="${cmdId}">${esc(cmd)}</span>
-            <button type="button" class="copy-btn" data-copy="${cmdId}">copy</button>
-          </div>
-        </div>`;
+    return `            <div class="cmd-row">
+              <span class="cmd-num">${pad2(i + 1)}</span>
+              <span class="cmd-title">${esc(p.title)}</span>
+              <div class="copy-cmd">
+                <span class="copy-cmd-text" id="${cmdId}">${esc(cmd)}</span>
+                <button type="button" class="copy-btn" data-copy="${cmdId}">copy</button>
+              </div>
+            </div>`;
   })
   .join('\n')}
-      </div>
+          </div>
+        </div>
+      </details>
 ${
   d.execution.agentTeamPrompt
     ? `
-      <details class="agent-team-details">
+      <details class="disclosure">
         <summary>Agent Team Prompt (parallel execution)</summary>
-        <div class="agent-team-body">
+        <div class="disclosure-body">
           <div class="copy-cmd copy-cmd-wide">
             <span class="copy-cmd-text" id="agent-team-prompt">${esc(d.execution.agentTeamPrompt)}</span>
             <button type="button" class="copy-btn" data-copy="agent-team-prompt">copy</button>
@@ -377,6 +436,27 @@ ${
       </details>`
     : ''
 }
+    </section>
+${buildClose(d)}`;
+}
+
+/** Closing approval band — the contract ends on the decision, not a footnote.
+    Approval happens in the session; this records it (peak-end). */
+function buildClose(d: ContractData): string {
+  if (d.status !== 'Approved') return '';
+  const phaseCount = d.execution.phases.length;
+  const when = d.approvedOn ?? d.date;
+  return `
+    <section class="contract-close">
+      <div>
+        <div class="kicker kicker-accent">Contract approved</div>
+        <div class="close-headline">This plan is the commitment.</div>
+        <div class="close-desc">${phaseCount} phase${phaseCount === 1 ? '' : 's'} · ${esc(d.execution.strategy)}. Scope changes mean a new revision that supersedes this brief — not silent drift.</div>
+      </div>
+      <div class="close-meta">
+        <div class="close-status">Approved</div>
+        <div>${esc(when)}${d.approvedBy ? ` · ${esc(d.approvedBy)}` : ''}</div>
+      </div>
     </section>`;
 }
 
@@ -397,21 +477,31 @@ ${CSS}
   </head>
   <body>
 ${buildHero(d)}
+    <main>
 ${buildFirstMove(d)}
 ${buildProblemGoals(d)}
 ${buildSuccess(d)}
 ${buildScope(d)}
 ${buildExecution(d)}
+    </main>
 
     <script>
       document.querySelectorAll('.copy-btn').forEach(btn => {
+        // aria-live so the copied/failed text swap is announced
+        btn.setAttribute('aria-live', 'polite');
         btn.addEventListener('click', () => {
           const target = document.getElementById(btn.dataset.copy);
           if (!target) return;
-          navigator.clipboard.writeText(target.textContent.trim()).then(() => {
-            btn.textContent = 'copied';
-            setTimeout(() => (btn.textContent = 'copy'), 1500);
-          });
+          const flash = label => {
+            btn.textContent = label;
+            setTimeout(() => (btn.textContent = 'copy'), 2000);
+          };
+          navigator.clipboard
+            .writeText(target.textContent.trim())
+            .then(() => flash('copied'))
+            // file:// or denied permission — the text is select-all, so
+            // point at the manual path instead of failing silently
+            .catch(() => flash('press ⌘C / Ctrl+C'));
         });
       });
     </script>

@@ -1,6 +1,6 @@
 ---
 name: retro
-description: "Mine a completed ideation project's implementation notes for generalizable spec-gap patterns and append them to a repo-level docs/ideation/learnings.md, so future interviews and specs learn from past gaps. Reads the project's implementation-notes-phase-*.html, contract.md, and git history; keeps only patterns that would change how future specs or interviews are written; dedupes against existing entries. Use when the user says 'retro', 'run a retro', 'what did we learn', or after an ideation project completes."
+description: "Mine a completed ideation project's implementation notes for generalizable spec-gap patterns and append them to a repo-level docs/ideation/learnings.md, so future interviews and specs learn from past gaps. Reads the project's implementation-notes-phase-*.html, contract.md, and git history; keeps only patterns that would change how future specs or interviews are written; dedupes against existing entries and retires entries the current codebase has invalidated. Use when the user says 'retro', 'run a retro', 'what did we learn', or after an ideation project completes."
 argument-hint: '[path/to/project-dir]'
 disable-model-invocation: true
 allowed-tools:
@@ -112,7 +112,18 @@ accumulate user state).
    `_Also seen in {project} ({date})._` line under the existing entry. Only
    genuinely new patterns become new entries.
 
-3. **Entry format** for a new pattern:
+3. **Retire stale entries**: while the file is open, re-verify each standing
+   entry against the current codebase. Retire (delete) an entry when its
+   evidence no longer holds — it cites a file, script, or piece of
+   infrastructure that no longer exists (confirm with an actual Glob/Grep, not
+   a guess) — or when a newer entry supersedes it. Delete outright: the file is
+   read by intake every session, so a kept-but-dead entry costs attention;
+   git history is the archive. Report every retirement in Step 6 with its
+   reason. An entry you cannot cheaply verify stays — when unsure, keep it.
+   If a retired pattern later re-emerges, it returns as a new dated entry,
+   which is correct: re-emergence is fresh evidence.
+
+4. **Entry format** for a new pattern:
 
    ```markdown
    ## {YYYY-MM-DD} — {project-name}
@@ -131,6 +142,8 @@ Give a conversational summary:
 - Which project was retro'd and how many note entries were scanned.
 - How many patterns generalized vs. how many were trivia.
 - The new entries added and any "also seen in" amendments made.
+- Any entries retired, each with its reason (e.g., "cites the Storybook
+  harness, removed in April") — git history keeps the full text.
 - If nothing generalized, say so plainly — that is a healthy result, not a failure.
 
 Then point the user at the file: `cat docs/ideation/learnings.md`.
@@ -142,9 +155,13 @@ Then point the user at the file: `cat docs/ideation/learnings.md`.
    point; when in doubt, discard.
 2. **Dedupe before append** — re-running retro on the same project must amend, not
    duplicate. Always read the existing file first.
-3. **Zero notes is normal** — clean phases delete their empty note files. Handle a
+3. **Retire, don't archive** — delete entries the current codebase has
+   invalidated (verified, not guessed); git history is the archive. A dead
+   entry kept "for reference" costs intake attention every session. When
+   unsure whether an entry still holds, keep it.
+4. **Zero notes is normal** — clean phases delete their empty note files. Handle a
    project with no notes by reporting and exiting, never by inventing patterns.
-4. **Learnings are hints, not gates** — entries inform future questions; they never
+5. **Learnings are hints, not gates** — entries inform future questions; they never
    replace the evidence a gate requires. Codebases drift, so entries are dated.
-5. **Markdown, not HTML** — `learnings.md` is a reference document read by future
+6. **Markdown, not HTML** — `learnings.md` is a reference document read by future
    sessions, per the SKILL.md Markdown/HTML split.
