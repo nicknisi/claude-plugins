@@ -14,6 +14,7 @@ This release ships the full Fable 5 upgrade. Six behavior changes, plus one brea
 - **Previews-first decision aids.** Comparisons default to inline `AskUserQuestion` previews (monospace, side-by-side) and escalate to ephemeral HTML only when the decision hinges on real visual rendering.
 - **Overlap-serialized parallel waves.** `/ideation:autopilot` and `--parallel` execution plan waves with a tested CLI that serializes any phases declaring overlapping `files`, so two phases never race the same file. See [Orchestration](#ideationautopilot).
 - **Retro loop.** `/ideation:retro` mines a completed project's implementation notes for generalizable spec-gap patterns and appends them to a repo-level `docs/ideation/learnings.md` that future interviews read. See [Retro](#retro).
+- **Command Deck contract design.** The contract HTML is redesigned as an instrument panel — dark-first with a co-equal light theme and an explicit theme toggle — surfacing the execution plan as an operational dashboard (run bar, phase table, copyable commands) rather than a static document. The artifact is still titled "Mission Brief".
 
 > **Breaking change — `contract-data.json` schema.** The contract now uses a `gates` object instead of the old `confidence` object. Regenerating an old contract fails fast:
 >
@@ -53,7 +54,7 @@ I want to build something. Here's what I'm thinking...
 
 1. **Intake** - Accept your messy, unstructured input without judgment. Take a position upfront — what's strong, what's weak. On an existing codebase, fire a parallel exploration sweep so the first question is already informed.
 2. **Interview loop** - One question at a time, each with a recommended answer. Explores the codebase inline — if it can look something up instead of asking, it does. Challenges vague demand, undefined terms, and hypothetical users. Loops until all 5 evidence gates are `ready`.
-3. **Contract** - When all 5 gates are `ready`, three plan critics stress-test the plan in parallel; then generate `contract.html` via the contract-gen CLI. "Mission Brief" poster layout with the gate readiness checklist, nested scope tiers (MVP / Full / Stretch), and copyable execution commands. Pick your scope tier in the terminal. Includes revision lineage tracking via `Supersedes` link.
+3. **Contract** - When all 5 gates are `ready`, three plan critics stress-test the plan in parallel; then generate `contract.html` via the contract-gen CLI. Command Deck instrument-panel layout with the gate readiness checklist, nested scope tiers (MVP / Full / Stretch), and copyable execution commands. Pick your scope tier in the terminal. Includes revision lineage tracking via `Supersedes` link.
 4. **HTML visualizations** - During interview and phasing, decisions default to inline `AskUserQuestion` previews; ephemeral HTML pages (comparisons, mockups, architecture options) are reserved for decisions that need real visual rendering. Deleted after you choose.
 5. **Phasing & specs** - Determine phases, generate Markdown specs with feedback loops and failure mode catalogs
 6. **Feedback quality check** - Self-review specs for feedback loop coverage before presenting
@@ -65,25 +66,28 @@ All artifacts are written to `./docs/ideation/{project-name}/`:
 
 ```
 _comparison.html               # Ephemeral decision aid (deleted after choice is made)
+contract-data.json             # Machine-readable contract (source of truth; consumed by autopilot)
 contract.html                  # Mission Brief contract (for review)
 contract.md                    # Plain contract (for execute-spec lineage)
+contract-{date}.html / .md     # Superseded revisions (lineage chain)
 prd-phase-1.md                 # Phase 1 requirements (only if PRDs chosen)
 spec-phase-1.md                # Implementation spec (for execute-spec)
 spec-template-{pattern}.md     # Shared template for repeatable phases (if applicable)
 spec-phase-N.md                # Per-phase delta or full spec
+context-map.md                 # Scout's codebase map (written during execution)
 implementation-notes-phase-1.html  # Decisions made during execution (per-phase)
 ```
 
 HTML artifacts (contract, implementation notes, ephemeral visualizations) are self-contained single files with all CSS/JS inlined — no external dependencies. They open in your browser automatically. Features include:
 
-- **Tabs** for section navigation (CSS-only, no JS framework)
+- **Command Deck layout** — a single instrument-panel page: deck header, run bar, and sectioned panels (no tabs, no JS framework)
 - **Readiness gate checklist** — a ✓/✗ per dimension with its one-sentence evidence citation in the hero (no score; readiness is binary)
 - **Success criteria with checks** — each criterion renders its verifying command; criteria with no mechanical check carry a visible "judgment call" tag
 - **Nested scope tiers** showing MVP / Full / Stretch commitment levels
 - **Horizontal phase track** with risk coloring and gate support
 - **Draft/Approved lifecycle** — a Draft contract shows the phase track as a plan preview with an "awaiting approval" note; run commands appear only once the contract is Approved (Phase 5)
 - **Copy-to-clipboard buttons** on `/ideation:autopilot` and per-phase commands (Approved contracts)
-- **Dark mode** automatic via `prefers-color-scheme`
+- **Dark-first theming** with a co-equal light theme — auto/light/dark toggle persisted in `localStorage`; auto follows system preference
 
 Specs and PRDs are Markdown — readable as-is and consumed directly by `/ideation:execute-spec`.
 
@@ -211,7 +215,7 @@ search too...
 3. Explores codebase inline — finds existing tag system, recommends reusing it instead of asking
 4. Challenges assumptions: "Have users complained about folders, or is this your gut?"
 5. All 5 evidence gates reach `ready` after ~5 questions
-6. Three plan critics stress-test the plan; then generates `contract.html` via contract-gen CLI — Mission Brief layout with the gate readiness checklist, nested scope tiers, and copyable execution commands. Pick your scope in the terminal.
+6. Three plan critics stress-test the plan; then generates `contract.html` via contract-gen CLI — Command Deck layout with the gate readiness checklist, nested scope tiers, and copyable execution commands. Pick your scope in the terminal.
 7. After approval, asks: "Straight to specs or PRDs first?"
 8. At decision points (phasing, orchestration), opens side-by-side visual comparisons in browser
 9. Generates Markdown specs with feedback loops and failure modes
@@ -376,12 +380,13 @@ Orchestrates full project execution — reads the contract, walks the phase depe
 
 **Behavior:**
 
-- Parses the contract's Execution Plan to derive phase dependencies and spec paths
-- Computes execution waves — groups of phases whose blockers are all satisfied
-- Dispatches each phase as a subagent with a clean context running `/ideation:execute-spec`
+- Reads `contract-data.json` for phase titles, dependencies, and spec paths (falls back to parsing the contract's Execution Plan for older projects)
+- **Git skip pre-pass** — commits referencing a phase's slug-qualified spec path mark it complete, so re-running the command resumes where it left off, even across sessions
+- Computes execution waves — groups of phases whose blockers are all satisfied; phases declaring overlapping `files` are serialized within a wave
+- Dispatches each phase as a subagent with a clean context running `/ideation:execute-spec --headless`
 - Independent phases within a wave run in parallel
 - **Full auto** — continues without pausing on success
-- **Gates on failure** — if a phase fails review after 3 cycles, pauses to ask: skip, retry, or stop
+- **Gates on failure** — after the run, if any phase failed, pauses to ask: retry failed phases (resumes from where it stopped), stop here, or accept and finish; phases dependent on a failure are skipped automatically
 - Each phase commits independently — completed work is durable even if later phases fail
 
 > _The wave planning and parallel dispatch run on a deterministic [dynamic Workflow](https://claude.com/blog/introducing-dynamic-workflows-in-claude-code) engine in [`workflows/`](workflows/README.md) — see its README for the `args` contract and return shape._
