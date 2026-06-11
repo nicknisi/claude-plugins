@@ -5,3 +5,7 @@ scripts/dist/
 *.log
 .env
 docs/ideation/
+
+# Local-only Claude/impeccable state
+.claude/settings.local.json
+.impeccable/

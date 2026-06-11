@@ -99,3 +99,12 @@ Build: `pnpm run build` (bundles to `dist/`)
 ```
 
 No build needed - runs published package.
+
+## Design Context
+
+The repo's designed surface is the ideation plugin's generated HTML artifacts (contracts, implementation notes). Before any visual work on them, read:
+
+- [PRODUCT.md](PRODUCT.md) — register (product), users, brand personality, anti-references, design principles
+- [DESIGN.md](DESIGN.md) — "The Mission Brief" visual system: tokens, typography, elevation, component rules
+
+Source of truth for styles: `plugins/ideation/scripts/contract-gen.css` and `plugins/ideation/skills/ideation/references/contract-template.html`. WCAG AA in both light and dark themes is required.
