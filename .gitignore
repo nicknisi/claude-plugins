@@ -9,3 +9,5 @@ docs/ideation/
 # Local-only Claude/impeccable state
 .claude/settings.local.json
 .impeccable/
+PRODUCT.md
+DESIGN.md
