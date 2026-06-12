@@ -116,9 +116,12 @@
     },
     {
       "name": "ideation",
-      "source": "./plugins/ideation",
-      "description": "Transform brain dumps into implementation specs through conversational interviews. Interactive HTML contract for planning decisions, Markdown specs for execution. /ideation:autopilot orchestrates full project execution — dispatches subagents per phase, parallel when possible, gates on failures.",
-      "version": "0.13.0",
+      "source": {
+        "source": "github",
+        "repo": "nicknisi/ideation"
+      },
+      "description": "Transform brain dumps into implementation specs through an evidence-gated interview stress-tested by adversarial plan critics. Interactive HTML contract for planning decisions, Markdown specs for execution. /ideation:autopilot runs all phases on a deterministic workflow engine with overlap-serialized parallel waves; /ideation:retro mines implementation notes into learnings future interviews read.",
+      "repository": "https://github.com/nicknisi/ideation",
       "author": {
         "name": "Nick Nisi",
         "email": "nick@nisi.org"

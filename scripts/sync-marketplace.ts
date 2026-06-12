@@ -58,8 +58,19 @@ function syncMarketplace() {
   );
   const marketplace = JSON.parse(readFileSync(marketplacePath, 'utf-8'));
 
+  // Preserve externally-hosted plugins (object sources, e.g. github repos);
+  // only entries with relative-path sources are regenerated from plugins/
+  const external = (marketplace.plugins ?? []).filter(
+    (plugin: any) => typeof plugin.source === 'object',
+  );
+  for (const plugin of external) {
+    console.log(`Preserved external plugin: ${plugin.name}`);
+  }
+
   // Discover all plugins in plugins/ directory
-  marketplace.plugins = discoverPlugins();
+  marketplace.plugins = [...discoverPlugins(), ...external].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
 
   writeFileSync(marketplacePath, JSON.stringify(marketplace, null, 2) + '\n');
   console.log(

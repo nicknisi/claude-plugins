@@ -22,7 +22,7 @@ Then install plugins:
 - [content](plugins/content/README.md) - Tools for bootstrapping content creation
 - [developer-experience](plugins/developer-experience/README.md) - Tools for the experienced developer experience engineer
 - [essentials](plugins/essentials/README.md) - Core productivity tools and workflows for Claude Code
-- [ideation](plugins/ideation/README.md) - Transform brain dumps into structured contracts, phased PRDs, and implementation specs
+- [ideation](https://github.com/nicknisi/ideation) - Evidence-gated planning interviews that turn brain dumps into contracts and implementation specs, with critic-reviewed plans, autopilot execution, and a retro learning loop. Lives in its own repo but still installs from this marketplace.
 - [meta](plugins/meta/README.md) - Meta-cognitive tools for Claude Code self-improvement. Learn from feedback, optimize configuration, and evolve your AI development workflow.
 - [sandbox](plugins/sandbox/README.md) - Experimental agents, skills, and output styles for unconventional interaction patterns
 - [spec-driven](plugins/spec-driven/README.md) - Transform specifications into executable code with validation-driven development
