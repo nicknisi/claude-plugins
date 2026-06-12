@@ -77,7 +77,15 @@ Phase 1: {title}
 
 ### Execution Steps
 
-{Ordered list of commands. Mark sequential vs parallel.}
+**Run the project** (recommended) — autopilot reads this contract, plans dependency waves, runs independent phases in parallel, and gates on failure:
+
+```bash
+/ideation:autopilot docs/ideation/{project-name}/contract.md
+```
+
+**Or run phases manually** in dependency order:
+
+{Ordered list of commands. Mark sequential vs parallel. Always keep one `/ideation:execute-spec {specPath}` line per phase — autopilot's contract.md fallback parser derives spec paths from these lines.}
 
 **Strategy**: {Sequential | Agent Team | Hybrid}
 

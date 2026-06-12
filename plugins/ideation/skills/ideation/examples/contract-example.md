@@ -60,6 +60,14 @@ Phase 1: Core Bookmarking + Tags ┐
 
 ### Strategy: Hybrid (Phase 1 sequential, then Phases 2-3 parallel)
 
+**Run the project** (recommended) — autopilot plans the waves and parallelizes Phases 2-3 automatically:
+
+```
+/ideation:autopilot docs/ideation/bookmarks/contract.md
+```
+
+**Or run phases manually:**
+
 1. **Phase 1 — Core Bookmarking** (sequential, blocks all others)
 
    ```
