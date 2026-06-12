@@ -101,8 +101,8 @@ Shared (plugin root):
 
 Skill-specific:
 
-- `html-guide.md` - HTML component library, design tokens, and constraints (for contract, exploration, visualizations)
-- `contract-template.html` / `contract-template.md` - Contract templates
+- `html-guide.md` - HTML component library, design tokens, and constraints (for ephemeral comparison/visualization artifacts; `contract.html` is rendered only by `scripts/contract-gen.ts`)
+- `contract-template.md` - Markdown contract template (the HTML contract has no template — it is generator output)
 - `prd-template.md` - PRD template
 - `spec-template.md` - Implementation spec template (includes feedback loops and failure modes)
 

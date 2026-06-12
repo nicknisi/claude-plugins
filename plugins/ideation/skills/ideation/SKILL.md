@@ -122,8 +122,10 @@ When all 5 evidence gates are `ready` — **not before** — generate the Missio
      --output ./docs/ideation/{slug}/contract.html
    ```
 
+   The generator is the **only** renderer for `contract.html`. There is no fallback template — never hand-write the contract HTML or "render it from a template" if the generator can't run. **If the command is denied by permissions** (common when the plugin root is outside the current repo — the classifier flags `npx tsx` on an out-of-repo script as untrusted code), do not work around the denial and do not hand-render — the denial message may say you "may attempt other tools to accomplish this goal"; for this step that does not apply, since any other tool means hand-authoring the contract. Instead show the user the exact command and ask them to run it themselves by typing `! npx tsx …` in the prompt, then continue once `contract.html` exists. Run the generator and `open` as **separate** Bash calls — never chained with `&&` — so a denial of one is visible and doesn't silently skip the other.
+
 6. Open it: `open ./docs/ideation/{slug}/contract.html` (macOS) or `xdg-open` (Linux).
-7. **Present the Critic digest**, then ask for approval. The digest is one line per lens: `found N (B blockers folded in, M notables, dismissed X — reasons)`; note any skipped lens; if all three returned SOUND, say so. Then `AskUserQuestion`:
+7. **Present the Critic digest**, then ask for approval. Only ask once `contract.html` was actually generated and opened — never ask the user to approve a contract they haven't seen. The digest is one line per lens: `found N (B blockers folded in, M notables, dismissed X — reasons)`; note any skipped lens; if all three returned SOUND, say so. Then `AskUserQuestion`:
 
    ```
    Question: "Does this contract capture your intent? Which scope tier should we target?"
@@ -293,7 +295,7 @@ spec-phase-{n}.md                  # Per-phase delta or full spec
 - `feedback-loop-guide.md` — component-type mapping and design criteria for spec feedback loops
 - `workflow-example.md` — end-to-end walkthrough
 
-**Skill references** — HTML (interactive): `references/html-guide.md` (component library, design tokens, constraints), `references/contract-template.html`. Markdown: `references/contract-template.md`, `references/prd-template.md`, `references/spec-template.md`.
+**Skill references** — HTML (interactive): `references/html-guide.md` (component library, design tokens, constraints — for ephemeral comparison artifacts only; `contract.html` comes exclusively from `scripts/contract-gen.ts`). Markdown: `references/contract-template.md`, `references/prd-template.md`, `references/spec-template.md`.
 
 **Examples** (filled-in artifacts for a bookmark feature — reference for tone, structure, detail): `examples/contract-example.md`, `examples/prd-example.md`, `examples/spec-example.md`.
 
@@ -305,14 +307,14 @@ During the interview and phasing, comparisons help the user decide. **Default to
 
 **Constraints:** previews are **single-select only** — never combine with `multiSelect` (drop previews and rely on labels + descriptions, or escalate to HTML). Keep them **comparative** — a preview earns its place only when seeing options side-by-side changes the choice; otherwise skip it.
 
-**Escalate to ephemeral HTML** only when a monospace box can't render the deciding factor: real visual design (color, typography, spacing), interactive behavior (sliders, toggles, hover), or side-by-side rendered (not sketched) artifacts. Workflow: write `_comparison.html` (prefix `_` marks it ephemeral) using `references/html-guide.md` components, show each option as a card/column (name, description, trade-offs, visual where apt), `open` it, ask via `AskUserQuestion` referencing the browser view, then delete it after the choice. The contract HTML and genuine visual mockups still use this path — the change is routing (preview by default), not removal.
+**Escalate to ephemeral HTML** only when a monospace box can't render the deciding factor: real visual design (color, typography, spacing), interactive behavior (sliders, toggles, hover), or side-by-side rendered (not sketched) artifacts. Workflow: write `_comparison.html` (prefix `_` marks it ephemeral) using `references/html-guide.md` components, show each option as a card/column (name, description, trade-offs, visual where apt), `open` it, ask via `AskUserQuestion` referencing the browser view, then delete it after the choice. Genuine visual mockups still use this path — the contract HTML does not; it comes only from the generator.
 
 **When NOT to use a decision aid:** simple yes/no, choices where the recommended option is clearly best, or anything faster to explain in text.
 
 ## Important Notes
 
 - **HTML is for interactive artifacts only** (contract, ephemeral visualizations); specs and PRDs are Markdown.
-- **Read templates before writing:** `references/html-guide.md` before Phase 3, `references/contract-template.html` before the contract, `references/spec-template.md` before specs.
+- **Read templates before writing:** `references/html-guide.md` before any ephemeral HTML, `references/spec-template.md` before specs. `contract.html` is generator output — never hand-written.
 - **Use `AskUserQuestion` for all questions and approvals** — one at a time, with your recommended answer.
 - **Judge gates conservatively** — when unsure the evidence is sufficient, the gate is not-ready. No fixed question limit.
 - **Open HTML artifacts** after writing (`open` / `xdg-open`).
