@@ -1,0 +1,17 @@
+{
+  "description": "Make Claude aware at session start when it is running inside a tmux pane, and surface the panes the user is watching.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/tmux-awareness.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
