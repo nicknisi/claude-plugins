@@ -1,6 +1,6 @@
 {
   "name": "tmux",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Makes Claude tmux-aware. A SessionStart hook detects when Claude runs inside tmux and surfaces the panes the user is watching, plus a skill for reading and driving interactive/long-running CLIs (Node REPL, dev servers, test watchers, the node debugger) by sending keystrokes and scraping pane output.",
   "author": {
     "name": "Nick Nisi",
