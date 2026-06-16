@@ -1,6 +1,6 @@
 ---
 name: tmux
-description: 'Remote control tmux sessions for interactive/long-running CLIs (Node REPL, dev servers, test watchers, the node debugger, etc.) by sending keystrokes and scraping pane output.'
+description: 'Read and drive other tmux panes when Claude runs inside tmux. Use whenever the user points at something running in another pane/split/window — their dev server, test watcher, build, logs, REPL, or another shell — e.g. "errors in my dev server", "read/tail my other pane", "is my server up and on what port", "run this in my other split", "restart the watcher". Also for driving interactive/long-running CLIs (Node REPL, vite/next dev, vitest, node inspect) and spawning isolated background tmux sessions.'
 license: Vibecoded
 ---
 
