@@ -1,6 +1,6 @@
 ---
 name: brainstorming
-description: Use when you want to think through or pressure-test an idea BEFORE committing to build it — "should I do X", "help me decide between X and Y", "what am I missing", "is this worth it", "am I over-engineering this". A lightweight thinking partner that surfaces hidden assumptions and pushes back on over-engineering, entirely in conversation — it writes no files and produces no spec. This is the deciding-WHETHER stage, not the planning-HOW stage: the moment you decide to build, want a spec, or say "plan this", "spec this out", or "I want to build X", use the ideation skill instead and hand off to it. Do not use for writing code to a known spec, bug fixes, or refactors.
+description: "Use when the user is weighing or pressure-testing an idea rather than committing to build it — 'should I do X', 'which of these approaches', 'is this worth doing', 'what am I missing', 'am I overthinking or over-engineering this'. A lightweight thinking partner that surfaces hidden assumptions and argues for the simplest version, in conversation — no files, no spec. Once the idea is settled and the user wants it turned into an actual plan or spec, that's planning work — hand off to the ideation skill if it's available. Not for writing code to a known spec, bug fixes, or refactors."
 ---
 
 # Brainstorming
@@ -48,8 +48,4 @@ A shared conclusion stated in chat: the decision, the key assumptions it rests o
 
 ## Handoff
 
-When the conclusion is "yes, build this," stop and point at ideation:
-
-> "Sounds like you're ready to build it. Run `/ideation` — it'll interview you into a spec. Bring what we just settled as the starting point so it's not from scratch."
-
-ideation will still run its own interview (its gates need evidence in their own form); our conclusion just gives it a running start.
+When the conclusion is "yes, build this," stop — this skill's job is done. Turn the decision into a plan next: if the `ideation` skill is installed, run `/ideation` (bring what we settled as the starting point — it still runs its own interview, but ours gives it a running start). If it isn't, hand back the decision plus the key assumptions it rests on and proceed to planning however this project normally does.
