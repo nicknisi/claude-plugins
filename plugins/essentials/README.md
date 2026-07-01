@@ -4,7 +4,7 @@ Essential agents, commands, and tools for enhanced Claude Code workflows.
 
 ## Overview
 
-The Essentials plugin provides foundational capabilities that improve how you work with Claude Code. It includes specialized agents for common development tasks and skills for deep thinking, reading blocked URLs, simplifying code, creating PRs, auditing code for security vulnerabilities, running repo-wide quality sweeps, codebase orientation, and throwaway prototyping.
+The Essentials plugin provides foundational capabilities that improve how you work with Claude Code. It includes specialized agents for common development tasks and skills for deep thinking, design brainstorming, reading blocked URLs, simplifying code, creating PRs, auditing code for security vulnerabilities, running repo-wide quality sweeps, codebase orientation, and throwaway prototyping.
 
 ## What's Included
 
@@ -135,6 +135,34 @@ Claude: *thermo-nuclear-code-quality-review agent applies the full rubric, retur
 ```
 
 ### Skills
+
+#### `/essentials:brainstorming` - Lightweight Thinking Partner
+
+Pressure-test a decision or explore an idea *before* committing to build it — a thinking partner that surfaces hidden assumptions and pushes back on over-engineering, entirely in conversation. It writes no files and produces no spec.
+
+**Auto-triggers** on "should I…", "help me decide…", "what am I missing…", or "am I over-engineering this?"
+
+**When to use:**
+
+- Deciding *whether* to build something, or which of two approaches to take
+- Pressure-testing a rough idea before turning it into a plan
+- Sanity-checking whether a design is overcomplicated
+
+**What it does:**
+
+- Surfaces the silent assumptions in a vague ask before solving
+- Resists over-engineering — argues for the minimum that works
+- Takes positions instead of hedging
+- Produces a spoken conclusion, not a document
+
+**Hands off to `ideation`** the moment the answer is "yes, build it" — brainstorming decides *whether*, ideation plans *how*.
+
+**Example:**
+
+```
+You: "Should I add a caching layer here, or is that premature?"
+Claude: *surfaces the assumptions, weighs the minimum, takes a position*
+```
 
 #### `/essentials:link-reader` - Read Blocked URLs
 
@@ -559,7 +587,7 @@ Claude: *engages ultrathink mode, questions assumptions, crafts elegant solution
 
 ## Keywords
 
-`git`, `commit`, `ultrathink`, `workflow`, `agents`, `link-reader`, `twitter`, `reddit`, `pr`, `review`, `simplify`, `de-slopify`, `codebase-sweep`, `codebase-rehab`, `cleanup`, `code-quality`, `security`, `audit`, `vulnerability`, `squad-review`, `parallel-review`, `multi-agent`, `handoff`, `context`, `session`, `zoom-out`, `orientation`, `architecture`, `prototype`, `spike`, `poc`, `proof-of-concept`, `thermo-nuclear`, `maintainability`, `code-judo`, `refactor`, `socratic-tutor`, `teach`, `learning`, `understand`
+`git`, `commit`, `ultrathink`, `workflow`, `agents`, `link-reader`, `twitter`, `reddit`, `pr`, `review`, `simplify`, `de-slopify`, `codebase-sweep`, `codebase-rehab`, `cleanup`, `code-quality`, `security`, `audit`, `vulnerability`, `squad-review`, `parallel-review`, `multi-agent`, `handoff`, `context`, `session`, `zoom-out`, `orientation`, `architecture`, `prototype`, `spike`, `poc`, `proof-of-concept`, `thermo-nuclear`, `maintainability`, `code-judo`, `refactor`, `socratic-tutor`, `teach`, `learning`, `understand`, `brainstorming`, `design`, `decide`
 
 ## Technical Details
 
