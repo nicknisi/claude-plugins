@@ -71,8 +71,8 @@
     {
       "name": "essentials",
       "source": "./plugins/essentials",
-      "description": "Essential agents, commands, and tools for enhanced Claude Code workflows - git commits, code simplification, security audits, thermo-nuclear code-quality review, PR creation, and codebase sweep.",
-      "version": "0.16.0",
+      "description": "Essential agents, commands, and tools for enhanced Claude Code workflows - git commits, code simplification, brainstorming, security audits, thermo-nuclear code-quality review, PR creation, and codebase sweep.",
+      "version": "0.17.0",
       "author": {
         "name": "Nick Nisi",
         "email": "nick@nisi.org"
@@ -111,7 +111,10 @@
         "socratic-tutor",
         "teach",
         "learning",
-        "understand"
+        "understand",
+        "brainstorming",
+        "design",
+        "decide"
       ]
     },
     {

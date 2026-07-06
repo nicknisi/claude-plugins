@@ -140,7 +140,7 @@ Claude: *thermo-nuclear-code-quality-review agent applies the full rubric, retur
 
 Pressure-test a decision or explore an idea *before* committing to build it — a thinking partner that surfaces hidden assumptions and pushes back on over-engineering, entirely in conversation. It writes no files and produces no spec.
 
-**Auto-triggers** on "should I…", "help me decide…", "what am I missing…", or "am I over-engineering this?"
+**Auto-triggers** on "should I do X…", "which of these approaches…", "is this worth doing…", "what am I missing…", or "am I overthinking / over-engineering this?"
 
 **When to use:**
 
