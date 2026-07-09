@@ -76,6 +76,43 @@ function syncMarketplace() {
   console.log(
     `Marketplace synced successfully with ${marketplace.plugins.length} plugins`,
   );
+
+  syncReadme(marketplace.plugins);
+}
+
+function syncReadme(plugins: any[]) {
+  const readmePath = resolve(projectRoot, 'README.md');
+  const readme = readFileSync(readmePath, 'utf-8');
+  const start = '<!-- plugins:start -->';
+  const end = '<!-- plugins:end -->';
+  const startIdx = readme.indexOf(start);
+  const endIdx = readme.indexOf(end);
+
+  if (startIdx === -1 || endIdx === -1) {
+    console.warn('README plugin markers not found; skipping README sync');
+    return;
+  }
+
+  const lines = plugins.map((plugin) => {
+    if (typeof plugin.source === 'object') {
+      const url =
+        plugin.homepage ??
+        (plugin.source.repo ? `https://github.com/${plugin.source.repo}` : '');
+      return `- [${plugin.name}](${url}) - ${plugin.description ?? ''} _(lives in its own repo, installs from this marketplace)_`;
+    }
+    const dir = plugin.source.replace(/^\.\//, '');
+    return `- [${plugin.name}](${dir}/README.md) - ${plugin.description ?? ''}`;
+  });
+
+  const updated =
+    readme.slice(0, startIdx + start.length) +
+    '\n\n' +
+    lines.join('\n') +
+    '\n\n' +
+    readme.slice(endIdx);
+
+  writeFileSync(readmePath, updated);
+  console.log(`README plugin list synced (${plugins.length} plugins)`);
 }
 
 syncMarketplace();

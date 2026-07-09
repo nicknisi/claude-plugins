@@ -18,15 +18,20 @@ Then install plugins:
 
 ## Plugins
 
-- [consultant](plugins/consultant/README.md) - Multi-model AI consultation and research with GPT-5/Codex, Gemini, Grok, Perplexity, and Claude (supports both single-agent consultation and parallel multi-agent research)
-- [content](plugins/content/README.md) - Tools for bootstrapping content creation
-- [developer-experience](plugins/developer-experience/README.md) - Tools for the experienced developer experience engineer
-- [essentials](plugins/essentials/README.md) - Core productivity tools and workflows for Claude Code
-- [ideation](https://github.com/nicknisi/ideation) - Evidence-gated planning interviews that turn brain dumps into contracts and implementation specs, with critic-reviewed plans, autopilot execution, and a retro learning loop. Lives in its own repo but still installs from this marketplace.
-- [meta](plugins/meta/README.md) - Meta-cognitive tools for Claude Code self-improvement. Learn from feedback, optimize configuration, and evolve your AI development workflow.
+The list below is generated from `marketplace.json` by `pnpm run sync` — do not edit it by hand.
+
+<!-- plugins:start -->
+
+- [consultant](plugins/consultant/README.md) - Multi-model AI consultation and research using GPT-5/Codex, Gemini, Grok, Perplexity, and Claude. Supports single-agent consultation or parallel multi-agent research (5-40 agents).
+- [content](plugins/content/README.md) - Tools for bootstrapping content creation such as blog posts and conference talks
+- [essentials](plugins/essentials/README.md) - Essential agents, commands, and tools for enhanced Claude Code workflows - git commits, code simplification, brainstorming, security audits, thermo-nuclear code-quality review, PR creation, and codebase sweep.
+- [ideation](https://github.com/nicknisi/ideation) - Transform brain dumps into implementation specs through an evidence-gated interview stress-tested by adversarial plan critics. Interactive HTML contract for planning decisions, Markdown specs for execution. /ideation:autopilot runs all phases on a deterministic workflow engine with overlap-serialized parallel waves; /ideation:retro mines implementation notes into learnings future interviews read. _(lives in its own repo, installs from this marketplace)_
+- [image-gen](plugins/image-gen/README.md) - Generate or edit images via Google Gemini (nano-banana-pro) or OpenAI gpt-image-2. Supports 1K/2K/4K resolution and masked inpainting.
 - [sandbox](plugins/sandbox/README.md) - Experimental agents, skills, and output styles for unconventional interaction patterns
-- [spec-driven](plugins/spec-driven/README.md) - Transform specifications into executable code with validation-driven development
-- [workos](plugins/workos/README.md) - Enterprise authentication and SSO integration toolkit
+- [sidequest](plugins/sidequest/README.md) - Park tangents as side quests with full resurrection context — writes a handoff doc to the Obsidian vault and creates a linked OmniFocus task
+- [tmux](plugins/tmux/README.md) - Makes Claude tmux-aware. A SessionStart hook detects when Claude runs inside tmux and surfaces the panes the user is watching, plus a skill for reading and driving interactive/long-running CLIs (Node REPL, dev servers, test watchers, the node debugger) by sending keystrokes and scraping pane output.
+
+<!-- plugins:end -->
 
 ## Using with Pi
 
