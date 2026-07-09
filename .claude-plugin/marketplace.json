@@ -49,26 +49,6 @@
       ]
     },
     {
-      "name": "developer-experience",
-      "source": "./plugins/developer-experience",
-      "description": "Tools for the experienced developer experience engineer.",
-      "version": "0.2.0",
-      "author": {
-        "name": "Nick Nisi",
-        "email": "nick@nisi.org"
-      },
-      "keywords": [
-        "dx",
-        "developer-experience",
-        "typescript",
-        "sdk",
-        "documentation",
-        "security",
-        "code-quality",
-        "tooling"
-      ]
-    },
-    {
       "name": "essentials",
       "source": "./plugins/essentials",
       "description": "Essential agents, commands, and tools for enhanced Claude Code workflows - git commits, code simplification, brainstorming, security audits, thermo-nuclear code-quality review, PR creation, and codebase sweep.",
@@ -162,26 +142,6 @@
       ]
     },
     {
-      "name": "meta",
-      "source": "./plugins/meta",
-      "description": "Meta-cognitive tools for Claude Code self-improvement. Learn from feedback, optimize configuration, and evolve your AI development workflow.",
-      "version": "0.1.0",
-      "author": {
-        "name": "Nick Nisi",
-        "email": "nick@nisi.org"
-      },
-      "keywords": [
-        "meta",
-        "learning",
-        "self-improvement",
-        "feedback",
-        "configuration",
-        "skills",
-        "optimization",
-        "workflow"
-      ]
-    },
-    {
       "name": "sandbox",
       "source": "./plugins/sandbox",
       "description": "Experimental agents, skills, and output styles for unconventional interaction patterns",
@@ -215,28 +175,6 @@
         "context",
         "productivity",
         "parking-lot"
-      ]
-    },
-    {
-      "name": "spec-driven",
-      "source": "./plugins/spec-driven",
-      "description": "Transform specifications into executable code with automated analysis, validation checkpoints, and incremental delivery",
-      "version": "0.1.0",
-      "author": {
-        "name": "Nick Nisi",
-        "email": "nick@nisi.org"
-      },
-      "keywords": [
-        "specification",
-        "requirements",
-        "prp",
-        "validation",
-        "incremental",
-        "automation",
-        "planning",
-        "execution",
-        "testing",
-        "architecture"
       ]
     },
     {
