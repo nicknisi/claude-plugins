@@ -1,6 +1,6 @@
 {
   "name": "essentials",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "description": "Essential agents, commands, and tools for enhanced Claude Code workflows - git commits, code simplification, brainstorming, security audits, thermo-nuclear code-quality review, PR creation, and codebase sweep.",
   "author": {
     "name": "Nick Nisi",
@@ -43,6 +43,10 @@
     "understand",
     "brainstorming",
     "design",
-    "decide"
+    "decide",
+    "explain-diff",
+    "explain",
+    "diff",
+    "walkthrough"
   ]
 }
