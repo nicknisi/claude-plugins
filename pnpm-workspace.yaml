@@ -1,3 +1,7 @@
 packages:
   - 'plugins/*/mcp-server'
   - 'plugins/*/skills/*'
+allowBuilds:
+  esbuild: true
+  koffi: true
+  protobufjs: true

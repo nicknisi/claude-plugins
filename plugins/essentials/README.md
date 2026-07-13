@@ -4,7 +4,7 @@ Essential agents, commands, and tools for enhanced Claude Code workflows.
 
 ## Overview
 
-The Essentials plugin provides foundational capabilities that improve how you work with Claude Code. It includes specialized agents for common development tasks and skills for deep thinking, design brainstorming, reading blocked URLs, simplifying code, creating PRs, auditing code for security vulnerabilities, running repo-wide quality sweeps, codebase orientation, and throwaway prototyping.
+The Essentials plugin provides foundational capabilities that improve how you work with Claude Code. It includes specialized agents for common development tasks and skills for deep thinking, design brainstorming, reading blocked URLs, simplifying code, creating PRs, auditing code for security vulnerabilities, running repo-wide quality sweeps, codebase orientation, rich diff explanations, and throwaway prototyping.
 
 ## What's Included
 
@@ -467,6 +467,34 @@ The session doesn't end until every checklist item is mastered. Supports `eli5` 
 /essentials:socratic-tutor
 ```
 
+#### `/essentials:explain-diff` - Rich HTML Diff Explainer
+
+Produce a self-contained, interactive HTML explainer for a code change — a document you can read, share, or use to onboard a teammate. Where `socratic-tutor` teaches interactively in-conversation, this generates a standalone artifact.
+
+**Auto-triggers** on "explain this PR", "walk me through this change", "what does this diff actually do", "make an explainer for this branch".
+
+**When to use:**
+
+- Understanding a PR, branch, commit, or working-tree diff in depth
+- Onboarding someone else to a change you (or Claude) made
+- Producing a durable explanation that outlives the chat session
+
+**What it produces** (one long HTML page with a table of contents):
+
+1. **Background** — the existing system the change slots into, layered for beginners and experts
+2. **Intuition** — the core idea with toy-data examples and HTML/CSS diagrams
+3. **Code** — a walkthrough grouped by concept, not file order
+4. **Quiz** — five interactive multiple-choice questions with explanatory feedback
+
+**Output:** a single offline-capable HTML file (inline CSS/JS, no CDNs) saved as `/tmp/YYYY-MM-DD-explanation-<slug>.html` and opened in your browser.
+
+**Example:**
+
+```
+You: "Explain PR #42 to me"
+Claude: *reads the diff and surrounding code, generates the explainer, opens it in your browser*
+```
+
 #### `/essentials:prototype` - Throwaway Prototype Builder
 
 Build throwaway code that answers a design question before committing to real implementation. Routes between two branches based on what kind of question you're asking.
@@ -587,7 +615,7 @@ Claude: *engages ultrathink mode, questions assumptions, crafts elegant solution
 
 ## Keywords
 
-`git`, `commit`, `ultrathink`, `workflow`, `agents`, `link-reader`, `twitter`, `reddit`, `pr`, `review`, `simplify`, `de-slopify`, `codebase-sweep`, `codebase-rehab`, `cleanup`, `code-quality`, `security`, `audit`, `vulnerability`, `squad-review`, `parallel-review`, `multi-agent`, `handoff`, `context`, `session`, `zoom-out`, `orientation`, `architecture`, `prototype`, `spike`, `poc`, `proof-of-concept`, `thermo-nuclear`, `maintainability`, `code-judo`, `refactor`, `socratic-tutor`, `teach`, `learning`, `understand`, `brainstorming`, `design`, `decide`
+`git`, `commit`, `ultrathink`, `workflow`, `agents`, `link-reader`, `twitter`, `reddit`, `pr`, `review`, `simplify`, `de-slopify`, `codebase-sweep`, `codebase-rehab`, `cleanup`, `code-quality`, `security`, `audit`, `vulnerability`, `squad-review`, `parallel-review`, `multi-agent`, `handoff`, `context`, `session`, `zoom-out`, `orientation`, `architecture`, `prototype`, `spike`, `poc`, `proof-of-concept`, `thermo-nuclear`, `maintainability`, `code-judo`, `refactor`, `socratic-tutor`, `teach`, `learning`, `understand`, `brainstorming`, `design`, `decide`, `explain-diff`, `explain`, `diff`, `walkthrough`
 
 ## Technical Details
 
