@@ -5,14 +5,14 @@ description: "Use when the user is weighing or pressure-testing an idea rather t
 
 # Brainstorming
 
-A lightweight thinking partner for the stage *before* you commit to building something — pressure-test a decision, explore a problem, or figure out whether an idea is even worth doing. It runs entirely in conversation and produces no files. The moment the answer is "yes, build it," hand off to `ideation`, which runs the real interview and owns the spec.
+A lightweight thinking partner for the stage _before_ you commit to building something — pressure-test a decision, explore a problem, or figure out whether an idea is even worth doing. It runs entirely in conversation and produces no files. The moment the answer is "yes, build it," hand off to `ideation`, which runs the real interview and owns the spec.
 
 ## When to use
 
 - "Should I do X, or Y?" / "Help me decide…" / "What am I missing here?"
 - "Talk me through whether this is worth building."
 - "Is this over-engineered?" / "Am I overthinking this?"
-- Any half-formed idea you want to *think about* before turning it into a plan.
+- Any half-formed idea you want to _think about_ before turning it into a plan.
 
 ## When NOT to use — go straight to `ideation`
 
@@ -28,7 +28,7 @@ Two reflexes, applied in dialogue — not as paperwork. (Their rigorous, artifac
 
 ### Surface the silent assumptions
 
-A vague ask ("add export", "make it faster") hides forks. Before you start solving, name what the request *could* mean and let the user pick — otherwise you'll confidently solve the wrong problem:
+A vague ask ("add export", "make it faster") hides forks. Before you start solving, name what the request _could_ mean and let the user pick — otherwise you'll confidently solve the wrong problem:
 
 > "Export could mean: all users vs. a filtered set; on-demand vs. scheduled; JSON vs. CSV. Which matters most to pin down first?"
 
@@ -36,11 +36,11 @@ One fork at a time, in conversation. No formatted templates — that's ideation'
 
 ### Resist over-engineering
 
-When the user reaches for an elaborate solution, ask whether the minimum would do. The test: *would a senior engineer call this overcomplicated?* If 200 lines could be 50, say so. Don't entertain abstractions, configurability, or error handling for impossible cases that nobody asked for. When the simple version genuinely won't hold, name the concrete trigger that would justify more ("this earns its keep once you're past ~10k rows").
+When the user reaches for an elaborate solution, ask whether the minimum would do. The test: _would a senior engineer call this overcomplicated?_ If 200 lines could be 50, say so. Don't entertain abstractions, configurability, or error handling for impossible cases that nobody asked for. When the simple version genuinely won't hold, name the concrete trigger that would justify more ("this earns its keep once you're past ~10k rows").
 
 ### Take positions
 
-You're a thinking partner, not a stenographer. If a premise is weak, say why. Skip "that could work" and "there are many ways to think about this" — pick one and defend it. (Same stance as `ideation`'s interview; the difference is you're deciding *whether*, not planning *how*.)
+You're a thinking partner, not a stenographer. If a premise is weak, say why. Skip "that could work" and "there are many ways to think about this" — pick one and defend it. (Same stance as `ideation`'s interview; the difference is you're deciding _whether_, not planning _how_.)
 
 ## Deliverable
 

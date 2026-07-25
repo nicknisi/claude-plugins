@@ -13,7 +13,7 @@ Add this marketplace to Claude Code:
 Then install plugins:
 
 ```bash
-/plugin install consultant@nicknisi
+/plugin install essentials@nicknisi
 ```
 
 ## Plugins
@@ -22,13 +22,10 @@ The list below is generated from `marketplace.json` by `pnpm run sync` — do no
 
 <!-- plugins:start -->
 
-- [consultant](plugins/consultant/README.md) - Multi-model AI consultation and research using GPT-5/Codex, Gemini, Grok, Perplexity, and Claude. Supports single-agent consultation or parallel multi-agent research (5-40 agents).
 - [content](plugins/content/README.md) - Tools for bootstrapping content creation such as blog posts and conference talks
-- [essentials](plugins/essentials/README.md) - Essential agents, commands, and tools for enhanced Claude Code workflows - git commits, code simplification, brainstorming, security audits, thermo-nuclear code-quality review, PR creation, and codebase sweep.
+- [essentials](plugins/essentials/README.md) - Essential agents and skills for Claude Code workflows - git commits, code simplification, security audits, verified multi-lens code review, thermo-nuclear code-quality review, Socratic tutoring, brainstorming, prototyping, diff explainers, session handoffs, and link reading.
 - [ideation](https://github.com/nicknisi/ideation) - Transform brain dumps into implementation specs through an evidence-gated interview stress-tested by adversarial plan critics. Interactive HTML contract for planning decisions, Markdown specs for execution. /ideation:autopilot runs all phases on a deterministic workflow engine with overlap-serialized parallel waves; /ideation:retro mines implementation notes into learnings future interviews read. _(lives in its own repo, installs from this marketplace)_
 - [image-gen](plugins/image-gen/README.md) - Generate or edit images via Google Gemini (nano-banana-pro) or OpenAI gpt-image-2. Supports 1K/2K/4K resolution and masked inpainting.
-- [sandbox](plugins/sandbox/README.md) - Experimental agents, skills, and output styles for unconventional interaction patterns
-- [sidequest](plugins/sidequest/README.md) - Park tangents as side quests with full resurrection context — writes a handoff doc to the Obsidian vault and creates a linked OmniFocus task
 - [tmux](plugins/tmux/README.md) - Makes Claude tmux-aware. A SessionStart hook detects when Claude runs inside tmux and surfaces the panes the user is watching, plus a skill for reading and driving interactive/long-running CLIs (Node REPL, dev servers, test watchers, the node debugger) by sending keystrokes and scraping pane output.
 
 <!-- plugins:end -->
@@ -64,11 +61,11 @@ pnpm install
 # Type check everything
 pnpm run typecheck
 
-# Build all MCP servers
+# Bundle plugin scripts (any package with a `bundle` script)
 pnpm run build
 
-# Build and sync marketplace metadata
-pnpm run build:all
+# Regenerate marketplace.json and the plugin list above
+pnpm run sync
 ```
 
 ### Adding a new plugin

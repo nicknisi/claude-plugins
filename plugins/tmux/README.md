@@ -2,7 +2,7 @@
 
 Makes Claude aware of tmux — and able to use it. When Claude Code runs inside a
 tmux pane, the terminals you're watching (dev servers, test watchers, REPLs,
-logs, editors) live on *your* tmux server. This plugin lets Claude see and drive
+logs, editors) live on _your_ tmux server. This plugin lets Claude see and drive
 those surfaces, instead of only spawning sandbox sessions you can't see.
 
 ## Components
@@ -12,7 +12,7 @@ those surfaces, instead of only spawning sandbox sessions you can't see.
 Fires when a session starts. If `$TMUX` is set, it injects a short note plus a
 live snapshot of your visible panes (location + running command) into Claude's
 context, and points it at the `tmux` skill for the full workflow. If you're not
-in tmux, it stays silent. This is what gives Claude *awareness* — a skill alone
+in tmux, it stays silent. This is what gives Claude _awareness_ — a skill alone
 only loads on demand, after Claude already suspects tmux is relevant.
 
 ### `tmux` skill — `skills/tmux/`

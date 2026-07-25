@@ -93,7 +93,7 @@ function syncReadme(plugins: any[]) {
     return;
   }
 
-  const lines = plugins.map((plugin) => {
+  const lines = plugins.map(plugin => {
     if (typeof plugin.source === 'object') {
       const url =
         plugin.homepage ??

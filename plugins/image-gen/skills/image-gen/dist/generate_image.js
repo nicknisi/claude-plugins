@@ -1605,6 +1605,166 @@ var require_browser = __commonJS({
   },
 });
 
+// ../../../../node_modules/.pnpm/has-flag@4.0.0/node_modules/has-flag/index.js
+var require_has_flag = __commonJS({
+  '../../../../node_modules/.pnpm/has-flag@4.0.0/node_modules/has-flag/index.js'(
+    exports,
+    module,
+  ) {
+    'use strict';
+    module.exports = (flag, argv = process.argv) => {
+      const prefix = flag.startsWith('-') ? '' : flag.length === 1 ? '-' : '--';
+      const position = argv.indexOf(prefix + flag);
+      const terminatorPosition = argv.indexOf('--');
+      return (
+        position !== -1 &&
+        (terminatorPosition === -1 || position < terminatorPosition)
+      );
+    };
+  },
+});
+
+// ../../../../node_modules/.pnpm/supports-color@7.2.0/node_modules/supports-color/index.js
+var require_supports_color = __commonJS({
+  '../../../../node_modules/.pnpm/supports-color@7.2.0/node_modules/supports-color/index.js'(
+    exports,
+    module,
+  ) {
+    'use strict';
+    var os = __require('os');
+    var tty = __require('tty');
+    var hasFlag = require_has_flag();
+    var { env } = process;
+    var forceColor;
+    if (
+      hasFlag('no-color') ||
+      hasFlag('no-colors') ||
+      hasFlag('color=false') ||
+      hasFlag('color=never')
+    ) {
+      forceColor = 0;
+    } else if (
+      hasFlag('color') ||
+      hasFlag('colors') ||
+      hasFlag('color=true') ||
+      hasFlag('color=always')
+    ) {
+      forceColor = 1;
+    }
+    if ('FORCE_COLOR' in env) {
+      if (env.FORCE_COLOR === 'true') {
+        forceColor = 1;
+      } else if (env.FORCE_COLOR === 'false') {
+        forceColor = 0;
+      } else {
+        forceColor =
+          env.FORCE_COLOR.length === 0
+            ? 1
+            : Math.min(parseInt(env.FORCE_COLOR, 10), 3);
+      }
+    }
+    function translateLevel(level) {
+      if (level === 0) {
+        return false;
+      }
+      return {
+        level,
+        hasBasic: true,
+        has256: level >= 2,
+        has16m: level >= 3,
+      };
+    }
+    function supportsColor(haveStream, streamIsTTY) {
+      if (forceColor === 0) {
+        return 0;
+      }
+      if (
+        hasFlag('color=16m') ||
+        hasFlag('color=full') ||
+        hasFlag('color=truecolor')
+      ) {
+        return 3;
+      }
+      if (hasFlag('color=256')) {
+        return 2;
+      }
+      if (haveStream && !streamIsTTY && forceColor === void 0) {
+        return 0;
+      }
+      const min = forceColor || 0;
+      if (env.TERM === 'dumb') {
+        return min;
+      }
+      if (process.platform === 'win32') {
+        const osRelease = os.release().split('.');
+        if (Number(osRelease[0]) >= 10 && Number(osRelease[2]) >= 10586) {
+          return Number(osRelease[2]) >= 14931 ? 3 : 2;
+        }
+        return 1;
+      }
+      if ('CI' in env) {
+        if (
+          [
+            'TRAVIS',
+            'CIRCLECI',
+            'APPVEYOR',
+            'GITLAB_CI',
+            'GITHUB_ACTIONS',
+            'BUILDKITE',
+          ].some(sign => sign in env) ||
+          env.CI_NAME === 'codeship'
+        ) {
+          return 1;
+        }
+        return min;
+      }
+      if ('TEAMCITY_VERSION' in env) {
+        return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env.TEAMCITY_VERSION)
+          ? 1
+          : 0;
+      }
+      if (env.COLORTERM === 'truecolor') {
+        return 3;
+      }
+      if ('TERM_PROGRAM' in env) {
+        const version = parseInt(
+          (env.TERM_PROGRAM_VERSION || '').split('.')[0],
+          10,
+        );
+        switch (env.TERM_PROGRAM) {
+          case 'iTerm.app':
+            return version >= 3 ? 3 : 2;
+          case 'Apple_Terminal':
+            return 2;
+        }
+      }
+      if (/-256(color)?$/i.test(env.TERM)) {
+        return 2;
+      }
+      if (
+        /^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i.test(
+          env.TERM,
+        )
+      ) {
+        return 1;
+      }
+      if ('COLORTERM' in env) {
+        return 1;
+      }
+      return min;
+    }
+    function getSupportLevel(stream) {
+      const level = supportsColor(stream, stream && stream.isTTY);
+      return translateLevel(level);
+    }
+    module.exports = {
+      supportsColor: getSupportLevel,
+      stdout: translateLevel(supportsColor(true, tty.isatty(1))),
+      stderr: translateLevel(supportsColor(true, tty.isatty(2))),
+    };
+  },
+});
+
 // ../../../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/node.js
 var require_node = __commonJS({
   '../../../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/node.js'(
@@ -1625,7 +1785,7 @@ var require_node = __commonJS({
     );
     exports.colors = [6, 2, 3, 4, 5, 1];
     try {
-      const supportsColor = __require('supports-color');
+      const supportsColor = require_supports_color();
       if (supportsColor && (supportsColor.stderr || supportsColor).level >= 2) {
         exports.colors = [
           20, 21, 26, 27, 32, 33, 38, 39, 40, 41, 42, 43, 44, 45, 56, 57, 62,
@@ -56931,11 +57091,7 @@ var OPENAI_RESOLUTION_MAP = {
   '2K': '2048x2048',
   '4K': '3840x2160',
 };
-var GEMINI_RESOLUTION_MAP = {
-  '1K': 1024,
-  '2K': 2048,
-  '4K': 4096,
-};
+var RESOLUTIONS = Object.keys(OPENAI_RESOLUTION_MAP);
 var { values } = parseArgs({
   options: {
     prompt: { type: 'string' },
@@ -57000,17 +57156,19 @@ if (values.help) {
   process.exit(0);
 }
 function die(msg) {
-  console.error(`Error: ${msg}
+  console.error(
+    `Error: ${msg}
 
-Run with --help for the full flag reference.`);
+Run with --help for the full flag reference.`,
+  );
   process.exit(1);
 }
 if (!values.prompt || !values.filename) {
   die('--prompt and --filename are required.');
 }
 var resolution = values.resolution;
-if (!(resolution in GEMINI_RESOLUTION_MAP)) {
-  die(`Invalid --resolution "${resolution}". Use 1K, 2K, or 4K.`);
+if (!RESOLUTIONS.includes(resolution)) {
+  die(`Invalid --resolution "${resolution}". Use ${RESOLUTIONS.join(', ')}.`);
 }
 var provider = resolveProvider(values.provider, values['api-key']);
 var apiKey = resolveApiKey(provider, values['api-key']);
@@ -57050,6 +57208,7 @@ var imageBase64 =
         apiKey,
         prompt: values.prompt,
         inputImages,
+        resolution,
       });
 await writeFile2(outPath, Buffer.from(imageBase64, 'base64'));
 console.log(`Image saved to: ${outPath}`);
@@ -57097,7 +57256,10 @@ async function runGemini(args) {
   const response = await ai.models.generateContent({
     model: 'nano-banana-pro-preview',
     contents,
-    config: { responseModalities: ['image', 'text'] },
+    config: {
+      responseModalities: ['image', 'text'],
+      imageConfig: { imageSize: args.resolution },
+    },
   });
   const part = response.candidates?.[0]?.content?.parts?.find(p =>
     p.inlineData?.mimeType?.startsWith('image/'),

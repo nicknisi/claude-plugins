@@ -19,10 +19,14 @@ Options:
   --force         send even if the pane is running a non-shell program
   -h, --help      show this help
 
-Everything after `--` is the command, sent literally to the pane.
+Everything after `--` is the command. A single argument is sent to the pane
+verbatim, so shell syntax works; multiple arguments are re-quoted, so values
+containing spaces survive intact.
 
-Example:
+Examples:
   run-in-pane.sh -t projects:3.2 -- pnpm vitest run src/auth
+  run-in-pane.sh -t projects:3.2 -- git commit -m "fix: two words"
+  run-in-pane.sh -t projects:3.2 -- 'cd packages/api && pnpm build'
 USAGE
 }
 
@@ -43,7 +47,19 @@ while [[ $# -gt 0 ]]; do
     -l|--lines)    lines="${2-}"; shift 2 ;;
     --force)       force=true; shift ;;
     -h|--help)     usage; exit 0 ;;
-    --)            shift; cmd="$*"; break ;;
+    # One argument after `--` is a command string: send it verbatim so shell
+    # syntax (&&, pipes, redirection, VAR=x prefixes) still works. Several
+    # arguments are an argv: re-quote each so multi-word values (commit
+    # messages, --grep patterns) survive being typed into the target shell.
+    --)            shift
+                   if [[ $# -eq 0 ]]; then
+                     echo "no command given after --" >&2; usage; exit 1
+                   elif [[ $# -eq 1 ]]; then
+                     cmd="$1"
+                   else
+                     cmd="$(printf '%q ' "$@")"
+                   fi
+                   break ;;
     *) echo "Unknown option: $1" >&2; usage; exit 1 ;;
   esac
 done

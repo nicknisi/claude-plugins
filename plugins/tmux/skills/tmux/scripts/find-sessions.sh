@@ -52,7 +52,12 @@ list_sessions() {
   local label="$1"; shift
   local tmux_cmd=(tmux "$@")
 
-  if ! sessions="$("${tmux_cmd[@]}" list-sessions -F '#{session_name}\t#{session_attached}\t#{session_created_string}' 2>/dev/null)"; then
+  # tmux -F does not expand \t, so the separator has to be a real tab the shell
+  # inserts ($'...'), not the two characters backslash-t. A tab is also the only
+  # safe delimiter here: session names may legally contain | and most
+  # punctuation. #{session_created_string} was removed from tmux years ago;
+  # #{t:session_created} is the current spelling.
+  if ! sessions="$("${tmux_cmd[@]}" list-sessions -F $'#{session_name}\t#{session_attached}\t#{t:session_created}' 2>/dev/null)"; then
     echo "No tmux server found on $label" >&2
     return 1
   fi

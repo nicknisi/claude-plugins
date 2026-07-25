@@ -15,11 +15,9 @@ const OPENAI_RESOLUTION_MAP: Record<Resolution, string> = {
   '4K': '3840x2160',
 };
 
-const GEMINI_RESOLUTION_MAP: Record<Resolution, number> = {
-  '1K': 1024,
-  '2K': 2048,
-  '4K': 4096,
-};
+// Gemini takes the resolution label verbatim as imageConfig.imageSize, so the
+// valid set is just the keys above — derive it rather than spelling it twice.
+const RESOLUTIONS = Object.keys(OPENAI_RESOLUTION_MAP) as Resolution[];
 
 const { values } = parseArgs({
   options: {
@@ -99,8 +97,8 @@ if (!values.prompt || !values.filename) {
 }
 
 const resolution = values.resolution as Resolution;
-if (!(resolution in GEMINI_RESOLUTION_MAP)) {
-  die(`Invalid --resolution "${resolution}". Use 1K, 2K, or 4K.`);
+if (!RESOLUTIONS.includes(resolution)) {
+  die(`Invalid --resolution "${resolution}". Use ${RESOLUTIONS.join(', ')}.`);
 }
 
 const provider = resolveProvider(values.provider, values['api-key']);
@@ -145,6 +143,7 @@ const imageBase64 =
         apiKey,
         prompt: values.prompt,
         inputImages,
+        resolution,
       });
 
 await writeFile(outPath, Buffer.from(imageBase64, 'base64'));
@@ -189,6 +188,7 @@ async function runGemini(args: {
   apiKey: string;
   prompt: string;
   inputImages: string[];
+  resolution: Resolution;
 }): Promise<string> {
   const ai = new GoogleGenAI({ apiKey: args.apiKey });
   const contents: Array<
@@ -209,7 +209,10 @@ async function runGemini(args: {
   const response = await ai.models.generateContent({
     model: 'nano-banana-pro-preview',
     contents,
-    config: { responseModalities: ['image', 'text'] },
+    config: {
+      responseModalities: ['image', 'text'],
+      imageConfig: { imageSize: args.resolution },
+    },
   });
 
   const part = response.candidates?.[0]?.content?.parts?.find(p =>

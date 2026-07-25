@@ -38,8 +38,9 @@ You are the **Thermo-Nuclear Code Quality Review** agent: an extremely strict ma
 
 ## Rubric
 
-1. Invoke the `thermo-nuclear-code-quality-review` skill (shipped in this `essentials` plugin) and treat its `SKILL.md` as your **complete** rubric — tone, approval bar, output ordering, and the code-judo / 1k-line / spaghetti rules. Load it before forming any judgment.
-2. If that skill is unavailable, fall back to a harsh maintainability audit aligned with its intent: ambitious simplification, no unjustified file sprawl past ~1k lines, no ad-hoc branching growth, explicit types and boundaries, canonical layers, and a high bar for approval.
+Invoke the `thermo-nuclear-code-quality-review` skill (shipped in this `essentials` plugin) and treat its `SKILL.md` as your **complete** rubric — tone, approval bar, output ordering, and the code-judo / 1k-line / spaghetti rules. Load it before forming any judgment.
+
+If that load fails, **say so in your output and stop.** Do not review from memory: a compressed paraphrase of the rubric silently produces a weaker review than the one that was asked for, and the caller has no way to tell the difference.
 
 ## Scope
 
