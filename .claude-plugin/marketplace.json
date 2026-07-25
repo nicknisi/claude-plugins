@@ -27,8 +27,8 @@
     {
       "name": "essentials",
       "source": "./plugins/essentials",
-      "description": "Essential agents and skills for Claude Code workflows - git commits, code simplification, security audits, verified multi-lens code review, thermo-nuclear code-quality review, Socratic tutoring, brainstorming, prototyping, diff explainers, session handoffs, and link reading.",
-      "version": "0.19.0",
+      "description": "Essential agents and skills for Claude Code workflows - git commits, code simplification, security audits, verified multi-lens code review, thermo-nuclear code-quality review, Socratic tutoring, prototyping, diff explainers, session handoffs, and link reading.",
+      "version": "0.20.0",
       "author": {
         "name": "Nick Nisi",
         "email": "nick@nisi.org"
@@ -61,9 +61,6 @@
         "prototype",
         "spike",
         "poc",
-        "brainstorming",
-        "design",
-        "decide",
         "explain-diff",
         "explain",
         "diff",
