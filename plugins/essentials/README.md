@@ -50,6 +50,7 @@ essentials/
 ├── agents/*.md                  # frontmatter: name, description, tools, model
 └── skills/<name>/
     ├── SKILL.md                 # frontmatter: name, description
+    ├── scripts/                 # executables the skill shells out to
     └── references/              # loaded on demand, not upfront
 ```
 

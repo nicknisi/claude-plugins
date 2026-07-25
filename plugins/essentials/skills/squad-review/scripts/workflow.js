@@ -277,13 +277,25 @@ const results = await pipeline(
       ...(lens.agentType ? { agentType: lens.agentType } : {}),
     }),
   (review, lens) => {
-    if (!review || !review.findings || !review.findings.length) {
+    // A dead agent must never look like a clean lens. Distinguish "agent
+    // returned nothing" from "agent looked and found nothing".
+    if (!review) {
+      return {
+        lens: lens.key,
+        failed: true,
+        findings: [],
+        refuted: [],
+        missed: [],
+      };
+    }
+    if (!review.findings || !review.findings.length) {
       return {
         lens: lens.key,
         findings: [],
         refuted: [],
         missed: [],
-        checked: review && review.nothing_found,
+        unverified: [],
+        checked: review.nothing_found || 'reported no findings',
       };
     }
     return agent(
@@ -338,9 +350,17 @@ ${JSON.stringify(review.findings, null, 2)}`,
           fix_correction: (verdict && verdict.fix_correction) || null,
         };
       });
+      // Fail closed. The verdicts are joined to findings by an id the verifier
+      // echoes back, so a dropped or rewritten id leaves a finding unjudged —
+      // and if the verify agent died, every id is missing. Those findings have
+      // NOT survived a skeptic, which is this skill's whole claim, so they go
+      // in their own bucket rather than being mixed in with the survivors.
       return {
         lens: lens.key,
-        findings: scored.filter(f => f.status !== 'REFUTED'),
+        findings: scored.filter(
+          f => f.status !== 'REFUTED' && f.status !== 'UNVERIFIED',
+        ),
+        unverified: scored.filter(f => f.status === 'UNVERIFIED'),
         refuted: scored
           .filter(f => f.status === 'REFUTED')
           .map(f => ({
@@ -355,33 +375,59 @@ ${JSON.stringify(review.findings, null, 2)}`,
   },
 );
 
-const clean = results.filter(Boolean);
 const RANK = { blocker: 0, high: 1, medium: 2, low: 3 };
-const surviving = clean
-  .flatMap(r => r.findings)
-  .sort((a, b) => RANK[a.severity] - RANK[b.severity]);
-const refuted = clean.flatMap(r => r.refuted);
-const missed = clean.flatMap(r => r.missed);
-const quiet = clean
-  .filter(r => !r.findings.length && !r.refuted.length)
+const bySeverity = (a, b) => RANK[a.severity] - RANK[b.severity];
+
+// A lens whose stage threw drops to null. Recover which one from the index so a
+// crashed lens is reported rather than silently absent from the tally.
+const clean = results.map(
+  (r, i) => r || { lens: LENSES[i].key, failed: true, findings: [] },
+);
+
+const failed = clean.filter(r => r.failed).map(r => r.lens);
+const ran = clean.filter(r => !r.failed);
+const surviving = ran.flatMap(r => r.findings).sort(bySeverity);
+const unverified = ran.flatMap(r => r.unverified || []).sort(bySeverity);
+const refuted = ran.flatMap(r => r.refuted || []);
+const missed = ran.flatMap(r => r.missed || []);
+const quiet = ran
+  .filter(
+    r =>
+      !r.findings.length &&
+      !(r.unverified || []).length &&
+      !(r.refuted || []).length,
+  )
   .map(r => r.lens);
 
 log(
-  `${surviving.length} findings survived, ${refuted.length} refuted` +
-    (missed.length ? `, ${missed.length} caught by verifiers` : ''),
+  `${surviving.length} verified, ${refuted.length} refuted` +
+    (unverified.length ? `, ${unverified.length} UNVERIFIED` : '') +
+    (missed.length ? `, ${missed.length} caught by verifiers` : '') +
+    (failed.length
+      ? `, ${failed.length} LENS FAILED (${failed.join(', ')})`
+      : ''),
 );
 
 return {
   scope: { command: scope, target: label },
   blockers: surviving.filter(f => f.severity === 'blocker'),
   findings: surviving,
+  // Reported separately and never counted as survivors: their verifier dropped
+  // them, so nothing has attacked these yet.
+  unverified,
   refuted,
   missed,
   lenses_with_nothing: quiet,
+  // Non-empty means the review is incomplete. Say so instead of implying six
+  // lenses ran clean.
+  lenses_failed: failed,
   totals: {
     surviving: surviving.length,
+    unverified: unverified.length,
     refuted: refuted.length,
     blocker: surviving.filter(f => f.severity === 'blocker').length,
     high: surviving.filter(f => f.severity === 'high').length,
+    lenses_run: ran.length,
+    lenses_failed: failed.length,
   },
 };

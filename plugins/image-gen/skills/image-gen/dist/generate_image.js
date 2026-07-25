@@ -57091,7 +57091,7 @@ var OPENAI_RESOLUTION_MAP = {
   '2K': '2048x2048',
   '4K': '3840x2160',
 };
-var GEMINI_RESOLUTIONS = ['1K', '2K', '4K'];
+var RESOLUTIONS = Object.keys(OPENAI_RESOLUTION_MAP);
 var { values } = parseArgs({
   options: {
     prompt: { type: 'string' },
@@ -57167,8 +57167,8 @@ if (!values.prompt || !values.filename) {
   die('--prompt and --filename are required.');
 }
 var resolution = values.resolution;
-if (!GEMINI_RESOLUTIONS.includes(resolution)) {
-  die(`Invalid --resolution "${resolution}". Use 1K, 2K, or 4K.`);
+if (!RESOLUTIONS.includes(resolution)) {
+  die(`Invalid --resolution "${resolution}". Use ${RESOLUTIONS.join(', ')}.`);
 }
 var provider = resolveProvider(values.provider, values['api-key']);
 var apiKey = resolveApiKey(provider, values['api-key']);

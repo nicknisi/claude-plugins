@@ -15,8 +15,9 @@ const OPENAI_RESOLUTION_MAP: Record<Resolution, string> = {
   '4K': '3840x2160',
 };
 
-// Gemini takes the resolution label verbatim as imageConfig.imageSize.
-const GEMINI_RESOLUTIONS: readonly Resolution[] = ['1K', '2K', '4K'];
+// Gemini takes the resolution label verbatim as imageConfig.imageSize, so the
+// valid set is just the keys above — derive it rather than spelling it twice.
+const RESOLUTIONS = Object.keys(OPENAI_RESOLUTION_MAP) as Resolution[];
 
 const { values } = parseArgs({
   options: {
@@ -96,8 +97,8 @@ if (!values.prompt || !values.filename) {
 }
 
 const resolution = values.resolution as Resolution;
-if (!GEMINI_RESOLUTIONS.includes(resolution)) {
-  die(`Invalid --resolution "${resolution}". Use 1K, 2K, or 4K.`);
+if (!RESOLUTIONS.includes(resolution)) {
+  die(`Invalid --resolution "${resolution}". Use ${RESOLUTIONS.join(', ')}.`);
 }
 
 const provider = resolveProvider(values.provider, values['api-key']);

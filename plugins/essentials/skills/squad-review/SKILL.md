@@ -24,7 +24,7 @@ third review.
 Resolve the script path, then hand it to the Workflow tool:
 
 ```bash
-echo ${CLAUDE_PLUGIN_ROOT}/skills/squad-review/workflow.js
+echo ${CLAUDE_PLUGIN_ROOT}/skills/squad-review/scripts/workflow.js
 ```
 
 ```
@@ -49,13 +49,27 @@ tell which one the user means. If the user named a scope, use it.
 
 ## Report the result
 
-The workflow returns findings already ranked and filtered. Present the survivors
-grouped by severity, not by lens — the lens is metadata, not structure. Lead with
-blockers. Give each finding its file:line, what breaks, and the fix direction.
+`findings` are ranked and already verified. Present them grouped by severity, not
+by lens — the lens is metadata, not structure. Lead with blockers. Give each
+finding its file:line, what breaks, and the fix direction.
 
-State how many findings were refuted and why, in one line. That number is the
-signal that verification happened; hiding it makes the review look like every
-other review.
+Three fields decide whether the review can be trusted, and all three must reach
+the user:
+
+- **`refuted`** — say how many and why, in one line. That number is the evidence
+  verification happened. Hiding it makes this look like every other review.
+- **`unverified`** — findings whose verifier never ruled on them. Report them
+  under a separate heading that says exactly that. They have _not_ survived a
+  skeptic, so never merge them into the findings list.
+- **`lenses_failed`** — non-empty means the review is incomplete. Name the lenses
+  that died. Never present a partial review as a clean bill of health.
 
 Do not re-rank or soften what the verifiers confirmed, and do not write the
 report to a file unless asked.
+
+## Requirements
+
+Needs Claude Code's Workflow tool. This skill also ships to Pi via the repo's
+`pi.skills` glob, where that tool does not exist — there it will not run, and
+that is the intended failure rather than a silent degradation to something
+weaker.
