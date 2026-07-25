@@ -13,8 +13,5 @@
     "isolatedModules": true
   },
   "files": [],
-  "references": [
-    { "path": "./scripts" },
-    { "path": "./plugins/consultant/mcp-server" }
-  ]
+  "references": [{ "path": "./scripts" }]
 }

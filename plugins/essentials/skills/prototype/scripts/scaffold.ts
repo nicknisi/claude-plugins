@@ -1,22 +1,24 @@
-import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { parseArgs } from "node:util";
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { parseArgs } from 'node:util';
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
   options: {
-    variants: { type: "string", default: "3" },
-    framework: { type: "string", default: "next" },
-    name: { type: "string" },
-    outdir: { type: "string", default: "." },
+    variants: { type: 'string', default: '3' },
+    framework: { type: 'string', default: 'next' },
+    name: { type: 'string' },
+    outdir: { type: 'string', default: '.' },
   },
 });
 
 const mode = positionals[0];
-if (!mode || !["ui", "tui"].includes(mode)) {
-  console.error("Usage: scaffold.ts <ui|tui> [options]");
-  console.error("  ui  --variants 3 --framework next --outdir ./src/app/settings");
-  console.error("  tui --name checkout-flow --outdir ./src/checkout");
+if (!mode || !['ui', 'tui'].includes(mode)) {
+  console.error('Usage: scaffold.ts <ui|tui> [options]');
+  console.error(
+    '  ui  --variants 3 --framework next --outdir ./src/app/settings',
+  );
+  console.error('  tui --name checkout-flow --outdir ./src/checkout');
   process.exit(1);
 }
 
@@ -27,28 +29,30 @@ function variantLetters(n: number): string[] {
 }
 
 function write(path: string, content: string) {
-  writeFileSync(path, content, "utf8");
+  writeFileSync(path, content, 'utf8');
 }
 
 function scaffoldUI() {
   const n = Math.min(Math.max(parseInt(values.variants!, 10), 2), 5);
   const letters = variantLetters(n);
-  const dir = join(outdir, "__prototype");
+  const dir = join(outdir, '__prototype');
   mkdirSync(dir, { recursive: true });
 
   const framework = values.framework!;
-  const isReact = ["next", "react-router", "react", "vite"].includes(framework);
+  const isReact = ['next', 'react-router', 'react', 'vite'].includes(framework);
 
   if (!isReact) {
     console.log(`${framework} scaffolding: __prototype/ created.`);
-    console.log("The pattern is identical to React — variants as components, switcher reads a URL search param.");
-    console.log("Adapt the generated React components to your framework.");
+    console.log(
+      'The pattern is identical to React — variants as components, switcher reads a URL search param.',
+    );
+    console.log('Adapt the generated React components to your framework.');
   }
 
-  const clientDirective = framework === "next" ? `"use client";\n\n` : "";
+  const clientDirective = framework === 'next' ? `"use client";\n\n` : '';
 
   write(
-    join(dir, "PrototypeSwitcher.tsx"),
+    join(dir, 'PrototypeSwitcher.tsx'),
     `${clientDirective}import { useCallback, useEffect } from "react";
 
 interface Props {
@@ -149,17 +153,17 @@ export function Variant${letter}(props: Props) {
   }
 
   const imports = letters
-    .map((l) => `import { Variant${l} } from "./__prototype/Variant${l}";`)
-    .join("\n");
+    .map(l => `import { Variant${l} } from "./__prototype/Variant${l}";`)
+    .join('\n');
 
   const renders = letters
-    .map((l) => `      {variant === "${l}" && <Variant${l} {...data} />}`)
-    .join("\n");
+    .map(l => `      {variant === "${l}" && <Variant${l} {...data} />}`)
+    .join('\n');
 
-  const variantList = letters.map((l) => `"${l}"`).join(", ");
+  const variantList = letters.map(l => `"${l}"`).join(', ');
 
   write(
-    join(dir, "wiring-example.tsx"),
+    join(dir, 'wiring-example.tsx'),
     `// Copy this into your route file and adapt to your framework's router.
 // Delete this file after wiring up.
 
@@ -187,16 +191,18 @@ export function Variant${letter}(props: Props) {
 
   console.log(`Scaffolded UI prototype in ${dir}/`);
   console.log(`  - PrototypeSwitcher component`);
-  console.log(`  - ${n} variant shells (${letters.join(", ")})`);
+  console.log(`  - ${n} variant shells (${letters.join(', ')})`);
   console.log(`  - Wiring example`);
   console.log();
-  console.log("Next: fill in each Variant file with a structurally different layout.");
+  console.log(
+    'Next: fill in each Variant file with a structurally different layout.',
+  );
 }
 
 function scaffoldTUI() {
   const name = values.name;
   if (!name) {
-    console.error("--name is required for tui mode");
+    console.error('--name is required for tui mode');
     process.exit(1);
   }
 
@@ -204,7 +210,7 @@ function scaffoldTUI() {
   mkdirSync(dir, { recursive: true });
 
   write(
-    join(dir, "logic.ts"),
+    join(dir, 'logic.ts'),
     `export interface State {
   // TODO: Define your state shape
   count: number;
@@ -238,7 +244,7 @@ export function legalActions(_state: State): Action["type"][] {
   );
 
   write(
-    join(dir, "shell.ts"),
+    join(dir, 'shell.ts'),
     `import { initialState, reduce, legalActions, type State, type Action } from "./logic";
 
 let state: State = initialState();
@@ -296,9 +302,11 @@ main();
   console.log(`  - logic.ts  (portable module — the deliverable)`);
   console.log(`  - shell.ts  (throwaway TUI shell)`);
   console.log();
-  console.log(`Run with: npx tsx ${join(dir, "shell.ts")}`);
-  console.log("Next: replace the example State/Action/reduce with your actual domain logic.");
+  console.log(`Run with: npx tsx ${join(dir, 'shell.ts')}`);
+  console.log(
+    'Next: replace the example State/Action/reduce with your actual domain logic.',
+  );
 }
 
-if (mode === "ui") scaffoldUI();
+if (mode === 'ui') scaffoldUI();
 else scaffoldTUI();

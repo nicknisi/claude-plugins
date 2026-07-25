@@ -65,6 +65,7 @@ npx tsx ${CLAUDE_PLUGIN_ROOT}/skills/prototype/scripts/scaffold.ts ui \
 ```
 
 This creates an `__prototype/` directory with:
+
 - `PrototypeSwitcher.tsx` — the floating bottom bar (keyboard nav, URL param sync, production guard)
 - `VariantA.tsx`, `VariantB.tsx`, `VariantC.tsx` — shell files to fill in
 - `wiring-example.tsx` — copy-paste snippet showing how to mount in the route
@@ -80,8 +81,11 @@ return (
     {variant === 'A' && <VariantA {...data} />}
     {variant === 'B' && <VariantB {...data} />}
     {variant === 'C' && <VariantC {...data} />}
-    <PrototypeSwitcher variants={['A', 'B', 'C']} current={variant}
-      onChange={(v) => router.replace(`?variant=${v}`)} />
+    <PrototypeSwitcher
+      variants={['A', 'B', 'C']}
+      current={variant}
+      onChange={v => router.replace(`?variant=${v}`)}
+    />
   </>
 );
 ```

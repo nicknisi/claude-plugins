@@ -2,11 +2,12 @@
 name: thermo-nuclear-code-quality-review
 description: >-
   Run an extremely strict maintainability review for abstraction quality,
-  giant files, and spaghetti-condition growth. User-invocable only — does
-  not auto-trigger. Use for a thermo-nuclear code quality review,
-  thermonuclear review, deep code quality audit, or especially harsh
-  maintainability review.
-disable-model-invocation: true
+  giant files, and spaghetti-condition growth. Use when the user explicitly
+  asks for a thermo-nuclear review, thermonuclear review, deep code quality
+  audit, or an especially harsh maintainability review. Not for ordinary
+  review requests — those belong to the built-in code-review skill. This
+  file is also the canonical rubric loaded by the
+  thermo-nuclear-code-quality-review agent.
 ---
 
 # Thermo-Nuclear Code Quality Review
