@@ -11,8 +11,8 @@ Personal collection of Claude Code plugins. For plugin and marketplace documenta
 # Install dependencies
 pnpm install
 
-# Build MCP servers and sync marketplace
-pnpm run build:all
+# Bundle plugin scripts, then regenerate marketplace.json + the README list
+pnpm run build && pnpm run sync
 ```
 
 ## Plugin Structure
