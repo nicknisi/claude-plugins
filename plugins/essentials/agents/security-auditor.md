@@ -29,7 +29,7 @@ description: |
   NOT a trigger. The description explicitly says "Do not auto-invoke for general code review." Generic review requests use a different path.
   </commentary>
   </example>
-tools: Read, Grep, Glob, Task
+tools: Read, Grep, Glob, Bash, Task
 color: red
 model: opus
 ---
