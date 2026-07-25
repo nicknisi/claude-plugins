@@ -43,7 +43,9 @@ while [[ $# -gt 0 ]]; do
     -l|--lines)    lines="${2-}"; shift 2 ;;
     --force)       force=true; shift ;;
     -h|--help)     usage; exit 0 ;;
-    --)            shift; cmd="$*"; break ;;
+    # Re-quote each argument so multi-word values (commit messages, --grep
+    # patterns) survive being typed into the target shell.
+    --)            shift; cmd="$(printf '%q ' "$@")"; break ;;
     *) echo "Unknown option: $1" >&2; usage; exit 1 ;;
   esac
 done
