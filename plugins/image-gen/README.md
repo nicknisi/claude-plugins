@@ -67,7 +67,7 @@ node plugins/image-gen/skills/image-gen/dist/generate_image.js \
 
 ## Resolution
 
-- `1K` → 1024px
-- `2K` → 2048px
-- `4K` → 4096px on Gemini; silently clamped to `3840x2160` on OpenAI (3840 is OpenAI's hard cap)
+- Gemini takes `1K` / `2K` / `4K` through the API's own `imageSize` setting and picks the pixel
+  dimensions; `1K` is the model default when unset.
+- OpenAI maps them to `1024x1024` / `2048x2048` / `3840x2160` (3840 is OpenAI's hard cap).
 - `--size WxH` (OpenAI only) overrides `--resolution`; max edge 3840, multiples of 16
