@@ -24,7 +24,6 @@ Dispatched via the Task tool, each in its own context window.
 
 | Skill                                | Use it when                                                                                                                                                         |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `brainstorming`                      | Weighing an idea, not committing to it — "should I do X", "am I over-engineering this". Hands off to `ideation` once you've decided to build.                       |
 | `explain-diff`                       | You want a rich, shareable HTML explainer for a diff, PR, or branch — with diagrams and a quiz.                                                                     |
 | `handoff`                            | Wrapping a session with unfinished work. Writes a portable doc the next session can pick up.                                                                        |
 | `link-reader`                        | A twitter.com, x.com, or reddit.com URL needs reading — routes through proxy APIs that aren't blocked.                                                              |
