@@ -112,7 +112,7 @@
       "name": "sources",
       "source": "./plugins/sources",
       "description": "Read and extract from external sources - tweets, Reddit threads, and YouTube videos - via proxies and caption APIs that direct fetching can't reach.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "author": {
         "name": "Nick Nisi",
         "email": "nick@nisi.org"
@@ -130,7 +130,12 @@
         "triage",
         "notes",
         "obsidian",
-        "yt-dlp"
+        "yt-dlp",
+        "cache",
+        "whisper",
+        "transcription",
+        "offline",
+        "rate-limit"
       ]
     },
     {
