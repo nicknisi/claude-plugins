@@ -26,6 +26,16 @@ SCRIPT="../scripts/fetch_video.ts"
 export FIXTURES="$PWD/fixtures"
 export PATH="$PWD:$PATH" # shadow the real uvx with ./uvx
 
+# Isolate the cache. Without this the suite would write synthetic transcripts
+# into the user's real cache under real video ids, and later genuine runs would
+# silently serve fixture data.
+CACHE="$(mktemp -d)"
+export YOUTUBE_NOTES_CACHE="$CACHE"
+trap 'rm -rf "$CACHE"' EXIT
+# Most checks assert on a fresh fetch, so default to bypassing the cache and
+# let the cache-specific checks opt back in.
+SCRIPT="$SCRIPT --no-cache"
+
 pass=0
 fail=0
 ck() {
@@ -100,6 +110,31 @@ for form in \
   ck "parses $form" \
     "node $SCRIPT '$form' --mode triage | jq -e '.id==\"aircAruvnKk\"'"
 done
+
+echo "== cache =="
+# A dedicated dir per assertion keeps these independent of each other.
+C1="$CACHE/c1"
+# Keeps node reachable while removing both the uvx stub and any real uvx, so a
+# run that still succeeds provably touched no upstream at all.
+NOUPSTREAM="$(dirname "$(command -v node)"):/usr/bin:/bin"
+ck "first run writes an entry" \
+  "node ../scripts/fetch_video.ts aircAruvnKk --mode triage --cache-dir $C1 >/dev/null && test -f $C1/aircAruvnKk.json"
+ck "entry records source and segments" \
+  "jq -e '.version==1 and .transcript_source==\"manual\" and (.segments|length)==374' $C1/aircAruvnKk.json"
+ck "second run serves from cache with no upstream reachable" \
+  "PATH='$NOUPSTREAM' node ../scripts/fetch_video.ts aircAruvnKk --mode triage --cache-dir $C1 | jq -e '.chapters_total==12'"
+ck "cached data feeds a different mode for free" \
+  "PATH='$NOUPSTREAM' node ../scripts/fetch_video.ts aircAruvnKk --mode full --chapters 3 --cache-dir $C1 | jq -e '[.chapters[].index]==[3]'"
+ck "no upstream + no cache genuinely fails (control)" \
+  "! PATH='$NOUPSTREAM' node ../scripts/fetch_video.ts aircAruvnKk --mode triage --cache-dir $CACHE/empty >/dev/null 2>&1"
+ck "--refresh ignores the cached copy" \
+  "! node ../scripts/fetch_video.ts aircAruvnKk --mode triage --cache-dir $C1 --refresh 2>&1 >/dev/null | grep -q 'cache hit'"
+ck "cache hit is announced on stderr" \
+  "node ../scripts/fetch_video.ts aircAruvnKk --mode triage --cache-dir $C1 2>&1 >/dev/null | grep -q 'cache hit'"
+ck "--no-cache writes nothing" \
+  "node ../scripts/fetch_video.ts aircAruvnKk --mode triage --cache-dir $CACHE/c2 --no-cache >/dev/null && ! test -e $CACHE/c2"
+ck "corrupt entry falls back to refetch" \
+  "mkdir -p $CACHE/c3 && echo 'not json' > $CACHE/c3/aircAruvnKk.json && node ../scripts/fetch_video.ts aircAruvnKk --mode triage --cache-dir $CACHE/c3 | jq -e '.chapters_total==12'"
 
 echo "== error paths =="
 ck "bad url exits 1" "node $SCRIPT https://example.com/x; test \$? -eq 1"

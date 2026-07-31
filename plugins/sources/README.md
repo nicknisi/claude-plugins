@@ -61,6 +61,15 @@ entity-range mapping needed to turn them back into markdown.
 
 ## `youtube-notes`
 
+Built for interrogating a video, not just summarizing one. The transcript is
+cached per video id on first fetch, so follow-up questions, mode switches, and
+different chapter pulls all read from disk. Load once, then ask freely.
+
+```
+first fetch (whisper path)   35.6s
+every call after that         0.06s
+```
+
 Three modes:
 
 - **triage** — a worth-watching verdict for roughly a tenth of the tokens.
@@ -112,8 +121,13 @@ Accepts a bare 11-character video id or any YouTube URL shape: `watch?v=`,
 - **Chapter fallback.** No uploader chapters means 5-minute time slices
   (`--slice-seconds`), reported honestly as `chapters_source: "time-sliced"` so
   bucket labels are never passed off as real chapter names.
-- **Caption provenance.** `caption_kind` distinguishes `manual` from `generated`,
-  because auto-captions mishear names, numbers, and jargon.
+- **Caption provenance.** `caption_kind` reports `manual`, `generated`, or `whisper`,
+  so quotes get trusted according to where the words actually came from.
+- **Transcript cache.** Keyed by video id under `$XDG_CACHE_HOME/youtube-notes`.
+  The cached payload is the raw upstream input, not a rendered bundle, so every
+  mode is a pure transformation of it and switching modes after the first fetch
+  costs nothing. `--refresh` refetches, `--no-cache` opts out, `--cache-dir`
+  relocates it.
 - **Token estimate.** Printed to stderr, with a nudge toward `--chapters` when the
   bundle is large. A 3h45m podcast is ~75k tokens whole, ~2k in triage.
 - **Metadata is optional.** If `yt-dlp` fails, captions still come through and
@@ -130,32 +144,55 @@ Accepts a bare 11-character video id or any YouTube URL shape: `watch?v=`,
   | `curl` of the watch page (metadata)  | 200    |
 
   The quota is per-IP and per-endpoint, and it ignores request headers, so
-  swapping libraries or hand-rolling the HTTP call buys nothing. Only time, a
-  different IP, or an authenticated session helps. The watch page stays open,
-  which is why titles and chapters keep working while captions are blocked. Exit 4
-  marks the condition transient so the skill says "retry shortly" instead of "this
-  video has no captions."
+  swapping libraries or hand-rolling the HTTP call buys nothing. Exit 4 marks the
+  condition transient so the skill says "retry shortly" instead of "this video
+  has no captions."
+
+  Two things do get around it. The cache, because a request never made can't be
+  throttled. And `--whisper-fallback`, below.
+
+- **Whisper fallback.** `--whisper-fallback` downloads the audio and transcribes
+  it locally. This works _during_ a block: the media CDN serving audio is not
+  subject to the caption quota, and pulled 7.73 MiB at 25 MB/s while every
+  caption request was still 429ing.
+
+  Apple Silicon uses `mlx-whisper`; everywhere else falls back to
+  `openai-whisper` (untested here, no non-Mac machine to try it on). An 8:20
+  video transcribed in 78s on an M3 Pro including the one-time ~1.6 GB model
+  download, then 35s on subsequent videos. Output is cached like any other
+  transcript, and reports `caption_kind: "whisper"` so local ASR is never
+  mistaken for something YouTube served.
+
+  Every other skill in this space treats Whisper as the answer to _captions
+  being disabled_. It also answers _being rate-limited_, which nobody seems to
+  have noticed.
+
+  Browser cookies are deliberately not offered. [Upstream warns](https://github.com/jdepoix/youtube-transcript-api)
+  that authenticating that way eventually gets the account permanently banned.
 
 ### Exit codes
 
-| Code | Meaning                                              |
-| ---- | ---------------------------------------------------- |
-| 0    | Success                                              |
-| 1    | Bad usage or runtime error                           |
-| 2    | `uvx` not found                                      |
-| 3    | No captions for this video (permanent, captions off) |
-| 4    | YouTube is rate-limiting this IP (transient, retry)  |
+| Code | Meaning                                            |
+| ---- | -------------------------------------------------- |
+| 0    | Success                                            |
+| 1    | Bad usage or runtime error                         |
+| 2    | `uvx` not found                                    |
+| 3    | No captions published (try `--whisper-fallback`)   |
+| 4    | Rate-limited by YouTube (try `--whisper-fallback`) |
+| 5    | Local transcription failed                         |
 
 ### Development
 
 Edit `scripts/fetch_video.ts` and run it. Nothing to install or rebuild.
 
 ```bash
-./skills/youtube-notes/test/run.sh   # 36 checks, no network
+./skills/youtube-notes/test/run.sh   # 45 checks, no network
 ```
 
 The suite shadows `uvx` on `PATH` with a stub that replays fixtures, so it can't
-be defeated by the rate limit above. Captions are synthetic (374 segments, three
+be defeated by the rate limit above. It runs against an isolated cache dir, and
+the cache checks include a control that proves they aren't passing vacuously by
+confirming the same call genuinely fails with no cache and no upstream. Captions are synthetic (374 segments, three
 seconds apart, three words each) which makes every derived number hand-checkable
 instead of dependent on what YouTube served that day. Metadata is a real `yt-dlp`
 dump trimmed to the fields the script reads.

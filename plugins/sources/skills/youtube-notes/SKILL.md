@@ -32,42 +32,102 @@ It shells out to `uvx` for `youtube-transcript-api` (captions) and `yt-dlp`
 (metadata, chapters). Both run on demand; nothing is installed globally. If
 `uvx` is missing the script exits 2 and tells the user to `brew install uv`.
 
-## Pick a mode first
+## The transcript is cached, so re-running is free
 
-Match the ask, using the table below. When the ask is ambiguous, triage is the
-cheaper mistake: it costs roughly a tenth of the tokens and frequently ends the
-task, whereas a needless `full` pull on a long video spends real context on
-something the user never wanted.
+The first fetch for a video is cached by id. Every later call for that video
+reads from disk and touches no network: 35s becomes 0.06s, and switching modes
+or pulling different chapters costs nothing.
 
-| User intent                                                     | Mode                                 |
-| --------------------------------------------------------------- | ------------------------------------ |
-| "is this worth watching", "what's this about", bare pasted link | `triage`                             |
-| "summarize", "take notes", "digest this", "save to my notes"    | `full`                               |
-| "what does it say about X", "find where they discuss Y"         | `triage`, then `full --chapters <n>` |
-| "give me the transcript"                                        | `transcript`                         |
+This shapes how to work. Do not ration calls to avoid refetching, because after
+the first one there is no refetch. Pull `triage` to see the shape, then pull the
+chapters you actually need, then pull different ones when the next question
+lands. The only real budget is context, not network.
+
+It is also the main defense against rate limiting, which is the failure mode
+this skill hits most. A request you never make cannot be throttled.
+
+`--refresh` forces a refetch, which you need only if a video's captions were
+genuinely republished. `--no-cache` skips it entirely.
+
+## The main use: answering questions about a video
+
+Most requests here are conversational. Someone wants to interrogate a video, not
+receive a document. Expect several questions across a conversation about one
+video.
+
+Load once, properly, then answer from what you have:
+
+1. Pull `--mode triage` to see the chapter map and size.
+2. For a short or medium video, pull `--mode full` and keep it in context. Every
+   follow-up is then answered without another call.
+3. For something multi-hour, pull the chapters that bear on the question with
+   `--chapters`, and pull more as the conversation moves. Cached, so cheap.
+
+Answer with the deep links inline so the user can jump to the source. When the
+video does not address something, say so plainly rather than reaching for an
+adjacent passage.
+
+Resist turning every question into a digest. If someone asks what the speaker
+thinks about X, answer that, cite it, and stop.
+
+## Mode by intent
+
+| User intent                                                     | Mode                                        |
+| --------------------------------------------------------------- | ------------------------------------------- |
+| "is this worth watching", "what's this about", bare pasted link | `triage`                                    |
+| "summarize", "take notes", "digest this", "save to my notes"    | `full`                                      |
+| a question about the content, or a conversation about the video | `triage`, then `full` (or `--chapters <n>`) |
+| "give me the transcript"                                        | `transcript`                                |
 
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/skills/youtube-notes/scripts/fetch_video.ts "<url>" --mode triage
 ```
 
-## Long videos: triage, then target
+## Long videos
 
-Never pull a full multi-hour bundle. A 3h45m podcast is ~75k tokens in `full`
-mode and ~2k in `triage`. The two-step flow:
+Chapter indices are stable across calls, so an index from triage is safe to
+reuse later. A 3h45m podcast is ~75k tokens in `full` and ~2k in `triage`, so
+target chapters rather than loading everything:
 
 ```bash
-# 1. See the shape of it — chapter titles, indices, word counts
-node ${CLAUDE_PLUGIN_ROOT}/skills/youtube-notes/scripts/fetch_video.ts "<url>" --mode triage
-
-# 2. Pull only the chapters that matter (accepts 3,7,9 or 4-6)
 node ${CLAUDE_PLUGIN_ROOT}/skills/youtube-notes/scripts/fetch_video.ts "<url>" \
   --mode full --chapters 3,7 --out /tmp/video.json
 ```
 
-Chapter indices are stable across calls, so an index from triage is safe to
-reuse. The script prints an estimated token count to stderr and warns when the
-output is large. Above roughly 25k tokens, write to `--out` and read the file
-back instead of piping through stdout.
+The script prints an estimated token count to stderr and warns when output is
+large. Above roughly 25k tokens, write to `--out` and read the file back rather
+than piping it through stdout.
+
+## When captions fail
+
+Two failures, one remedy:
+
+- **Exit 4, rate limited.** YouTube throttles the caption endpoint per IP. It is
+  transient and affects only captions; metadata, chapters, and the audio stream
+  keep working.
+- **Exit 3, no captions published.** Permanent for that video.
+
+Both are answered by `--whisper-fallback`, which downloads the audio and
+transcribes it locally. It works during a block because the media CDN is not
+subject to the caption quota. Verified: `youtube-transcript-api`, `yt-dlp`
+subtitles, and `curl` with a real browser User-Agent all get 429 on the caption
+endpoint while audio downloads at full speed.
+
+Ask before using it on the first video of a session. It costs a one-time model
+download of roughly 1.6 GB and a minute or two of compute, which is a real cost
+the user should agree to. Once they have agreed, keep using it for that
+conversation without asking again.
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/skills/youtube-notes/scripts/fetch_video.ts "<url>" \
+  --mode full --whisper-fallback
+```
+
+Do not suggest browser cookies as a workaround. Upstream warns that
+authenticating that way eventually gets the account permanently banned.
+
+Whisper output is cached like any other transcript, so the cost is paid once per
+video.
 
 ## What comes back
 
@@ -77,9 +137,19 @@ JSON modes return metadata plus a `chapters` array. Fields that drive decisions:
   structure), `time-sliced` (no chapters, so 5-minute buckets titled by range),
   or `single` (short video, one bucket). Only `youtube` reflects authorial
   intent; do not present time-sliced bucket titles as if they were chapter names.
-- `caption_kind` — `manual` or `generated`. Generated captions mishear proper
-  nouns, technical terms, and numbers. When it is `generated`, treat exact
-  quotes as approximate and say so once.
+- `caption_kind` — where the words came from, which sets how much to trust an
+  exact quote:
+  - `manual` — a human-authored track. Quote freely.
+  - `generated` — YouTube's ASR. Mishears proper nouns, technical terms, and
+    numbers.
+  - `whisper` — local ASR, not anything YouTube served. Usually cleaner prose
+    than `generated`, but still guesses at names, product names, and version
+    numbers.
+
+  For `generated` or `whisper`, say once that quotes are approximate, and flag
+  specific proper nouns you suspect rather than silently correcting them into
+  something plausible.
+
 - `word_count` and `reading_minutes` — compare `reading_minutes` against
   `duration_hms` to tell the user whether reading beats watching. It usually
   does for interviews and usually doesn't for anything visual.
@@ -208,10 +278,13 @@ duplicating a video already captured.
   do not describe visuals, slides, or demos beyond what the captions state.
 - Auto-generated captions garble names and numbers. Do not silently "fix" a
   term into something plausible; flag the uncertainty instead.
-- Videos with captions disabled exit 3. Tell the user plainly rather than
-  searching the web for a third-party transcript of unknown provenance.
-- Exit 4 is different: YouTube is rate-limiting the IP, which is transient. Say
-  so and offer to retry in a few minutes. Do not report the video as
-  unavailable, and do not retry immediately in a loop — that extends the block.
-  Metadata and chapters still work, so a title-and-chapters answer is available
-  even while captions are blocked.
+- Never search the web for a third-party transcript. A re-publication of unknown
+  provenance cannot be verified, and `--whisper-fallback` gets you the real audio
+  anyway.
+- Do not retry a rate-limited fetch in a loop. It extends the block. Offer
+  `--whisper-fallback` or a wait.
+- Metadata and chapters survive a caption block, so a title-and-chapter-map
+  answer is available even when the transcript is not. Say clearly that it comes
+  from metadata and that you have not read the content.
+- When `caption_kind` is `whisper`, the words are a local transcription of the
+  audio. Do not present them as YouTube's captions.
