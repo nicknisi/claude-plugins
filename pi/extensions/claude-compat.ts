@@ -264,6 +264,17 @@ export default function claudeCompat(pi: ExtensionAPI) {
       if (url.protocol !== 'http:' && url.protocol !== 'https:') {
         throw new Error(`Unsupported URL protocol: ${url.protocol}`);
       }
+      const h = url.hostname;
+      const ipv4 = h.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+      if (
+        h === 'localhost' || h === '::1' ||
+        (ipv4 && (Number(ipv4[1]) === 10 || Number(ipv4[1]) === 127 ||
+          (Number(ipv4[1]) === 172 && Number(ipv4[2]) >= 16 && Number(ipv4[2]) <= 31) ||
+          (Number(ipv4[1]) === 192 && Number(ipv4[2]) === 168) ||
+          (Number(ipv4[1]) === 169 && Number(ipv4[2]) === 254)))
+      ) {
+        throw new Error(`Fetching internal/private URLs is not allowed`);
+      }
 
       const response = await fetch(url, { signal });
       const contentType = response.headers.get('content-type') ?? '';
