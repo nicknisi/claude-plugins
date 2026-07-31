@@ -27,8 +27,8 @@
     {
       "name": "essentials",
       "source": "./plugins/essentials",
-      "description": "Essential agents and skills for Claude Code workflows - git commits, code simplification, security audits, verified multi-lens code review, thermo-nuclear code-quality review, Socratic tutoring, prototyping, diff explainers, session handoffs, and link reading.",
-      "version": "0.20.0",
+      "description": "Essential agents and skills for Claude Code workflows - git commits, code simplification, security audits, verified multi-lens code review, thermo-nuclear code-quality review, Socratic tutoring, prototyping, diff explainers, and session handoffs.",
+      "version": "0.21.0",
       "author": {
         "name": "Nick Nisi",
         "email": "nick@nisi.org"
@@ -48,9 +48,6 @@
         "learning",
         "simplify",
         "refactor",
-        "link-reader",
-        "twitter",
-        "reddit",
         "maintainability",
         "code-quality",
         "thermo-nuclear",
@@ -109,6 +106,31 @@
         "diagrams",
         "illustrations",
         "inpainting"
+      ]
+    },
+    {
+      "name": "sources",
+      "source": "./plugins/sources",
+      "description": "Read and extract from external sources - tweets, Reddit threads, and YouTube videos - via proxies and caption APIs that direct fetching can't reach.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Nick Nisi",
+        "email": "nick@nisi.org"
+      },
+      "keywords": [
+        "link-reader",
+        "twitter",
+        "x",
+        "reddit",
+        "youtube",
+        "transcript",
+        "captions",
+        "video",
+        "digest",
+        "triage",
+        "notes",
+        "obsidian",
+        "yt-dlp"
       ]
     },
     {

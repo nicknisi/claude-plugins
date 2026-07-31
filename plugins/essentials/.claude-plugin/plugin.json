@@ -1,7 +1,7 @@
 {
   "name": "essentials",
-  "version": "0.20.0",
-  "description": "Essential agents and skills for Claude Code workflows - git commits, code simplification, security audits, verified multi-lens code review, thermo-nuclear code-quality review, Socratic tutoring, prototyping, diff explainers, session handoffs, and link reading.",
+  "version": "0.21.0",
+  "description": "Essential agents and skills for Claude Code workflows - git commits, code simplification, security audits, verified multi-lens code review, thermo-nuclear code-quality review, Socratic tutoring, prototyping, diff explainers, and session handoffs.",
   "author": {
     "name": "Nick Nisi",
     "email": "nick@nisi.org"
@@ -21,9 +21,6 @@
     "learning",
     "simplify",
     "refactor",
-    "link-reader",
-    "twitter",
-    "reddit",
     "maintainability",
     "code-quality",
     "thermo-nuclear",

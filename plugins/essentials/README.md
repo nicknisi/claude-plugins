@@ -26,7 +26,6 @@ Dispatched via the Task tool, each in its own context window.
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `explain-diff`                       | You want a rich, shareable HTML explainer for a diff, PR, or branch — with diagrams and a quiz.                                                                     |
 | `handoff`                            | Wrapping a session with unfinished work. Writes a portable doc the next session can pick up.                                                                        |
-| `link-reader`                        | A twitter.com, x.com, or reddit.com URL needs reading — routes through proxy APIs that aren't blocked.                                                              |
 | `prototype`                          | A design question needs answering in code before you commit to the real implementation.                                                                             |
 | `socratic-tutor`                     | You want to actually own a change, not skim it. Drills you with quizzes until you can explain the problem, the solution, and the edge cases.                        |
 | `squad-review`                       | A thorough review before merging. Six lenses, then every finding attacked by a verifier — only what survives reaches you.                                           |
