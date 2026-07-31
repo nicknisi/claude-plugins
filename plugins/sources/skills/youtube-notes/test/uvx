@@ -1,0 +1,15 @@
+#!/bin/sh
+# Stands in for the real `uvx` by shadowing it on PATH, so the suite exercises
+# fetch_video.ts end to end without touching YouTube. This matters: YouTube
+# rate-limits the timedtext endpoint per IP, so a network-dependent suite fails
+# for reasons that have nothing to do with the code under test.
+#
+# Routes on which upstream tool the script asked for.
+for arg in "$@"; do
+  case "$arg" in
+    yt-dlp) exec cat "$FIXTURES/metadata.json" ;;
+    youtube_transcript_api) exec cat "$FIXTURES/captions.json" ;;
+  esac
+done
+echo "uvx stub: unexpected invocation: $*" >&2
+exit 127
