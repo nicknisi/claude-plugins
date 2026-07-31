@@ -13,10 +13,23 @@
  */
 
 import { spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 
 type Mode = 'full' | 'triage' | 'transcript';
+
+/** Where the words came from. `whisper` is local ASR, not anything YouTube served. */
+type TranscriptSource = 'manual' | 'generated' | 'whisper' | 'unknown';
+
+const DEFAULT_WHISPER_MODEL = 'mlx-community/whisper-large-v3-turbo';
 
 interface RawSegment {
   text: string;
@@ -78,14 +91,32 @@ Options:
   --plain                transcript mode only: omit timestamps
   --no-metadata          Skip yt-dlp (faster; loses chapters, title, description)
   --out <path>           Write to a file instead of stdout
+
+  --whisper-fallback     If captions are blocked or absent, download the audio
+                           and transcribe it locally. The media CDN is not
+                           subject to the caption rate limit, so this works
+                           when nothing else does.
+  --whisper              Skip captions entirely and always transcribe locally.
+  --whisper-model <id>   Default: mlx-community/whisper-large-v3-turbo
+                           (Apple Silicon uses mlx-whisper; elsewhere
+                           openai-whisper, where this is a size like "turbo")
+
+  --refresh              Ignore any cached copy and refetch
+  --no-cache             Neither read nor write the cache
+  --cache-dir <path>     Default: $XDG_CACHE_HOME/youtube-notes
   --help
+
+Transcripts are cached per video id after the first fetch, so re-running with
+different modes or --chapters costs nothing and hits no network. Every request
+you don't make is one that can't be rate-limited.
 
 Exit codes:
   0  success
   1  bad usage or runtime error
   2  uvx not found
-  3  no captions for this video (permanent — captions are disabled)
-  4  YouTube is rate-limiting this IP (transient — retry later)
+  3  no captions for this video (try --whisper-fallback)
+  4  YouTube is rate-limiting this IP (transient; try --whisper-fallback)
+  5  local transcription failed
 `.trimStart();
 
 function fail(message: string, code = 1): never {
@@ -206,10 +237,82 @@ async function fetchMetadata(id: string): Promise<Metadata | null> {
   }
 }
 
-async function fetchSegments(
+/**
+ * Cached payload: the raw upstream inputs, not a rendered bundle. Every mode is
+ * a pure transformation of these two things, so a cache hit makes switching
+ * between triage, full, and a targeted --chapters pull completely free. That
+ * matters most for the intended workflow — load a video once, then ask it
+ * several questions — and it is also the main defense against the rate limit,
+ * since the requests you never make can never be throttled.
+ */
+interface CacheEntry {
+  version: 1;
+  id: string;
+  fetched_at: string;
+  transcript_source: TranscriptSource;
+  language: string;
+  metadata: Metadata | null;
+  segments: RawSegment[];
+}
+
+function cachePath(dir: string | null, id: string): string {
+  const base =
+    dir ??
+    process.env.YOUTUBE_NOTES_CACHE ??
+    join(
+      process.env.XDG_CACHE_HOME ?? join(homedir(), '.cache'),
+      'youtube-notes',
+    );
+  return join(base, `${id}.json`);
+}
+
+function readCache(path: string): CacheEntry | null {
+  try {
+    const entry = JSON.parse(readFileSync(path, 'utf-8'));
+    if (entry?.version === 1 && Array.isArray(entry.segments)) return entry;
+  } catch {
+    // A corrupt or half-written entry is not worth diagnosing; refetch.
+  }
+  return null;
+}
+
+function writeCache(path: string, entry: CacheEntry): void {
+  try {
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, JSON.stringify(entry));
+  } catch (err) {
+    // Losing the cache costs speed, never correctness, so never fail over it.
+    process.stderr.write(
+      `warning: could not write cache: ${err instanceof Error ? err.message : err}\n`,
+    );
+  }
+}
+
+function normalizeSegments(raw: RawSegment[]): RawSegment[] {
+  return raw
+    .filter(seg => seg && typeof seg.start === 'number')
+    .map(seg => ({
+      start: seg.start,
+      duration: typeof seg.duration === 'number' ? seg.duration : 0,
+      text: String(seg.text ?? '')
+        .replace(/\s+/g, ' ')
+        .trim(),
+    }))
+    .filter(seg => seg.text.length > 0);
+}
+
+/**
+ * Returns segments, or a failure the caller can decide about. Captions failing
+ * is not necessarily fatal now that Whisper can stand in, so this reports
+ * rather than exits — except for a missing uvx, which nothing recovers from.
+ */
+async function fetchCaptions(
   id: string,
   langs: string[],
-): Promise<RawSegment[]> {
+): Promise<
+  | { ok: true; segments: RawSegment[] }
+  | { ok: false; code: 3 | 4; detail: string }
+> {
   const result = await run('uvx', [
     '--from',
     'youtube-transcript-api',
@@ -237,26 +340,14 @@ async function fetchSegments(
 
     // A rate-limited IP and a captions-disabled video both fail here, but they
     // call for opposite responses: wait and retry vs. give up on this video.
-    // yt-dlp is no escape hatch — it fetches captions from the same timedtext
-    // endpoint and gets the same 429.
-    if (
+    // yt-dlp is no escape hatch for either — it fetches captions from the same
+    // timedtext endpoint and gets the same 429. Whisper is, because the media
+    // CDN that serves audio is unaffected by the caption quota.
+    const blocked =
       /blocking requests from your IP|RequestBlocked|IpBlocked|Too Many Requests|429/i.test(
         detail,
-      )
-    ) {
-      fail(
-        `YouTube is rate-limiting this IP, so captions for ${id} are temporarily unavailable.\n` +
-          'This is transient. Wait a few minutes, or pass cookies from a logged-in\n' +
-          'browser session if it persists. Metadata and chapters are unaffected.\n\n' +
-          detail,
-        4,
       );
-    }
-
-    fail(
-      `No captions retrieved for ${id}.\n${detail || 'youtube-transcript-api produced no output.'}`,
-      3,
-    );
+    return { ok: false, code: blocked ? 4 : 3, detail };
   }
 
   // The CLI takes a list of video ids, so it returns a list of transcripts.
@@ -266,19 +357,104 @@ async function fetchSegments(
       : (parsed as RawSegment[]);
 
   if (!Array.isArray(segments) || segments.length === 0) {
-    fail(`No caption segments returned for ${id}.`, 3);
+    return { ok: false, code: 3, detail: 'No caption segments returned.' };
   }
 
-  return segments
-    .filter(seg => seg && typeof seg.start === 'number')
-    .map(seg => ({
-      start: seg.start,
-      duration: typeof seg.duration === 'number' ? seg.duration : 0,
-      text: String(seg.text ?? '')
-        .replace(/\s+/g, ' ')
-        .trim(),
-    }))
-    .filter(seg => seg.text.length > 0);
+  return { ok: true, segments: normalizeSegments(segments) };
+}
+
+/**
+ * Transcribe the audio track locally. This is the only route that survives a
+ * caption block: the timedtext endpoint is rate-limited per IP, but the media
+ * CDN serving audio is not, so the download goes through even while captions
+ * 429. Costs a model download once and a few minutes of compute per video, so
+ * callers opt in rather than getting it silently.
+ */
+async function transcribeAudio(
+  id: string,
+  model: string,
+): Promise<RawSegment[]> {
+  const workdir = mkdtempSync(join(tmpdir(), `yt-${id}-`));
+  const audio = join(workdir, 'audio.m4a');
+
+  try {
+    process.stderr.write('Downloading audio...\n');
+    const dl = await run('uvx', [
+      'yt-dlp',
+      '-f',
+      'bestaudio[ext=m4a]/bestaudio',
+      '--no-warnings',
+      '--no-progress',
+      '-o',
+      audio,
+      `https://www.youtube.com/watch?v=${id}`,
+    ]);
+    if (dl.code !== 0 || !existsSync(audio)) {
+      fail(
+        `Audio download failed for ${id}.\n${(dl.stderr || dl.stdout).trim()}`,
+        5,
+      );
+    }
+
+    // MLX is Apple-Silicon only and dramatically faster there; openai-whisper
+    // is the portable fallback. Their CLI flags differ, hence the two shapes.
+    const useMlx = process.platform === 'darwin' && process.arch === 'arm64';
+    process.stderr.write(
+      `Transcribing with ${useMlx ? 'mlx-whisper' : 'openai-whisper'} (${model}). ` +
+        'First run downloads the model.\n',
+    );
+
+    const asr = useMlx
+      ? await run('uvx', [
+          '--from',
+          'mlx-whisper',
+          'mlx_whisper',
+          audio,
+          '--model',
+          model,
+          '--output-dir',
+          workdir,
+          '--output-name',
+          'out',
+          '--output-format',
+          'json',
+        ])
+      : await run('uvx', [
+          '--from',
+          'openai-whisper',
+          'whisper',
+          audio,
+          '--model',
+          model.includes('/') ? 'turbo' : model,
+          '--output_dir',
+          workdir,
+          '--output_format',
+          'json',
+        ]);
+
+    const produced = ['out.json', 'audio.json']
+      .map(name => join(workdir, name))
+      .find(existsSync);
+
+    if (!produced) {
+      fail(
+        `Transcription produced no output.\n${(asr.stderr || asr.stdout).trim()}`,
+        5,
+      );
+    }
+
+    const parsed = JSON.parse(readFileSync(produced, 'utf-8'));
+    const segments = (parsed.segments ?? []).map((seg: any) => ({
+      text: String(seg.text ?? '').trim(),
+      start: Number(seg.start ?? 0),
+      duration: Number(seg.end ?? 0) - Number(seg.start ?? 0),
+    }));
+
+    if (segments.length === 0) fail('Transcription returned no segments.', 5);
+    return normalizeSegments(segments);
+  } finally {
+    rmSync(workdir, { recursive: true, force: true });
+  }
 }
 
 /**
@@ -412,6 +588,11 @@ async function main() {
   let withMetadata = true;
   let out: string | null = null;
   let keep: Set<number> | null = null;
+  let whisper: 'never' | 'fallback' | 'always' = 'never';
+  let whisperModel = DEFAULT_WHISPER_MODEL;
+  let useCache = true;
+  let readFromCache = true;
+  let cacheDir: string | null = null;
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -459,6 +640,24 @@ async function main() {
       case '--out':
         out = next();
         break;
+      case '--whisper':
+        whisper = 'always';
+        break;
+      case '--whisper-fallback':
+        whisper = 'fallback';
+        break;
+      case '--whisper-model':
+        whisperModel = next();
+        break;
+      case '--no-cache':
+        useCache = false;
+        break;
+      case '--refresh':
+        readFromCache = false;
+        break;
+      case '--cache-dir':
+        cacheDir = next();
+        break;
       default:
         if (arg.startsWith('-')) fail(`Unknown option: ${arg}`);
         if (target) fail('Pass exactly one video URL or id');
@@ -471,12 +670,79 @@ async function main() {
   if (!id) fail(`Could not parse a YouTube video id from: ${target}`);
 
   const url = `https://www.youtube.com/watch?v=${id}`;
+  const cacheFile = cachePath(cacheDir, id);
+  const cached = useCache && readFromCache ? readCache(cacheFile) : null;
 
-  // Both calls hit the network; run them together.
-  const [segments, meta] = await Promise.all([
-    fetchSegments(id, langs),
-    withMetadata ? fetchMetadata(id) : Promise.resolve(null),
-  ]);
+  let segments: RawSegment[];
+  let meta: Metadata | null;
+  let transcriptSource: TranscriptSource;
+
+  if (cached) {
+    ({ segments, metadata: meta } = cached);
+    transcriptSource = cached.transcript_source;
+    process.stderr.write(
+      `cache hit (${cached.fetched_at}, ${cached.transcript_source}); no network. --refresh to refetch.\n`,
+    );
+  } else {
+    // Metadata and captions are independent requests, so overlap them.
+    const [captions, fetchedMeta] = await Promise.all([
+      whisper === 'always'
+        ? Promise.resolve({ ok: false as const, code: 3 as const, detail: '' })
+        : fetchCaptions(id, langs),
+      withMetadata ? fetchMetadata(id) : Promise.resolve(null),
+    ]);
+    meta = fetchedMeta;
+
+    if (captions.ok) {
+      segments = captions.segments;
+      const lang = langs[0];
+      transcriptSource = !meta
+        ? 'unknown'
+        : meta.subtitle_langs.some(l => l.startsWith(lang))
+          ? 'manual'
+          : meta.auto_caption_langs.some(l => l.startsWith(lang))
+            ? 'generated'
+            : 'unknown';
+    } else if (whisper === 'always' || whisper === 'fallback') {
+      if (whisper === 'fallback') {
+        process.stderr.write(
+          `Captions unavailable (${captions.code === 4 ? 'rate limited' : 'none published'}); falling back to local transcription.\n`,
+        );
+      }
+      segments = await transcribeAudio(id, whisperModel);
+      transcriptSource = 'whisper';
+    } else if (captions.code === 4) {
+      fail(
+        `YouTube is rate-limiting this IP, so captions for ${id} are temporarily unavailable.\n` +
+          'This is transient and affects only the caption endpoint; metadata, chapters,\n' +
+          'and the audio stream still work. Either wait a few minutes, or re-run with\n' +
+          '--whisper-fallback to transcribe the audio locally instead.\n' +
+          'Avoid browser cookies as a workaround: upstream warns that authenticating\n' +
+          'this way eventually gets the account permanently banned.\n\n' +
+          captions.detail,
+        4,
+      );
+    } else {
+      fail(
+        `No captions published for ${id}.\n` +
+          'Re-run with --whisper-fallback to transcribe the audio locally instead.\n\n' +
+          captions.detail,
+        3,
+      );
+    }
+
+    if (useCache) {
+      writeCache(cacheFile, {
+        version: 1,
+        id,
+        fetched_at: new Date().toISOString(),
+        transcript_source: transcriptSource,
+        language: langs[0],
+        metadata: meta,
+        segments,
+      });
+    }
+  }
 
   if (withMetadata && !meta) {
     process.stderr.write(
@@ -511,14 +777,6 @@ async function main() {
     output = renderTranscript(chapters, meta, url, plain);
   } else {
     const wordCount = chapters.reduce((sum, c) => sum + c.word_count, 0);
-    const lang = langs[0];
-    const captionKind = !meta
-      ? 'unknown'
-      : meta.subtitle_langs.some(l => l.startsWith(lang))
-        ? 'manual'
-        : meta.auto_caption_langs.some(l => l.startsWith(lang))
-          ? 'generated'
-          : 'unknown';
 
     const bundle = {
       id,
@@ -529,8 +787,8 @@ async function main() {
       duration_hms: meta?.duration != null ? hms(meta.duration) : null,
       upload_date: meta?.upload_date ?? null,
       view_count: meta?.view_count ?? null,
-      caption_kind: captionKind,
-      caption_language: lang,
+      caption_kind: transcriptSource,
+      caption_language: langs[0],
       chapters_source: source,
       chapters_total: allChapters.length,
       chapters_included: chapters.length,
