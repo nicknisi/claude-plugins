@@ -8,6 +8,7 @@
     "sync": "tsx scripts/sync-marketplace.ts",
     "build": "pnpm -r --if-present run bundle",
     "typecheck": "tsc --build",
+    "test": "node --import tsx --test tests/*.test.ts",
     "format": "prettier --write ."
   },
   "dependencies": {

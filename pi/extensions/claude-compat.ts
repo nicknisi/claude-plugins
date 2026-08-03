@@ -27,6 +27,7 @@ type CompatTask = {
 };
 
 const MAX_TOOL_TEXT_BYTES = 50 * 1024;
+const CUSTOM_ANSWER_CHOICE = 'Other... (type your own answer)';
 let taskQueue = Promise.resolve();
 let todos: unknown[] = [];
 
@@ -47,7 +48,18 @@ function optionDisplay(option: QuestionOption) {
     : option.label;
 }
 
-async function askQuestions(ctx: ExtensionContext, questions: Question[]) {
+async function promptForCustomAnswer(
+  ctx: ExtensionContext,
+  question: Question,
+) {
+  const answer = await ctx.ui.input(question.question, 'Type your answer');
+  return answer?.trim();
+}
+
+export async function askQuestions(
+  ctx: ExtensionContext,
+  questions: Question[],
+) {
   const answers: Array<{
     header: string;
     question: string;
@@ -79,9 +91,13 @@ async function askQuestions(ctx: ExtensionContext, questions: Question[]) {
       const selected: string[] = [];
       const remaining = [...q.options];
 
-      while (remaining.length > 0) {
+      while (true) {
         const done = selected.length > 0 ? 'Done' : 'Skip';
-        const choices = [...remaining.map(optionDisplay), done];
+        const choices = [
+          ...remaining.map(optionDisplay),
+          CUSTOM_ANSWER_CHOICE,
+          done,
+        ];
         const choice = await ctx.ui.select(
           selected.length > 0
             ? `${q.question} (selected: ${selected.join(', ')})`
@@ -90,6 +106,12 @@ async function askQuestions(ctx: ExtensionContext, questions: Question[]) {
         );
 
         if (!choice || choice === done) break;
+        if (choice === CUSTOM_ANSWER_CHOICE) {
+          const customAnswer = await promptForCustomAnswer(ctx, q);
+          if (customAnswer) selected.push(customAnswer);
+          continue;
+        }
+
         const index = remaining.findIndex(
           option => optionDisplay(option) === choice,
         );
@@ -105,16 +127,40 @@ async function askQuestions(ctx: ExtensionContext, questions: Question[]) {
         answer: selected,
       });
     } else {
-      const choices = q.options.map(optionDisplay);
-      const choice = await ctx.ui.select(q.question, choices);
-      const option = q.options.find(
-        candidate => optionDisplay(candidate) === choice,
-      );
-      answers.push({
-        header: q.header,
-        question: q.question,
-        answer: option?.label ?? choice ?? '',
-      });
+      while (true) {
+        const choices = [...q.options.map(optionDisplay), CUSTOM_ANSWER_CHOICE];
+        const choice = await ctx.ui.select(q.question, choices);
+
+        if (!choice) {
+          answers.push({
+            header: q.header,
+            question: q.question,
+            answer: '',
+          });
+          break;
+        }
+
+        if (choice === CUSTOM_ANSWER_CHOICE) {
+          const customAnswer = await promptForCustomAnswer(ctx, q);
+          if (!customAnswer) continue;
+          answers.push({
+            header: q.header,
+            question: q.question,
+            answer: customAnswer,
+          });
+          break;
+        }
+
+        const option = q.options.find(
+          candidate => optionDisplay(candidate) === choice,
+        );
+        answers.push({
+          header: q.header,
+          question: q.question,
+          answer: option?.label ?? choice,
+        });
+        break;
+      }
     }
   }
 
