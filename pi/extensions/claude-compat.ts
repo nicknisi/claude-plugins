@@ -6,14 +6,6 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Type } from 'typebox';
 
-type QuestionOption = { label: string; description?: string };
-type Question = {
-  question: string;
-  header: string;
-  options: QuestionOption[];
-  multiSelect: boolean;
-};
-
 type CompatTask = {
   id: string;
   subject: string;
@@ -39,103 +31,6 @@ function truncateText(text: string, maxBytes = MAX_TOOL_TEXT_BYTES) {
     out = out.slice(0, Math.floor(out.length * 0.9));
   }
   return `${out}\n\n[Truncated from ${bytes} bytes to ${Buffer.byteLength(out, 'utf8')} bytes.]`;
-}
-
-function optionDisplay(option: QuestionOption) {
-  return option.description
-    ? `${option.label} — ${option.description}`
-    : option.label;
-}
-
-async function askQuestions(ctx: ExtensionContext, questions: Question[]) {
-  const answers: Array<{
-    header: string;
-    question: string;
-    answer: string | string[];
-  }> = [];
-
-  if (!ctx.hasUI) {
-    return {
-      content: [
-        {
-          type: 'text' as const,
-          text:
-            'Structured questions require Pi interactive/RPC UI. Ask the user these questions in plain text instead:\n\n' +
-            questions
-              .map(
-                (q, i) =>
-                  `${i + 1}. ${q.question}\n` +
-                  q.options.map(o => `   - ${optionDisplay(o)}`).join('\n'),
-              )
-              .join('\n\n'),
-        },
-      ],
-      details: { questions, answers: [] },
-    };
-  }
-
-  for (const q of questions) {
-    if (q.multiSelect) {
-      const selected: string[] = [];
-      const remaining = [...q.options];
-
-      while (remaining.length > 0) {
-        const done = selected.length > 0 ? 'Done' : 'Skip';
-        const choices = [...remaining.map(optionDisplay), done];
-        const choice = await ctx.ui.select(
-          selected.length > 0
-            ? `${q.question} (selected: ${selected.join(', ')})`
-            : q.question,
-          choices,
-        );
-
-        if (!choice || choice === done) break;
-        const index = remaining.findIndex(
-          option => optionDisplay(option) === choice,
-        );
-        if (index >= 0) {
-          selected.push(remaining[index]!.label);
-          remaining.splice(index, 1);
-        }
-      }
-
-      answers.push({
-        header: q.header,
-        question: q.question,
-        answer: selected,
-      });
-    } else {
-      const choices = q.options.map(optionDisplay);
-      const choice = await ctx.ui.select(q.question, choices);
-      const option = q.options.find(
-        candidate => optionDisplay(candidate) === choice,
-      );
-      answers.push({
-        header: q.header,
-        question: q.question,
-        answer: option?.label ?? choice ?? '',
-      });
-    }
-  }
-
-  return {
-    content: [
-      {
-        type: 'text' as const,
-        text:
-          'User answered structured questions:\n' +
-          answers
-            .map(answer => {
-              const value = Array.isArray(answer.answer)
-                ? answer.answer.join(', ')
-                : answer.answer;
-              return `- ${answer.header}: ${value}`;
-            })
-            .join('\n'),
-      },
-    ],
-    details: { questions, answers },
-  };
 }
 
 function taskFile(ctx: ExtensionContext) {
@@ -195,52 +90,12 @@ function stripHtml(html: string) {
     .trim();
 }
 
-function registerAskUserQuestion(pi: ExtensionAPI, name: string) {
-  pi.registerTool({
-    name,
-    label: name,
-    description:
-      'Ask the user 1-4 structured clarifying questions with 2-4 options each. Claude Code compatibility shim for AskUserQuestion.',
-    promptSnippet:
-      'Ask the user structured clarifying questions with selectable options',
-    promptGuidelines: [
-      `Use ${name} when a loaded skill asks for AskUserQuestion or structured user clarification.`,
-    ],
-    parameters: Type.Object({
-      questions: Type.Array(
-        Type.Object({
-          question: Type.String({
-            description: 'Full question text shown to the user',
-          }),
-          header: Type.String({
-            description: 'Short label, max 12 characters',
-          }),
-          options: Type.Array(
-            Type.Object({
-              label: Type.String(),
-              description: Type.Optional(Type.String()),
-            }),
-            { minItems: 2, maxItems: 4 },
-          ),
-          multiSelect: Type.Boolean(),
-        }),
-        { minItems: 1, maxItems: 4 },
-      ),
-    }),
-    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-      return askQuestions(ctx, params.questions as Question[]);
-    },
-  });
-}
-
 export default function claudeCompat(pi: ExtensionAPI) {
   pi.on('before_agent_start', event => ({
     systemPrompt:
       event.systemPrompt +
-      `\n\nClaude Code compatibility shims are installed for this session. When a loaded Claude Code plugin/skill mentions Claude tool names, map them as follows:\n- AskUserQuestion: use the AskUserQuestion compatibility tool.\n- WebFetch/WebSearch/TodoWrite/TaskCreate/TaskUpdate/TaskList/TaskGet: use the same-named compatibility tools.\n- Task or Agent subagents: use Pi's subagent tool from pi-subagents when available.\n- Glob: use find. Grep: use grep. LS: use ls. MultiEdit: use edit with multiple edits[].\n- MCP tools are not automatically emulated unless a dedicated Pi extension provides them; use available web/search/subagent/bash fallbacks instead.`,
+      `\n\nClaude Code compatibility shims are installed for this session. When a loaded Claude Code plugin/skill mentions Claude tool names, map them as follows:\n- AskUserQuestion: use the ask_user_question tool.\n- WebFetch/WebSearch/TodoWrite/TaskCreate/TaskUpdate/TaskList/TaskGet: use the same-named compatibility tools.\n- Task or Agent subagents: use Pi's subagent tool from pi-subagents when available.\n- Glob: use find. Grep: use grep. LS: use ls. MultiEdit: use edit with multiple edits[].\n- MCP tools are not automatically emulated unless a dedicated Pi extension provides them; use available web/search/subagent/bash fallbacks instead.`,
   }));
-
-  registerAskUserQuestion(pi, 'AskUserQuestion');
 
   pi.registerTool({
     name: 'WebFetch',
