@@ -40,5 +40,10 @@
     "extensions": [
       "pi/extensions/*.ts"
     ]
+  },
+  "pnpm": {
+    "overrides": {
+      "protobufjs": "8.6.6"
+    }
   }
 }
