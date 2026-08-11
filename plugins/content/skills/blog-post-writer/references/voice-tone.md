@@ -1,170 +1,123 @@
-# Nick Nisi's Voice and Tone
+# Nick Nisi's Voice — Ceilings and Prohibitions
 
-Captured from analyzing posts at nicknisi.com
+**This file used to be a feature list.** It said things like "uses single-line
+paragraphs for impact" and "ties back to the opening" and "vulnerability builds
+credibility." Every one of those was true of his writing and every one of them was
+a disaster as an instruction.
 
-## Core Writing Characteristics
+Here's why. A feature a real writer uses *sometimes*, at maybe 20% intensity,
+becomes a per-section quota the moment you write it as an imperative. "Uses
+single-line paragraphs for impact" produced a post where **eight of eight sections**
+ended on an aphorism. Nick's own rate is closer to one in eight.
 
-### Voice
+The tell was never the presence of the device. **It was the rate and the
+regularity.** Nick uses every technique listed below. He just doesn't use them all,
+every time, on schedule.
 
-Personal, authentic, conversational yet thoughtful. Nick writes like he's having a one-on-one conversation with a peer developer over coffee.
+So this file no longer tells you what to do. It tells you what not to exceed. You
+cannot Goodhart a ceiling.
 
-### Vulnerability
+## Read the corpus instead
 
-Nick isn't afraid to admit uncertainty, fear, or being wrong. He shares his journey from skepticism to understanding.
+Before writing a word, read 2–3 recent posts from `src/content/posts/` in full.
+Imitate **those**. A model imitates examples far better than it imitates a prose
+description of examples, and the description is a lossy round-trip that injects
+error twice.
 
-Examples:
+Good ones to load: `fleet.mdx`, `case-statement.mdx`, `ideation.mdx`.
 
-- "I was wrong, but not in the way I feared."
-- "I won't lie – joining Meta was intimidating."
-- "That night in my hotel room, I couldn't sleep."
-- "Looking at my interviewers' backgrounds... it was hard not to feel like an outsider."
+## Stance — the part that actually is his voice
 
-### Narrative Structure
+Not observable features. His relationship to the material:
 
-Posts often follow a journey: initial position → experience/challenge → realization → new understanding. He builds tension and resolves it.
+**To his claims:** show the receipt. He states a mechanism, then the evidence, then
+understates the conclusion. He'd rather explain how the fusion layer resolves a
+stale hook than tell you the lesson was profound.
 
-### Sentence Style
+**To himself:** low ceremony. He does not narrate an arc over his own past. He
+admits specific limits about specific things — "the PRs it generated weren't
+perfect," "letting go of 'I'll just do it myself' is harder than I expected" —
+not staged confessions positioned where a redemption arc needs a cost.
 
-- Mix of short punchy sentences and longer explanatory ones
-- Uses fragments for emphasis
-- Varies paragraph length for rhythm
-- Short paragraphs for key moments: "🤯" stands alone, "That changed everything." gets its own paragraph
+**To the reader:** a peer who already has context. Not an audience to be landed.
+He never emcees. He never says "now watch this."
 
-### Specific Phrases and Patterns
+Forbidding moves produces voice. Requesting moves produces pastiche.
 
-**Opening hooks:**
+## Measured ceilings
 
-- Sets up expectations then challenges them
-- Often starts with current position or recent event
-- "I've been thinking a lot about..."
-- "Want to dive in? [Links]" (practical calls to action upfront)
+Rates from 20 published posts. Run `scripts/slopcheck.py` for current numbers —
+these drift as he writes more.
 
-**Transitions:**
+| Feature | His rate | Ceiling | Notes |
+| ------- | -------- | ------- | ----- |
+| Sections ending on an aphorism | 0.15 (max 0.40) | **≤ 0.33** | The single strongest tell. Most sections end on information. |
+| "Not X. It's Y." antithesis | 0.83 / 1k words | **≤ 2 / 1k** | Fine once. Six times is a metronome. |
+| Narrator stage directions | 0.05 per post | **≤ 1** | "Now watch what happened next" — he does not do this. |
+| Staged epiphany markers | 0.15 per post | **≤ 1** | "reframed everything," "something clicked" |
+| First-person mental states | 0.97 / 1k words | **≤ 2 / 1k** | See the hard rule below. |
+| Long-long-short rhythm triplets | 0.20 / 1k | **≤ 0.9 / 1k** | Two long sentences then a short one, as a beat. |
+| Closure devices in final section | 0.05 per post | **≤ 1** | Callback, direct address, bolded lesson, past-self frame — pick one. |
+| Section length variation (CV) | 0.45 | **≥ 0.3** | Suspiciously even sections mean a template. |
 
-- "Here's what I've learned..."
-- "The strange part?"
-- "Let's talk about..."
-- "But beneath the apprehension..."
+**Both directions count.** A draft sitting far *below* his baseline is as suspicious
+as one above it — it means someone wrote to the metric. The post that triggered this
+rewrite had an em-dash rate of 5.84/1k against his 1.42/1k mean and *that wasn't
+even the problem*; the earlier gate had congratulated itself for coming in under
+Fleet's em-dash count while shipping six other structural failures.
 
-**Emphasis techniques:**
+## The hard rule: interiority
 
-- Single-line paragraphs for impact
-- Emojis used sparingly but effectively (🤯, 😂)
-- Italics for internal thoughts or emphasis
-- Bold for key concepts
+**Facts may come from logs and git history. Feelings may not come from anywhere but
+Nick.**
 
-**Metaphors and analogies:**
+Every sentence claiming what he thought, felt, assumed, realized, feared, or
+never considered is either:
 
-- Technical concepts explained through relatable comparisons
-- "Like cooking with your eyes closed"
-- "The developers who insist on writing every line by hand are like accountants refusing to use spreadsheets"
-- "It was a pair programmer who spoke fluent bash"
+1. a verbatim quote from him, or
+2. a `[NICK: what were you actually thinking here?]` marker
 
-### Technical Writing Style
+There is no third option. Not "a reasonable inference from the logs." Not "clearly
+implied by his behavior."
 
-**Code and tools:**
+Readers don't detect fabricated inner life directly — they detect its artifact:
+**narratively convenient** inner life. Invented feelings always arrive exactly on
+cue and always point at the moral. Real interiority is lumpy: irrelevant
+reactions, unresolved irritation, feelings that don't serve the plot. If every
+emotion in a draft is load-bearing, every emotion in it was manufactured.
 
-- Mentions specific tools naturally (vim, tmux, rg, npm)
-- Shows actual commands and code when relevant
-- Explains technical decisions without over-explaining
-- Assumes reader has technical knowledge but explains when needed
+## Prohibitions
 
-**Examples:**
+- **No sustained metaphor.** One figure, used once. A metaphor recurring across
+  three or more sections is a framework fingerprint, not an image. (The bad post ran
+  "the city I'd built" through four sections.)
+- **No invented precision.** Every number traces to a source. "Twelve minutes of
+  curiosity, nineteen minutes of reading" is arithmetic no human performs on their
+  own life.
+- **No allusive headers in bulk.** His are descriptive: "What Fleet is," "Three
+  signals, none trustworthy alone," "Evidence that can't be faked," "What this
+  costs." Not "The drift," "Coming home," "What I'd tell July me."
+- **No stacked endings.** The bad post closed with a callback *and* a direct address
+  *and* a bolded portable lesson *and* an apology. Pick the plainest one.
+- **No fresh metaphor per paragraph.** He runs about 1 novel figure per 1,000 words
+  and then plainly explains it. Models mint one per paragraph; humans reuse and
+  clumsily extend the few they have.
 
-- Inline code formatting: `CLAUDE.md`, `git`, `npm test`
-- Commands shown naturally in prose
-- Tool names used casually: "I watched it use rg to search through codebases"
+## What to keep
 
-### Honesty About Limitations
+These survive because they're properties of the material, not moves to execute:
 
-Nick admits when things aren't perfect:
+- Specific tool names, real commands, actual file paths
+- Real numbers with sources
+- Honest limits, stated plainly and specifically
+- Credit to named collaborators
+- Humor that arises from the facts, not humor constructed to land a section
 
-- "The PRs it generated weren't perfect. But they worked. Somewhat."
-- "Would I ship our vibe-coded GitHub Action to production? No way."
-- "Not perfect, not production-ready, but working."
+## The meta-rule
 
-### Self-Awareness and Humor
+Human technical prose has slack — hedges, redundancy, sentences that merely inform,
+uneven paragraphs, the occasional shrug. **Uniform optimization is the meta-tell
+that subsumes every specific one.** If every paragraph in your draft is doing
+rhetorical work, you have written slop no matter how clean the vocabulary is.
 
-Light self-deprecation and humor:
-
-- "(except maybe 'Why doesn't Nick use VS Code?' 😉)"
-- "One of my favorite memories? Getting texts from friends asking why my face kept showing up in their Instagram feeds."
-- "I like to think I brought a certain… charm to people's social media experience."
-- Acknowledging his tooling preferences with humor
-
-### Structure Patterns
-
-**Sections often use:**
-
-- Clear headers that are descriptive
-- Lists with explanations
-- Tables when comparing options
-- Code examples with context
-- Pull quotes or emphasized text
-
-**Common section patterns:**
-
-- The Setup/Problem → The Journey → The Results → Lessons Learned
-- Philosophy sections: "Here's what I've learned..."
-- How-to sections with practical steps
-- Reflection sections: "Looking back..."
-
-### Conclusions
-
-Endings often:
-
-- Tie back to opening tension or question
-- Offer forward-looking perspective
-- Include actionable advice
-- End on optimistic or thought-provoking note
-
-Examples:
-
-- "The party isn't over – we're just changing the runtime!"
-- "That week, I learned to code with my eyes wide shut. The strange part? I've never seen more clearly where we're headed."
-- "You're not being replaced; you're being amplified."
-
-### Authenticity Markers
-
-**Real examples:**
-
-- Specific projects and PRs with links
-- Actual teammates mentioned by name
-- Real events (MCP Night, onsite meetings)
-- Concrete details (5,000 lines of TypeScript, two hours, 600 developers)
-
-**Acknowledges help:**
-
-- "Thanks to John Christopher for reviewing this post."
-- Credits teammates and collaborators
-
-### Tone Shifts
-
-Nick modulates tone based on content:
-
-- **Technical tutorials**: Clear, instructional, still conversational
-- **Personal reflections**: Vulnerable, thoughtful
-- **Tool reviews**: Enthusiastic but honest
-- **Career stories**: Reflective, self-aware
-
-### What to Avoid
-
-- Corporate speak or marketing language
-- Overly formal academic tone
-- Pretending to have all the answers
-- Dismissing reader concerns
-- Being preachy or condescending
-- Hiding uncertainty or mistakes
-
-### Key Principles
-
-1. Be conversational but substantive
-2. Share the journey, not just the destination
-3. Admit when you're uncertain or learning
-4. Use specific details and real examples
-5. Balance technical depth with accessibility
-6. End with forward momentum
-7. Write for a peer, not a student
-8. Show vulnerability builds credibility
-9. Humor works when it's self-aware
-10. Practical value matters
+Leave flat ground. Let some paragraphs just say a thing.

@@ -7,6 +7,30 @@ description: This skill should be used when the user asks to "tighten this up", 
 
 A final editing pass that catches and removes AI-detectable writing patterns. Not a detector — an editor. The output reads like a human wrote it because, after this pass, a human shaped every sentence.
 
+## What this pass cannot see
+
+**This skill scans vocabulary and sentence-level habits. It is blind to structure,
+and structure is where modern AI prose gives itself away.**
+
+A ghost-written blog post once passed this gate with zero findings — no AI
+vocabulary, em-dash rate *below* the author's own baseline — while ending eight of
+eight sections on an aphorism, using six "Not X. That's Y." antitheses, and
+asserting nine invented claims about the author's inner life. Readers called it
+slop immediately. The gate had certified its own blind spot.
+
+If you are tightening a draft written *for* someone else in their voice, run a
+corpus-calibrated structural check first — see
+`plugins/content/skills/blog-post-writer/scripts/slopcheck.py`. Two rules that pass
+list can't encode:
+
+- **Slop is a rate, not a presence.** Real writers use every device on the list
+  below. The tell is one firing on every section instead of once a post. Thresholds
+  have to be measured against the author's real corpus.
+- **Check both directions.** A metric sitting far *below* an author's baseline means
+  someone wrote to the metric. That's as suspicious as excess.
+
+Run this skill last and weight it least.
+
 ## When to Run
 
 - After completing any prose-heavy output (blog posts, documentation, emails, talks)

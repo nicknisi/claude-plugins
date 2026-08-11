@@ -1,349 +1,152 @@
 ---
 name: blog-post-writer
-description: Transform brain dumps into polished blog posts in Nick Nisi's voice. Use when the user says "write a blog post," "draft a post," "write about [topic]," "turn my notes into a blog post," or provides scattered ideas, talking points, or conclusions that need shaping into a cohesive narrative.
+description: Turn Nick Nisi's raw material into a blog post draft in his voice. Use when the user says "write a blog post," "draft a post," "write about [topic]," "turn my notes into a blog post," or provides scattered ideas that need shaping. Produces a deliberately flat draft with sourced facts and tagged gaps — never a finished post.
 ---
 
 # Nick Nisi Blog Writer
 
-Transform unstructured brain dumps into polished blog posts that sound like Nick Nisi.
+Turn raw material into a draft Nick finishes. This skill does research, structure,
+and connective prose. It does **not** produce publishable first-person writing.
+
+## The rule this skill exists to enforce
+
+> **Facts may come from logs. Feelings may not.**
+
+An earlier version of this skill shipped a post that readers called AI slop. The
+facts were impeccable — real timestamps, real commit stats, real Slack quotes. The
+failure was that it also generated Nick's inner life: what he thought, what he'd
+assumed, what moved him. Nine such claims; one had a source. Readers can't always
+name that, but they feel it, and they stop trusting the piece.
+
+The measured version: that post claimed inner states at **5.84 per 1,000 words**
+against Nick's corpus mean of **0.97**. Six times his rate. He mostly writes about
+what he built. The draft wrote about how he felt about what he built.
+
+Everything below follows from that.
 
 ## Process
 
-### 1. Receive the Brain Dump
+### 1. Gather the raw material
 
-Accept whatever the user provides:
+Accept the mess: scattered thoughts, code, commands, conclusions, links. Don't
+require organization.
 
-- Scattered thoughts and ideas
-- Technical points to cover
-- Code examples or commands
-- Conclusions or takeaways
-- Links to reference
-- Random observations
+If the material is thin, mine it — session logs, Slack, git history, the repos
+themselves. This is the pipeline's genuine strength and there's no reason to hold
+back. **Record a source for every fact.** A working file of claim → source keeps
+the draft honest and makes step 5 mechanical.
 
-Don't require organization. The mess is the input.
+### 2. Interview for the parts you cannot mine
 
-**Clarify constraints** (if not provided, ask about):
+**This is the highest-value step in the skill. Do not skip it.**
 
-- Target length (see `references/post-template.md` for word count ranges)
-- Target audience (if different from general developer peers)
-- Whether this is a first draft or revision of existing content
-- Any specific sections, topics, or angles to include or exclude
+Logs record what Nick did. They never record what he thought. Ask 8–15 targeted
+questions with `ask_user_question` or plain prose, and capture the answers
+**verbatim**:
 
-### 2. Read Voice and Tone
+- "What did you actually think when X happened?"
+- "Why did you really stop doing Y? Not the tidy reason — the real one."
+- "What's the part of this you'd argue with someone about?"
+- "What did you get wrong that you'd rather not include?"
 
-Load `references/voice-tone.md` as the baseline voice guide.
+Tell him to type fast and not polish. His unpolished answers are the raw material
+for every voice-load-bearing sentence in the post. They will be flat, hedged, and
+specific — **that flatness is the voice.** Do not smooth it.
 
-**Then calibrate against recent writing:**
+If he declines to be interviewed, the post ships with `[NICK: ...]` markers where
+his inner life would go. That is a correct outcome, not a failure.
 
-1. Fetch `https://nicknisi.com/posts` to find the 2-3 most recent posts
-2. Fetch and read those posts
-3. Note any patterns that extend or differ from the static reference — new phrases, tone shifts, topic-specific voice adjustments
+### 3. Read the corpus, not a description of it
 
-The static reference captures established patterns. The live fetch catches evolution. When they conflict, prefer the recent posts — voice is a living thing. If the site cannot be fetched, rely on the static voice guide alone.
+Read 2–3 recent posts from `src/content/posts/` in full — most recent first, plus
+any on a similar topic. Write connective prose consistent with **those**, not with
+a summary of them.
 
-Key characteristics (read the full reference for details and examples):
+Then read `references/voice-tone.md`, which is now a list of **ceilings and
+prohibitions**, not features to hit. Requesting a feature makes a model execute it
+every time it applies; that's what produced eight aphorisms in an eight-section
+post. Only constraints are safe to state.
 
-- Conversational yet substantive
-- Vulnerable and authentic
-- Journey-based narrative
-- Mix of short and long sentences
-- Specific examples and real details
-- Self-aware humor
+### 4. Structure from the material
 
-### 3. Choose a Narrative Framework
+Find the chronology or the argument already in the facts and follow it.
 
-Match the content to the best framework. Read the corresponding reference file before writing.
+**Do not select a narrative framework.** `references/frameworks.md` exists as
+diagnostic vocabulary for talking about a draft that already exists — never as a
+template to fill. Choosing a framework means choosing what the events *meant*,
+which is Nick's call, not the tool's. A flawlessly executed Story Circle is the
+single most detectable artifact this skill can produce, because no human drafting
+from memory has ever produced one.
 
-**Quick-match shortcuts** (covers ~80% of posts):
+The only structural instruction: **identify the one turn the post exists to make,
+arrange the facts so it lands, and leave flat ground everywhere else.**
 
-- Personal journey → **Story Circle** (`references/story-circle.md`)
-- Teaching a concept → **Progressive Disclosure** (`references/progressive-disclosure.md`)
-- Bug fix story → **PAS** (`references/problem-agitation-solution.md`)
-- Tool comparison → **Compare & Contrast** (`references/compare-contrast.md`)
-- Something broke → **Post-mortem** (`references/post-mortem.md`)
-- Technical decision → **SCQA** (`references/scqa.md`)
-- Contrarian take → **The Sparkline** (`references/the-sparkline.md`)
-- Absurd complexity → **Kafkaesque Labyrinth** (`references/kafkaesque-labyrinth.md`)
+Section headers are descriptive — they name the topic ("What Fleet is", "Three
+signals, none trustworthy alone"). Allusive narrative-beat headers ("The drift",
+"Coming home") read as chapter titles and are a tell in bulk.
 
-**Category decision tree** (for the other 20%):
+### 5. Write the ugly draft
 
-- "I changed through this" → **Journey & Transformation**
-- "The structure IS the story" → **Structural Techniques**
-- "There's a surprise or tension" → **Tension & Contrast**
-- "Making a logical case" → **Analytical & Persuasive**
-- "Mood/feeling drives the piece" → **Atmospheric & Experimental**
+Informationally complete, rhetorically inert. **Aim for flat.**
 
-#### Journey & Transformation
+Nick is good at adding voice to plain prose and bad at excising pastiche from
+clever prose. A draft that already *sounds* finished is the worst possible artifact
+to hand him — he has to fight it. Give him something that obviously needs him.
 
-| Framework             | Reference                             | One-liner                                                    |
-| --------------------- | ------------------------------------- | ------------------------------------------------------------ |
-| Story Circle          | `references/story-circle.md`          | 8-step hero's journey for personal transformation arcs       |
-| Three-Act             | `references/three-act.md`             | Classic setup/confrontation/resolution narrative spine       |
-| Freytag's Pyramid     | `references/freytags-pyramid.md`      | 5-phase dramatic arc with explicit climax mapping            |
-| The Metamorphosis     | `references/the-metamorphosis.md`     | Identity-level change — the author becomes someone different |
-| Existential Awakening | `references/existential-awakening.md` | Profound realization that shifts relationship to work        |
+Hard rules while drafting:
 
-#### Structural Techniques
+| Rule | Why |
+| ---- | --- |
+| Every mental-state sentence is a verbatim quote from step 2, or a `[NICK: what were you actually thinking here?]` marker | The core failure. Untagged invented interiority is an automatic fail. |
+| Sections end on information — a fact, a number, a command, or just stop | Eight aphoristic endings is the template's silhouette |
+| Every number traces to a source | "Twelve minutes of curiosity" was invented precision that narrativizes a life |
+| One sustained metaphor per post, maximum | A metaphor recurring across 3+ sections is a framework fingerprint |
+| No narrator stage directions | "Now watch what happened next" is Nick emceeing a post he'd never emcee |
 
-| Framework          | Reference                          | One-liner                                                    |
-| ------------------ | ---------------------------------- | ------------------------------------------------------------ |
-| In Medias Res      | `references/in-medias-res.md`      | Start in the middle of the action, backfill context          |
-| Reverse Chronology | `references/reverse-chronology.md` | Tell it backwards — outcome first, origin last               |
-| Nested Loops       | `references/nested-loops.md`       | Layer stories inside each other like Russian dolls           |
-| The Spiral         | `references/the-spiral.md`         | Revisit the same concept with deeper understanding each pass |
-| The Petal          | `references/the-petal.md`          | Multiple stories radiating from a central theme              |
+Where you'd reach for a rhetorical flourish, write the plain sentence instead and
+let Nick decide whether it deserves more.
 
-#### Tension & Contrast
+### 6. Run the structural gate — before Nick reads it
 
-| Framework        | Reference                        | One-liner                                                      |
-| ---------------- | -------------------------------- | -------------------------------------------------------------- |
-| Kishōtenketsu    | `references/kishotenketsu.md`    | 4-act twist without conflict — recontextualize, don't confront |
-| The Sparkline    | `references/the-sparkline.md`    | Oscillate between "what is" and "what could be"                |
-| The False Start  | `references/the-false-start.md`  | Begin with the wrong story, then restart with truth            |
-| Converging Ideas | `references/converging-ideas.md` | Unrelated threads that connect to a single insight             |
-| Catch-22         | `references/catch-22.md`         | Paradox where the rules create an impossible situation         |
-| The Rashomon     | `references/the-rashomon.md`     | Same event from multiple contradictory perspectives            |
+```bash
+python3 scripts/slopcheck.py \
+  --corpus '/Users/nicknisi/Developer/nicknisi.com/src/content/posts/*.md*' \
+  --draft path/to/draft.mdx \
+  --extract-interiority
+```
 
-#### Analytical & Persuasive
+It calibrates against Nick's real posts and flags outliers in both directions —
+**suppression is as suspicious as excess.** A draft engineered to dodge a metric
+looks different from one that never considered it.
 
-| Framework              | Reference                                  | One-liner                                                          |
-| ---------------------- | ------------------------------------------ | ------------------------------------------------------------------ |
-| SCQA                   | `references/scqa.md`                       | Situation-Complication-Question-Answer for logical problem-solving |
-| Progressive Disclosure | `references/progressive-disclosure.md`     | Simple-to-complex layering for teaching concepts                   |
-| Compare & Contrast     | `references/compare-contrast.md`           | Structured evaluation of trade-offs between options                |
-| PAS                    | `references/problem-agitation-solution.md` | Punchy problem→pain→fix for short optimization stories             |
-| Post-mortem            | `references/post-mortem.md`                | Incident retrospective with timeline and lessons                   |
-| Socratic Path          | `references/socratic-path.md`              | Chain of questions leading to self-discovered conclusions          |
+The gate's job is to produce Nick's rewrite list, not to certify the draft. Fix
+what it flags, then hand over. Note that `--extract-interiority` output goes
+**to Nick**, not to you: every line is a claim only he can confirm.
 
-#### Atmospheric & Experimental
+Vocabulary checks (the `tighten-prose` skill) run last and matter least. They
+scan for 2024-era tells like "delve" and "leverage" and will pass a maximally
+slop-shaped draft — they did exactly that on the post that caused this rewrite.
 
-| Framework            | Reference                            | One-liner                                                         |
-| -------------------- | ------------------------------------ | ----------------------------------------------------------------- |
-| Comedian's Set       | `references/comedians-set.md`        | Setup→punchline structure for myth-busting and reframes           |
-| Kafkaesque Labyrinth | `references/kafkaesque-labyrinth.md` | Systemic absurdity where the villain is the system itself         |
-| Sisyphean Arc        | `references/sisyphean-arc.md`        | Find meaning in repetitive work that never ends                   |
-| Stranger's Report    | `references/strangers-report.md`     | Fresh-eyes outsider perspective on normalized strangeness         |
-| The Waiting          | `references/the-waiting.md`          | Something promised that never arrives — meaning from anticipation |
+### 7. Hand off, don't ship
 
-Not every post maps cleanly to one framework. Hybrid approaches are fine — each framework's reference includes Combination Notes for pairing. Use a framework as a starting structure, not a straitjacket.
+Deliver:
 
-`voice-tone.md` and `post-template.md` are always loaded. Load only one framework reference in addition — do not preload all twenty-seven.
+1. The flat draft
+2. The interiority list — every sentence claiming his inner life, for him to rewrite or cut
+3. The gate output
+4. Open questions
 
-### 4. Outline the Post
-
-Apply the chosen framework to the brain dump material:
-
-- Map the user's points to the framework's steps/sections
-- Identify gaps — what's missing that the framework needs?
-- Decide section headers (descriptive and specific, not generic placeholders)
-- Determine where code examples and specific details will land
-
-If the content doesn't fit the framework cleanly, adapt — the framework is scaffolding, not a cage.
-
-### 5. Write in Nick's Voice
-
-Apply voice characteristics:
-
-**Opening:**
-
-- Hook with current position or recent event
-- Set up tension or question
-- Be direct and honest
-
-**Body:**
-
-- Vary paragraph length
-- Use short paragraphs for emphasis
-- Include specific details (tool names, commands, numbers)
-- Show vulnerability where appropriate
-- Use inline code formatting naturally
-- Break up text with headers
-
-**Technical content:**
-
-- Assume reader knowledge but explain when needed
-- Show actual commands and examples
-- Be honest about limitations
-- Use casual tool references
-
-**Tone modulation:**
-
-- Technical sections: clear, instructional
-- Personal sections: vulnerable, reflective
-- Be conversational throughout
-
-**Ending:**
-
-- Tie back to opening
-- Forward-looking perspective
-- Actionable advice
-- Optimistic or thought-provoking
-
-### 6. Review and Refine
-
-Check the post:
-
-- Does it sound conversational?
-- Is there a clear narrative arc?
-- Are technical details specific and accurate?
-- Does it show vulnerability appropriately?
-- Are paragraphs varied in length?
-- Is humor self-aware, not forced?
-- Does it end with momentum?
-
-**Tighten pass:** Run the `tighten-prose` skill as the final quality gate. It handles loading the AI tells catalog, fetching live patterns from Wikipedia, scanning for density, and rewriting flagged sections.
-
-Show the post to the user for feedback and iterate.
-
-**Revision strategy:**
-
-- Re-read `references/voice-tone.md` before revising to recalibrate
-- Focus changes on the specific feedback — don't rewrite unrelated sections
-- Preserve the overall narrative structure unless the user explicitly requests restructuring
-- If feedback is vague ("make it better"), ask what specifically feels off
+**Do not publish a post whose first-person sentences Nick has not read and
+approved.** He isn't the editor of this artifact. He's the only source for half of
+it.
 
 ## Output Format
 
-Format posts using `references/post-template.md` as the structural template. This defines the frontmatter schema and file format for Nick's site.
-
-For detailed voice do's and don'ts, see `references/voice-tone.md`.
-
-## Example Patterns
-
-### Opening hooks:
-
-```markdown
-"AI is going to replace developers."
-
-I must have heard that phrase a hundred times in the last year.
-```
-
-```markdown
-I've been thinking a lot about how we use AI in our daily work.
-```
-
-### Emphasis through structure:
-
-```markdown
-Then something clicked.
-
-I watched it use rg to search through codebases, just like I would.
-```
-
-### Vulnerability:
-
-```markdown
-I won't lie – joining Meta was intimidating.
-```
-
-### Technical details:
-
-```markdown
-I watched it use `rg` to search through codebases, just like I would.
-It ran `npm test` to verify its changes weren't breaking anything.
-```
-
-### Conclusions:
-
-```markdown
-You're not being replaced; you're being amplified.
-```
+See `references/post-template.md` for frontmatter schema and file conventions.
 
 ## Bundled Resources
 
-### References
-
-- `references/voice-tone.md` - Complete voice and tone guide. Read this first to capture Nick's style.
-- `references/post-template.md` - Output format template with frontmatter schema and structural skeleton.
-
-**Narrative frameworks** (read the one that matches the content — do not preload all twenty-seven):
-
-Journey & Transformation:
-
-- `references/story-circle.md` - 8-step hero's journey for personal transformation arcs
-- `references/three-act.md` - Classic setup/confrontation/resolution narrative spine
-- `references/freytags-pyramid.md` - 5-phase dramatic arc with explicit climax mapping
-- `references/the-metamorphosis.md` - Identity-level change — the author becomes someone different
-- `references/existential-awakening.md` - Profound realization that shifts relationship to work
-
-Structural Techniques:
-
-- `references/in-medias-res.md` - Start in the middle of the action, backfill context
-- `references/reverse-chronology.md` - Tell it backwards — outcome first, origin last
-- `references/nested-loops.md` - Layer stories inside each other like Russian dolls
-- `references/the-spiral.md` - Revisit the same concept with deeper understanding each pass
-- `references/the-petal.md` - Multiple stories radiating from a central theme
-
-Tension & Contrast:
-
-- `references/kishotenketsu.md` - 4-act twist without conflict — recontextualize, don't confront
-- `references/the-sparkline.md` - Oscillate between "what is" and "what could be"
-- `references/the-false-start.md` - Begin with the wrong story, then restart with truth
-- `references/converging-ideas.md` - Unrelated threads that connect to a single insight
-- `references/catch-22.md` - Paradox where the rules create an impossible situation
-- `references/the-rashomon.md` - Same event from multiple contradictory perspectives
-
-Analytical & Persuasive:
-
-- `references/scqa.md` - Situation-Complication-Question-Answer for logical problem-solving
-- `references/progressive-disclosure.md` - Simple-to-complex layering for teaching concepts
-- `references/compare-contrast.md` - Structured evaluation of trade-offs between options
-- `references/problem-agitation-solution.md` - Punchy problem→pain→fix for short optimization stories
-- `references/post-mortem.md` - Incident retrospective with timeline and lessons
-- `references/socratic-path.md` - Chain of questions leading to self-discovered conclusions
-
-Atmospheric & Experimental:
-
-- `references/comedians-set.md` - Setup→punchline structure for myth-busting and reframes
-- `references/kafkaesque-labyrinth.md` - Systemic absurdity where the villain is the system itself
-- `references/sisyphean-arc.md` - Find meaning in repetitive work that never ends
-- `references/strangers-report.md` - Fresh-eyes outsider perspective on normalized strangeness
-- `references/the-waiting.md` - Something promised that never arrives — meaning from anticipation
-
-## Workflow Example
-
-User provides brain dump:
-
-```
-thoughts on using cursor vs claude code
-- cursor is in IDE, feels familiar
-- but claude code is in terminal, my natural environment
-- tried cursor first, felt weird leaving vim
-- claude code met me where I was
-- not about which is better, about workflow fit
-- some devs love IDE integration
-- I need terminal access
-- conclusion: use what fits YOUR workflow
-```
-
-Process:
-
-1. Read voice-tone.md
-2. Choose framework — this is a personal journey, so **Compare & Contrast** with Story Circle elements
-3. Outline: Current tools → Trying Cursor → Finding Claude Code → Realization
-4. Write opening hook about tool debates
-5. Show vulnerability about trying new things
-6. Include specific terminal commands naturally
-7. Conclude with "meet yourself where you are" message
-8. Review for conversational tone and specific details
-
-Sample output (opening paragraphs):
-
-```markdown
-"Which AI coding tool should I use?"
-
-I must get asked that question weekly at this point. And honestly? I tried to answer it
-the wrong way for months.
-
-When Cursor started blowing up, I did what any curious developer would do — I installed
-it and gave it a shot. It's impressive. The inline completions, the chat panel, the way
-it weaves right into VS Code. I get why people love it.
-
-But here's the thing: I'm not a VS Code person. I live in the terminal. Vim, tmux,
-`rg` piped into `fzf` — that's my happy place. And every time I opened Cursor, I felt
-like I was visiting someone else's apartment. Nice place, but not _mine_.
-
-Then I found Claude Code.
-```
-
-Notice: conversational hook, specific tool names, vulnerability about trying something new, short paragraph for emphasis at the end.
+- `references/voice-tone.md` — ceilings and prohibitions, with measured rates from his corpus
+- `references/post-template.md` — frontmatter schema and structural skeleton
+- `references/frameworks.md` — diagnostic vocabulary for critiquing a finished draft
+- `scripts/slopcheck.py` — corpus-calibrated structural detector
