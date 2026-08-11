@@ -111,8 +111,7 @@ let Nick decide whether it deserves more.
 ```bash
 python3 scripts/slopcheck.py \
   --corpus '/Users/nicknisi/Developer/nicknisi.com/src/content/posts/*.md*' \
-  --draft path/to/draft.mdx \
-  --extract-interiority
+  --draft path/to/draft.mdx
 ```
 
 It calibrates against Nick's real posts and flags outliers in both directions —
@@ -120,8 +119,12 @@ It calibrates against Nick's real posts and flags outliers in both directions �
 looks different from one that never considered it.
 
 The gate's job is to produce Nick's rewrite list, not to certify the draft. Fix
-what it flags, then hand over. Note that `--extract-interiority` output goes
-**to Nick**, not to you: every line is a claim only he can confirm.
+what it flags, then hand over.
+
+The interiority section always prints and is **not** scored against the corpus —
+it exits non-zero while any claim is unconfirmed. A structurally clean draft with
+unconfirmed first-person claims is not a passing draft. Those lines go to Nick,
+not to you.
 
 Vocabulary checks (the `tighten-prose` skill) run last and matter least. They
 scan for 2024-era tells like "delve" and "leverage" and will pass a maximally

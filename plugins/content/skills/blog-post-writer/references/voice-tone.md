@@ -55,7 +55,7 @@ these drift as he writes more.
 | "Not X. It's Y." antithesis | 0.83 / 1k words | **≤ 2 / 1k** | Fine once. Six times is a metronome. |
 | Narrator stage directions | 0.05 per post | **≤ 1** | "Now watch what happened next" — he does not do this. |
 | Staged epiphany markers | 0.15 per post | **≤ 1** | "reframed everything," "something clicked" |
-| First-person mental states | 0.97 / 1k words | **≤ 2 / 1k** | See the hard rule below. |
+| First-person mental states | 0.97 / 1k words | **0 unsourced** | Not a rate. See the hard rule below. |
 | Long-long-short rhythm triplets | 0.20 / 1k | **≤ 0.9 / 1k** | Two long sentences then a short one, as a beat. |
 | Closure devices in final section | 0.05 per post | **≤ 1** | Callback, direct address, bolded lesson, past-self frame — pick one. |
 | Section length variation (CV) | 0.45 | **≥ 0.3** | Suspiciously even sections mean a template. |
@@ -79,6 +79,13 @@ never considered is either:
 
 There is no third option. Not "a reasonable inference from the logs." Not "clearly
 implied by his behavior."
+
+**And this is not a rate check.** An earlier version of the detector scored
+interiority as a z-score against his corpus mean, which meant a draft could go
+green while still containing three invented claims about his head — they were
+"in range." That converted a truth problem into a rate problem and licensed
+stopping early. The target for unsourced claims is zero. No score in any report
+overrules it.
 
 Readers don't detect fabricated inner life directly — they detect its artifact:
 **narratively convenient** inner life. Invented feelings always arrive exactly on

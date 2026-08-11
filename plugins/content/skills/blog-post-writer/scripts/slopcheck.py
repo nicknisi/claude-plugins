@@ -96,12 +96,21 @@ INTERIORITY = re.compile(
     r"never (?:thought|realized|realised|noticed|considered))\b"
     r"|it (?:had )?never occurred to me"
     r"|\bI'd (?:been|spent|assumed|thought|told myself)\b"
+    r"|\bI (?:did not|didn't) (?:want|mean|intend|expect)\b"
+    r"|\bI went a little \w+"
+    r"|^\s*mostly i was\b"
+    r"|\bI was (?:bored|tired|annoyed|frustrated|curious|nervous|embarrassed|hooked)\b"
     r"|\bmy (?:exit strategy|whole personality|instinct|first instinct)\b",
     re.I,
 )
 
 CLOSURE_DEVICES = {
-    "direct address": re.compile(r"^(?:and )?[A-Z][a-z]+ —|^(?:and )?[A-Z][a-z]+,\s", re.M),
+    # A vocative, not just any sentence opening with "Word,". Requires second
+    # person immediately after the name: "And Zack — you were right...".
+    # ("Speed, cost, and model choice..." is not an address.)
+    "direct address": re.compile(
+        r"^(?:and |but |so )?[A-Z][a-z]+\s*[—,]\s+(?:you|your|if you)\b", re.M | re.I
+    ),
     "past-self frame": re.compile(r"what i'd tell|if you'd asked me|July me|past me", re.I),
     "bolded lesson": re.compile(r"\*\*[^*]{40,}\*\*"),
     "apology/absolution": re.compile(r"\bsorry about\b|\byou were right\b", re.I),
@@ -179,12 +188,18 @@ def analyze(text):
 
 
 # Direction of suspicion: "high" = only excess is bad, "both" = suppression too.
+#
+# interiority_per_1k is deliberately NOT here. It used to be a z-score check and
+# that was a design error: it turned a truth problem into a rate problem. A draft
+# can score "in range" against the corpus mean while still containing fabricated
+# claims about the author's mind, because the metric cannot distinguish invented
+# interiority from remembered interiority. Unsourced mental-state claims have a
+# target of ZERO, not a corpus average. Reported separately, always.
 METRICS = {
     "punchline_ending_rate": "high",
     "antithesis_per_1k": "high",
     "stage_directions": "high",
     "epiphany_markers": "high",
-    "interiority_per_1k": "high",
     "em_dash_per_1k": "both",
     "long_long_punch_per_1k": "high",
     "closure_devices_stacked": "high",
@@ -247,21 +262,30 @@ def main():
     if d["_closure"]:
         print(f"\n  closure devices stacked in final section: {', '.join(d['_closure'])}")
 
-    if args.extract_interiority:
-        print("\n" + "=" * 62)
-        print("UNSOURCED INTERIORITY \u2014 every line below is a claim about the")
-        print("author's inner life. Each needs a real source or the author's own")
-        print("words. This check cannot be automated away.\n")
-        for i, s in enumerate(
-            [s for p in paragraphs(d["_prose"]) for s in sentences(p) if INTERIORITY.search(s)], 1
-        ):
-            print(f"  {i:2d}. {s.strip()[:150]}")
+    # Always runs. This is a provenance gate, not a style metric: it is not
+    # optional and it is not scored against the corpus.
+    claims = [
+        s.strip()
+        for par in paragraphs(d["_prose"])
+        for s in sentences(par)
+        if INTERIORITY.search(s)
+    ]
+    print("\n" + "=" * 62)
+    print(f"INTERIORITY \u2014 {len(claims)} claim(s) about the author's inner life.")
+    print("Target for UNSOURCED claims is zero, not a corpus average. Each line")
+    print("below is either the author's own words or an invention. Only the")
+    print("author knows which. No score in this report overrules that.\n")
+    for i, s in enumerate(claims, 1):
+        print(f"  {i:2d}. {s[:150]}")
 
     print()
     if fails:
-        print(f"RESULT: {len(fails)} structural flag(s) \u2014 rewrite before the prose pass.")
+        print(f"RESULT: {len(fails)} structural flag(s); {len(claims)} interiority claim(s) unconfirmed.")
         sys.exit(1)
-    print("RESULT: no structural outliers vs corpus.")
+    if claims:
+        print(f"RESULT: no structural outliers, but {len(claims)} interiority claim(s) need the author.")
+        sys.exit(2)
+    print("RESULT: no structural outliers; no unconfirmed interiority.")
 
 
 if __name__ == "__main__":
