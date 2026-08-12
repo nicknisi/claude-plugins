@@ -65,6 +65,30 @@
       ]
     },
     {
+      "name": "hermes-tweet",
+      "source": {
+        "source": "github",
+        "repo": "Xquik-dev/hermes-tweet"
+      },
+      "description": "Hermes Agent plugin for public X/Twitter research and approval-gated account actions.",
+      "homepage": "https://github.com/Xquik-dev/hermes-tweet#readme",
+      "repository": "https://github.com/Xquik-dev/hermes-tweet",
+      "license": "MIT",
+      "author": {
+        "name": "Xquik",
+        "url": "https://github.com/Xquik-dev"
+      },
+      "keywords": [
+        "hermes-agent",
+        "hermes-plugin",
+        "twitter",
+        "x",
+        "social-media",
+        "research",
+        "automation"
+      ]
+    },
+    {
       "name": "ideation",
       "source": {
         "source": "github",
